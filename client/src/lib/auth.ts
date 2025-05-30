@@ -13,17 +13,17 @@ export interface LoginCredentials {
 }
 
 export async function login(credentials: LoginCredentials): Promise<User> {
-  const response = await apiRequest("POST", "/api/auth/login", credentials);
+  const response = await apiRequest("/api/auth/login", "POST", credentials);
   return response.json();
 }
 
 export async function logout(): Promise<void> {
-  await apiRequest("POST", "/api/auth/logout");
+  await apiRequest("/api/auth/logout", "POST");
 }
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const response = await apiRequest("GET", "/api/auth/me");
+    const response = await apiRequest("/api/auth/me", "GET");
     return response.json();
   } catch (error) {
     // Se não estiver autenticado, retorna null
