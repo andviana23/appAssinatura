@@ -14,6 +14,7 @@ import Barbeiros from "@/pages/barbeiros";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
 import Distribuicao from "@/pages/distribuicao";
+import TotalServicos from "@/pages/total-servicos";
 import BarberDashboard from "@/pages/barber-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -30,6 +31,7 @@ function AuthenticatedRoutes() {
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/distribuicao" component={Distribuicao} />
+          <Route path="/total-servicos" component={TotalServicos} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
