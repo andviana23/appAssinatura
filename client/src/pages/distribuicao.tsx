@@ -16,7 +16,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, getInitials, getCurrentMonth } from "@/lib/utils";
-import { Calculator, Download, Save, Clock } from "lucide-react";
+import { Calculator, Download, Save, Clock, Plus } from "lucide-react";
+import { AtendimentoModal } from "@/components/atendimento-modal";
 import type { Barbeiro, Servico } from "@shared/schema";
 
 interface DistribuicaoData {

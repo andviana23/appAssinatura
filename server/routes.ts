@@ -387,6 +387,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Atendimentos routes
+  app.get("/api/atendimentos", requireAuth, async (req, res) => {
+    try {
+      const atendimentos = await storage.getAllAtendimentos();
+      res.json(atendimentos);
+    } catch (error) {
+      console.error("Erro ao buscar atendimentos:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.get("/api/atendimentos/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
+    try {
+      const barbeiroId = parseInt(req.params.barbeiroId);
+      const mes = req.query.mes as string;
+      
+      // Verificar se é admin ou o próprio barbeiro
+      if (req.session.userRole !== 'admin' && req.session.barbeiroId !== barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const atendimentos = await storage.getAtendimentosByBarbeiro(barbeiroId, mes);
+      res.json(atendimentos);
+    } catch (error) {
+      console.error("Erro ao buscar atendimentos do barbeiro:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.get("/api/atendimentos/resumo/:barbeiroId/:mes", requireAuth, async (req, res) => {
+    try {
+      const barbeiroId = parseInt(req.params.barbeiroId);
+      const mes = req.params.mes;
+      
+      // Verificar se é admin ou o próprio barbeiro
+      if (req.session.userRole !== 'admin' && req.session.barbeiroId !== barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const resumo = await storage.getAtendimentosResumo(barbeiroId, mes);
+      res.json(resumo);
+    } catch (error) {
+      console.error("Erro ao buscar resumo de atendimentos:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/atendimentos", requireAuth, async (req, res) => {
+    try {
+      const atendimento = await storage.createAtendimento(req.body);
+      res.status(201).json(atendimento);
+    } catch (error) {
+      console.error("Erro ao criar atendimento:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.put("/api/atendimentos/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const atendimento = await storage.updateAtendimento(id, req.body);
+      res.json(atendimento);
+    } catch (error) {
+      console.error("Erro ao atualizar atendimento:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.delete("/api/atendimentos/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAtendimento(id);
+      res.json({ message: "Atendimento removido com sucesso" });
+    } catch (error) {
+      console.error("Erro ao remover atendimento:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Comissões routes
   app.get("/api/comissoes/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
     try {
