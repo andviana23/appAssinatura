@@ -1,6 +1,10 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { config } from "dotenv";
+
+// Load environment variables
+config();
 import {
   barbeiros,
   servicos,
@@ -27,6 +31,10 @@ import {
   type User,
   type InsertUser,
 } from "@shared/schema";
+
+// Debug da conexão
+console.log('DATABASE_URL existe:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL primeiro chars:', process.env.DATABASE_URL?.substring(0, 30));
 
 const client = postgres(process.env.DATABASE_URL!);
 const db = drizzle(client);
