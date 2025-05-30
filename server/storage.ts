@@ -15,6 +15,7 @@ import {
   comissoes,
   users,
   atendimentos,
+  totalServicos,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -33,6 +34,8 @@ import {
   type InsertUser,
   type Atendimento,
   type InsertAtendimento,
+  type TotalServico,
+  type InsertTotalServico,
 } from "@shared/schema";
 
 // Debug da conexão
@@ -100,6 +103,25 @@ export interface IStorage {
     totalMinutos: number;
     dias: Array<{ data: string; quantidade: number }>;
   }>>;
+
+  // Total de Serviços (Controle Admin)
+  getTotalServicosByMes(mes: string): Promise<TotalServico[]>;
+  createOrUpdateTotalServico(data: InsertTotalServico): Promise<TotalServico>;
+  getTotalServicoByMesAndServico(mes: string, servicoId: number): Promise<TotalServico | undefined>;
+  
+  // Validações
+  validateAtendimentoLimits(mes: string): Promise<{
+    valid: boolean;
+    violations: Array<{ servicoId: number; used: number; limit: number }>;
+  }>;
+
+  // Comissões calculadas em tempo real
+  getComissaoAtualBarbeiro(barbeiroId: number, mes: string): Promise<{
+    minutosTrabalhadosMes: number;
+    comissaoCalculada: number;
+    faturamentoProporcional: number;
+    percentualParticipacao: number;
+  }>;
 
   // Métricas
   getDashboardMetrics(): Promise<{
@@ -363,6 +385,132 @@ export class DatabaseStorage implements IStorage {
     }, {} as Record<number, any>);
 
     return Object.values(grouped);
+  }
+
+  // Métodos para Total de Serviços
+  async getTotalServicosByMes(mes: string): Promise<TotalServico[]> {
+    return await db.select().from(totalServicos)
+      .where(eq(totalServicos.mes, mes))
+      .orderBy(totalServicos.servicoId);
+  }
+
+  async getTotalServicoByMesAndServico(mes: string, servicoId: number): Promise<TotalServico | undefined> {
+    const [result] = await db.select().from(totalServicos)
+      .where(and(eq(totalServicos.mes, mes), eq(totalServicos.servicoId, servicoId)));
+    return result;
+  }
+
+  async createOrUpdateTotalServico(data: InsertTotalServico): Promise<TotalServico> {
+    const existing = await this.getTotalServicoByMesAndServico(data.mes, data.servicoId);
+    
+    if (existing) {
+      const [updated] = await db.update(totalServicos)
+        .set({ totalMes: data.totalMes })
+        .where(eq(totalServicos.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(totalServicos).values(data).returning();
+      return created;
+    }
+  }
+
+  async validateAtendimentoLimits(mes: string): Promise<{
+    valid: boolean;
+    violations: Array<{ servicoId: number; used: number; limit: number }>;
+  }> {
+    const totaisServicos = await this.getTotalServicosByMes(mes);
+    const violations = [];
+
+    for (const totalServico of totaisServicos) {
+      const [usedResult] = await db
+        .select({
+          total: sql<number>`COALESCE(SUM(${atendimentos.quantidade}), 0)`,
+        })
+        .from(atendimentos)
+        .where(and(
+          eq(atendimentos.mes, mes),
+          eq(atendimentos.servicoId, totalServico.servicoId)
+        ));
+
+      const used = Number(usedResult?.total || 0);
+      
+      if (used > totalServico.totalMes) {
+        violations.push({
+          servicoId: totalServico.servicoId,
+          used,
+          limit: totalServico.totalMes
+        });
+      }
+    }
+
+    return {
+      valid: violations.length === 0,
+      violations
+    };
+  }
+
+  async getComissaoAtualBarbeiro(barbeiroId: number, mes: string): Promise<{
+    minutosTrabalhadosMes: number;
+    comissaoCalculada: number;
+    faturamentoProporcional: number;
+    percentualParticipacao: number;
+  }> {
+    // Buscar atendimentos do barbeiro no mês
+    const atendimentosBarbeiro = await db
+      .select({
+        atendimento: atendimentos,
+        servico: servicos,
+      })
+      .from(atendimentos)
+      .innerJoin(servicos, eq(atendimentos.servicoId, servicos.id))
+      .where(and(
+        eq(atendimentos.barbeiroId, barbeiroId),
+        eq(atendimentos.mes, mes)
+      ));
+
+    // Calcular minutos trabalhados pelo barbeiro
+    const minutosTrabalhadosMes = atendimentosBarbeiro.reduce((total, item) => {
+      return total + (item.atendimento.quantidade * item.servico.tempoMinutos);
+    }, 0);
+
+    // Buscar total de minutos de todos os barbeiros no mês
+    const [totalMinutosResult] = await db
+      .select({
+        total: sql<number>`COALESCE(SUM(${atendimentos.quantidade} * ${servicos.tempoMinutos}), 0)`,
+      })
+      .from(atendimentos)
+      .innerJoin(servicos, eq(atendimentos.servicoId, servicos.id))
+      .where(eq(atendimentos.mes, mes));
+
+    const totalMinutosMes = Number(totalMinutosResult?.total || 0);
+
+    // Calcular percentual de participação
+    const percentualParticipacao = totalMinutosMes > 0 
+      ? (minutosTrabalhadosMes / totalMinutosMes) * 100 
+      : 0;
+
+    // Buscar última distribuição salva para obter faturamento e percentual de comissão
+    const [ultimaDistribuicao] = await db
+      .select()
+      .from(distribuicoes)
+      .where(eq(distribuicoes.periodoInicio, new Date(mes + '-01')))
+      .orderBy(desc(distribuicoes.createdAt))
+      .limit(1);
+
+    const faturamentoTotal = Number(ultimaDistribuicao?.faturamentoTotal || 15000);
+    const percentualComissao = ultimaDistribuicao?.percentualComissao || 40;
+
+    // Calcular faturamento proporcional e comissão
+    const faturamentoProporcional = (faturamentoTotal * percentualParticipacao) / 100;
+    const comissaoCalculada = (faturamentoProporcional * percentualComissao) / 100;
+
+    return {
+      minutosTrabalhadosMes,
+      comissaoCalculada,
+      faturamentoProporcional,
+      percentualParticipacao,
+    };
   }
 
   async getDashboardMetrics(): Promise<{

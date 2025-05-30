@@ -91,6 +91,15 @@ export const atendimentos = pgTable("atendimentos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Tabela para controle do total de serviços por mês (administrador define o limite)
+export const totalServicos = pgTable("total_servicos", {
+  id: serial("id").primaryKey(),
+  servicoId: integer("servico_id").notNull().references(() => servicos.id, { onDelete: "cascade" }),
+  mes: text("mes").notNull(), // formato YYYY-MM
+  totalMes: integer("total_mes").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
   id: true,
@@ -136,6 +145,11 @@ export const insertAtendimentoSchema = createInsertSchema(atendimentos).omit({
   createdAt: true,
 });
 
+export const insertTotalServicoSchema = createInsertSchema(totalServicos).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Barbeiro = typeof barbeiros.$inferSelect;
 export type InsertBarbeiro = z.infer<typeof insertBarbeiroSchema>;
@@ -163,3 +177,6 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Atendimento = typeof atendimentos.$inferSelect;
 export type InsertAtendimento = z.infer<typeof insertAtendimentoSchema>;
+
+export type TotalServico = typeof totalServicos.$inferSelect;
+export type InsertTotalServico = z.infer<typeof insertTotalServicoSchema>;

@@ -466,6 +466,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Total de Serviços routes (Controle Admin)
+  app.get("/api/total-servicos/:mes", requireAdmin, async (req, res) => {
+    try {
+      const mes = req.params.mes;
+      const totais = await storage.getTotalServicosByMes(mes);
+      res.json(totais);
+    } catch (error) {
+      console.error("Erro ao buscar totais de serviços:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/total-servicos", requireAdmin, async (req, res) => {
+    try {
+      const totalServico = await storage.createOrUpdateTotalServico(req.body);
+      res.json(totalServico);
+    } catch (error) {
+      console.error("Erro ao salvar total de serviço:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.get("/api/validate-limits/:mes", requireAdmin, async (req, res) => {
+    try {
+      const mes = req.params.mes;
+      const validation = await storage.validateAtendimentoLimits(mes);
+      res.json(validation);
+    } catch (error) {
+      console.error("Erro ao validar limites:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Comissão em tempo real para barbeiro
+  app.get("/api/comissao-atual/:barbeiroId/:mes", requireAuth, async (req, res) => {
+    try {
+      const barbeiroId = parseInt(req.params.barbeiroId);
+      const mes = req.params.mes;
+      
+      // Verificar se é admin ou o próprio barbeiro
+      if (req.session.userRole !== 'admin' && req.session.barbeiroId !== barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const comissao = await storage.getComissaoAtualBarbeiro(barbeiroId, mes);
+      res.json(comissao);
+    } catch (error) {
+      console.error("Erro ao buscar comissão atual:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Comissões routes
   app.get("/api/comissoes/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
     try {
