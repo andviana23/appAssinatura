@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 11% 98%; /* #F8FAFC */
+  --foreground: 215 25% 16%; /* #1E293B */
+  --muted: 215 12% 91%; /* #E2E8F0 */
+  --muted-foreground: 215 16% 46%; /* #64748B */
+  --popover: 0 0% 100%; /* #FFFFFF */
+  --popover-foreground: 215 25% 16%; /* #1E293B */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 215 25% 16%; /* #1E293B */
+  --border: 215 12% 91%; /* #E2E8F0 */
+  --input: 215 12% 91%; /* #E2E8F0 */
+  --primary: 207 90% 54%; /* #2563EB */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
+  --secondary: 215 12% 91%; /* #E2E8F0 */
+  --secondary-foreground: 215 25% 16%; /* #1E293B */
+  --accent: 215 12% 91%; /* #E2E8F0 */
+  --accent-foreground: 215 25% 16%; /* #1E293B */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+  --ring: 207 90% 54%; /* #2563EB */
+  --radius: 1rem; /* 16px for 2xl rounded corners */
+  
+  /* Barbershop theme colors */
+  --barbershop-brown: 27 70% 35%; /* #8B5A2B */
+  --barbershop-gold: 43 96% 49%; /* #F59E0B */
+  --barbershop-dark: 215 25% 16%; /* #1F2937 */
+}
+
+.dark {
+  --background: 215 28% 8%; /* #0F172A */
+  --foreground: 210 40% 98%; /* #F8FAFC */
+  --muted: 215 28% 15%; /* #1E293B */
+  --muted-foreground: 217 10% 64%; /* #94A3B8 */
+  --popover: 215 28% 8%; /* #0F172A */
+  --popover-foreground: 210 40% 98%; /* #F8FAFC */
+  --card: 215 28% 8%; /* #0F172A */
+  --card-foreground: 210 40% 98%; /* #F8FAFC */
+  --border: 215 28% 15%; /* #1E293B */
+  --input: 215 28% 15%; /* #1E293B */
+  --primary: 207 90% 54%; /* #2563EB */
+  --primary-foreground: 210 40% 98%; /* #F8FAFC */
+  --secondary: 215 28% 15%; /* #1E293B */
+  --secondary-foreground: 210 40% 98%; /* #F8FAFC */
+  --accent: 215 28% 15%; /* #1E293B */
+  --accent-foreground: 210 40% 98%; /* #F8FAFC */
+  --destructive: 0 62% 30%; /* #991B1B */
+  --destructive-foreground: 210 40% 98%; /* #F8FAFC */
+  --ring: 207 90% 54%; /* #2563EB */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  /* Custom spacing for 24px */
+  .space-24 {
+    @apply space-y-6;
+  }
+
+  .gap-24 {
+    @apply gap-6;
+  }
+
+  .p-24 {
+    @apply p-6;
+  }
+
+  .px-24 {
+    @apply px-6;
+  }
+
+  .py-24 {
+    @apply py-6;
+  }
+
+  .m-24 {
+    @apply m-6;
+  }
+
+  .mx-24 {
+    @apply mx-6;
+  }
+
+  .my-24 {
+    @apply my-6;
+  }
+
+  .mb-24 {
+    @apply mb-6;
+  }
+
+  .mt-24 {
+    @apply mt-6;
+  }
+
+  /* Barbershop theme utilities */
+  .bg-barbershop-brown {
+    background-color: hsl(var(--barbershop-brown));
+  }
+
+  .bg-barbershop-gold {
+    background-color: hsl(var(--barbershop-gold));
+  }
+
+  .bg-barbershop-dark {
+    background-color: hsl(var(--barbershop-dark));
+  }
+
+  .text-barbershop-brown {
+    color: hsl(var(--barbershop-brown));
+  }
+
+  .text-barbershop-gold {
+    color: hsl(var(--barbershop-gold));
+  }
+
+  .text-barbershop-dark {
+    color: hsl(var(--barbershop-dark));
+  }
+
+  /* Rounded corners - 2xl everywhere */
+  .rounded-default {
+    @apply rounded-2xl;
+  }
+
+  /* Soft shadows */
+  .shadow-soft {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+/* Override default button and card styles to use 2xl corners */
+@layer components {
+  .btn {
+    @apply rounded-2xl;
+  }
+
+  .card {
+    @apply rounded-2xl;
+  }
+
+  .input {
+    @apply rounded-2xl;
+  }
+
+  /* Loading states */
+  .loading {
+    @apply animate-pulse;
+  }
+}
