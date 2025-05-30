@@ -354,13 +354,26 @@ export default function Distribuicao() {
                 {barbeiros?.filter(b => b.ativo).map((barbeiro) => (
                   <TableRow key={barbeiro.id}>
                     <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-medium">
-                            {getInitials(barbeiro.nome)}
-                          </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {getInitials(barbeiro.nome)}
+                            </span>
+                          </div>
+                          <span className="font-medium">{barbeiro.nome}</span>
                         </div>
-                        <span className="font-medium">{barbeiro.nome}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedBarbeiro(barbeiro);
+                            setShowAtendimentoModal(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Atendimentos
+                        </Button>
                       </div>
                     </TableCell>
                     {servicosAssinatura?.map((servico) => (
@@ -466,6 +479,19 @@ export default function Distribuicao() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal de Atendimentos */}
+      {selectedBarbeiro && (
+        <AtendimentoModal
+          isOpen={showAtendimentoModal}
+          onClose={() => {
+            setShowAtendimentoModal(false);
+            setSelectedBarbeiro(null);
+          }}
+          barbeiro={selectedBarbeiro}
+          mes={currentMonth}
+        />
       )}
     </div>
   );
