@@ -5,6 +5,15 @@ import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema,
 import bcrypt from "bcrypt";
 import session from "express-session";
 
+// Extend session interface
+declare module "express-session" {
+  interface SessionData {
+    userId: number;
+    userRole: string;
+    barbeiroId?: number;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware
   app.use(session({
@@ -16,14 +25,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    if (!req.session.userId) {
+    if (!req.session?.userId) {
       return res.status(401).json({ message: "Acesso negado. Faça login." });
     }
     next();
   };
 
   const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.session.userId || req.session.userRole !== 'admin') {
+    if (!req.session?.userId || req.session?.userRole !== 'admin') {
       return res.status(403).json({ message: "Acesso negado. Apenas administradores." });
     }
     next();
