@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = user.id;
       req.session.userRole = user.role;
-      req.session.barbeiroId = user.barbeiroId;
+      req.session.barbeiroId = user.barbeiroId ?? undefined;
 
       res.json({
         id: user.id,
@@ -84,7 +84,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUserById(req.session.userId);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const user = await storage.getUserById(userId as number);
       if (!user) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }

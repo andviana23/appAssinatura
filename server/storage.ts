@@ -176,7 +176,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPlano(plano: InsertPlanoAssinatura): Promise<PlanoAssinatura> {
-    const [created] = await db.insert(planosAssinatura).values(plano).returning();
+    const [created] = await db.insert(planosAssinatura).values({
+      ...plano,
+      servicosIncluidos: plano.servicosIncluidos as number[]
+    }).returning();
     return created;
   }
 
