@@ -31,12 +31,12 @@ export default function TotalServicos() {
   });
 
   const { data: totaisServicos = [], isLoading: totaisLoading } = useQuery({
-    queryKey: ['/api/total-servicos', mes],
+    queryKey: [`/api/total-servicos/${mes}`],
     enabled: !!mes,
   });
 
   const { data: validation } = useQuery({
-    queryKey: ['/api/validate-limits', mes],
+    queryKey: [`/api/validate-limits/${mes}`],
     enabled: !!mes,
     refetchInterval: 30000, // Revalida a cada 30 segundos
   });
@@ -45,17 +45,18 @@ export default function TotalServicos() {
     mutationFn: (data: { servicoId: number; mes: string; totalMes: number }) =>
       apiRequest('/api/total-servicos', 'POST', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/total-servicos'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/validate-limits'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/total-servicos/${mes}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/validate-limits/${mes}`] });
       toast({
         title: "Sucesso",
         description: "Total de serviços atualizado com sucesso!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Erro ao salvar:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar total de serviços",
+        description: error?.message || "Erro ao salvar total de serviços",
         variant: "destructive",
       });
     },
