@@ -14,6 +14,7 @@ import {
   distribuicaoItens,
   comissoes,
   users,
+  atendimentos,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -30,6 +31,8 @@ import {
   type InsertComissao,
   type User,
   type InsertUser,
+  type Atendimento,
+  type InsertAtendimento,
 } from "@shared/schema";
 
 // Debug da conexão
@@ -84,6 +87,19 @@ export interface IStorage {
   getComissoesByBarbeiro(barbeiroId: number): Promise<Comissao[]>;
   getComissoesByMes(mes: string): Promise<Comissao[]>;
   createComissao(comissao: InsertComissao): Promise<Comissao>;
+
+  // Atendimentos
+  getAllAtendimentos(): Promise<Atendimento[]>;
+  getAtendimentosByBarbeiro(barbeiroId: number, mes?: string): Promise<Atendimento[]>;
+  createAtendimento(atendimento: InsertAtendimento): Promise<Atendimento>;
+  updateAtendimento(id: number, atendimento: Partial<InsertAtendimento>): Promise<Atendimento>;
+  deleteAtendimento(id: number): Promise<void>;
+  getAtendimentosResumo(barbeiroId: number, mes: string): Promise<Array<{
+    servico: Servico;
+    totalQuantidade: number;
+    totalMinutos: number;
+    dias: Array<{ data: string; quantidade: number }>;
+  }>>;
 
   // Métricas
   getDashboardMetrics(): Promise<{
@@ -268,6 +284,85 @@ export class DatabaseStorage implements IStorage {
   async createComissao(comissao: InsertComissao): Promise<Comissao> {
     const [created] = await db.insert(comissoes).values(comissao).returning();
     return created;
+  }
+
+  // Métodos para Atendimentos
+  async getAllAtendimentos(): Promise<Atendimento[]> {
+    return await db.select().from(atendimentos).orderBy(desc(atendimentos.dataAtendimento));
+  }
+
+  async getAtendimentosByBarbeiro(barbeiroId: number, mes?: string): Promise<Atendimento[]> {
+    if (mes) {
+      return await db.select().from(atendimentos)
+        .where(and(eq(atendimentos.barbeiroId, barbeiroId), eq(atendimentos.mes, mes)))
+        .orderBy(desc(atendimentos.dataAtendimento));
+    }
+    return await db.select().from(atendimentos)
+      .where(eq(atendimentos.barbeiroId, barbeiroId))
+      .orderBy(desc(atendimentos.dataAtendimento));
+  }
+
+  async createAtendimento(atendimento: InsertAtendimento): Promise<Atendimento> {
+    const [created] = await db.insert(atendimentos).values(atendimento).returning();
+    return created;
+  }
+
+  async updateAtendimento(id: number, atendimento: Partial<InsertAtendimento>): Promise<Atendimento> {
+    const [updated] = await db.update(atendimentos)
+      .set(atendimento)
+      .where(eq(atendimentos.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAtendimento(id: number): Promise<void> {
+    await db.delete(atendimentos).where(eq(atendimentos.id, id));
+  }
+
+  async getAtendimentosResumo(barbeiroId: number, mes: string): Promise<Array<{
+    servico: Servico;
+    totalQuantidade: number;
+    totalMinutos: number;
+    dias: Array<{ data: string; quantidade: number }>;
+  }>> {
+    const atendimentosData = await db
+      .select({
+        atendimento: atendimentos,
+        servico: servicos,
+      })
+      .from(atendimentos)
+      .innerJoin(servicos, eq(atendimentos.servicoId, servicos.id))
+      .where(and(
+        eq(atendimentos.barbeiroId, barbeiroId),
+        eq(atendimentos.mes, mes)
+      ))
+      .orderBy(atendimentos.dataAtendimento);
+
+    // Agrupar por serviço
+    const grouped = atendimentosData.reduce((acc, item) => {
+      const servicoId = item.servico.id;
+      if (!acc[servicoId]) {
+        acc[servicoId] = {
+          servico: item.servico,
+          totalQuantidade: 0,
+          totalMinutos: 0,
+          dias: []
+        };
+      }
+      
+      acc[servicoId].totalQuantidade += item.atendimento.quantidade;
+      acc[servicoId].totalMinutos += item.atendimento.quantidade * item.servico.tempoMinutos;
+      
+      const dataFormatted = item.atendimento.dataAtendimento.toISOString().split('T')[0];
+      acc[servicoId].dias.push({
+        data: dataFormatted,
+        quantidade: item.atendimento.quantidade
+      });
+      
+      return acc;
+    }, {} as Record<number, any>);
+
+    return Object.values(grouped);
   }
 
   async getDashboardMetrics(): Promise<{

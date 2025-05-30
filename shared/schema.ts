@@ -80,6 +80,17 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Nova tabela para atendimentos com datas
+export const atendimentos = pgTable("atendimentos", {
+  id: serial("id").primaryKey(),
+  barbeiroId: integer("barbeiro_id").notNull().references(() => barbeiros.id, { onDelete: "cascade" }),
+  servicoId: integer("servico_id").notNull().references(() => servicos.id, { onDelete: "cascade" }),
+  dataAtendimento: timestamp("data_atendimento").notNull(),
+  quantidade: integer("quantidade").notNull().default(1),
+  mes: text("mes").notNull(), // formato YYYY-MM
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
   id: true,
@@ -120,6 +131,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+export const insertAtendimentoSchema = createInsertSchema(atendimentos).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Barbeiro = typeof barbeiros.$inferSelect;
 export type InsertBarbeiro = z.infer<typeof insertBarbeiroSchema>;
@@ -144,3 +160,6 @@ export type InsertComissao = z.infer<typeof insertComissaoSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Atendimento = typeof atendimentos.$inferSelect;
+export type InsertAtendimento = z.infer<typeof insertAtendimentoSchema>;
