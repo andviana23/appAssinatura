@@ -7,6 +7,7 @@ import {
   Scissors,
   CreditCard,
   Calculator,
+  Target,
   LogOut,
 } from "lucide-react";
 
@@ -35,6 +36,11 @@ const navigation = [
     name: "Distribuição",
     href: "/distribuicao",
     icon: Calculator,
+  },
+  {
+    name: "Controle de Totais",
+    href: "/total-servicos",
+    icon: Target,
   },
 ];
 
