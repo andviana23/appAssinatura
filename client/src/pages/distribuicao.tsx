@@ -56,6 +56,9 @@ export default function Distribuicao() {
     totalMinutesPool: number;
     poolValue: number;
   } | null>(null);
+  const [selectedBarbeiro, setSelectedBarbeiro] = useState<Barbeiro | null>(null);
+  const [showAtendimentoModal, setShowAtendimentoModal] = useState(false);
+  const currentMonth = getCurrentMonth();
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
