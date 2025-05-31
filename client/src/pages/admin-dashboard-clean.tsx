@@ -290,7 +290,7 @@ export default function AdminDashboard() {
             ) : Array.isArray(expiring) && expiring.length > 0 ? (
               <div className="space-y-3">
                 {expiring
-                  .sort((a: any, b: any) => a.diasRestantes - b.diasRestantes)
+                  .sort((a: any, b: any) => a.daysLeft - b.daysLeft)
                   .slice(0, 5)
                   .map((cliente: any) => (
                   <div
@@ -298,16 +298,16 @@ export default function AdminDashboard() {
                     className="flex items-center justify-between p-3 rounded-xl border-l-4 border-orange-500 bg-orange-50"
                   >
                     <div>
-                      <div className="font-medium text-gray-900">{cliente.nome}</div>
-                      <div className="text-sm text-gray-600">{cliente.planoNome}</div>
+                      <div className="font-medium text-gray-900">{cliente.clientName}</div>
+                      <div className="text-sm text-gray-600">{cliente.planName}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold text-orange-600">
-                        {cliente.diasRestantes <= 0 ? 'Vencida' : `${cliente.diasRestantes} dias`}
+                        {cliente.daysLeft <= 0 ? 'Vencida' : `${cliente.daysLeft} dias`}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {cliente.dataVencimentoAssinatura 
-                          ? format(new Date(cliente.dataVencimentoAssinatura), "dd/MM", { locale: ptBR })
+                        {cliente.expiryDate 
+                          ? format(new Date(cliente.expiryDate), "dd/MM", { locale: ptBR })
                           : 'N/A'
                         }
                       </div>

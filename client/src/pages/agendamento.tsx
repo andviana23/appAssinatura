@@ -327,7 +327,7 @@ export default function Agendamento() {
 
             <div>
               <label className="text-sm font-medium">Serviço</label>
-              <Select name="servicoId" required>
+              <Select value={selectedServico} onValueChange={setSelectedServico} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
@@ -351,9 +351,10 @@ export default function Agendamento() {
                 Cancelar
               </Button>
               <Button
-                type="submit"
+                type="button"
                 className="flex-1 bg-[#8B4513] hover:bg-[#A0522D]"
                 disabled={createAgendamento.isPending}
+                onClick={handleCreateAgendamento}
               >
                 {createAgendamento.isPending ? "Criando..." : "Agendar"}
               </Button>
