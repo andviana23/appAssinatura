@@ -1,0 +1,67 @@
+1. Novo Menu “Clientes”
+Adicione no menu lateral a opção “Clientes”.
+
+Nessa tela só devem aparecer clientes que possuem assinatura ativa na Trato de Barbados.
+
+2. Integração Asaas
+Os clientes devem ser importados automaticamente via integração com o sistema Asaas.
+
+Buscar todos os clientes cadastrados no Asaas que possuem assinaturas ativas.
+
+Para cada cliente, mostrar:
+
+Nome
+
+E-mail
+
+Status da assinatura (ativa/inativa/inadimplente)
+
+Dias restantes de assinatura ativa
+
+Valor mensal da assinatura
+
+3. Regras de Atualização
+Clientes inadimplentes (com pagamentos atrasados) devem ser automaticamente marcados como inativos no sistema.
+
+Toda mudança de status (pagou/falhou/venceu/cancelou) deve ser refletida na plataforma da Trato de Barbados, sem precisar atualizar manualmente.
+
+4. Dashboard
+No dashboard principal:
+
+Mostrar o valor total somado das assinaturas ativas (soma dos clientes ativos).
+
+Adicionar um gráfico de linha temporal, mostrando o número de ativações de clientes por dia (ativação = confirmação de pagamento). Isso ajuda a ver quais dias têm mais ativações de assinatura.
+
+5. Integração Asaas – Documentação
+Toda a documentação para integração da API está disponível aqui:
+https://docs.asaas.com/docs/visao-geral
+
+O sistema deve usar as rotas/documentos de:
+
+Listar clientes (GET /customers)
+
+Listar assinaturas (GET /subscriptions)
+
+Listar pagamentos (GET /payments)
+
+Verificar status e datas das assinaturas/pagamentos
+
+(Ver exemplos de filtros e status no docs)
+
+A integração deve ser automática, via token de API, e atualizar a base diariamente ou em tempo real.
+
+Resumo prático do fluxo:
+Integra com a API Asaas usando o token.
+
+Busca os clientes com assinatura ativa, mostra na tela Clientes.
+
+Marca automaticamente como inativo quem ficou inadimplente.
+
+Mostra os dias restantes da assinatura de cada cliente.
+
+No dashboard, exibe o total somado das assinaturas ativas e um gráfico com ativações diárias.
+
+Se precisar de exemplos de requisição, tá tudo na documentação acima.
+Qualquer dúvida, olhe o endpoint de clientes e de assinaturas da API Asaas.
+Não esqueça de garantir que o sistema atualize as informações automaticamente.
+

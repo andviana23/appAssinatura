@@ -8,6 +8,7 @@ import {
   CreditCard,
   Calculator,
   Target,
+  UserCheck,
   LogOut,
 } from "lucide-react";
 
@@ -21,6 +22,11 @@ const navigation = [
     name: "Barbeiros",
     href: "/barbeiros",
     icon: Users,
+  },
+  {
+    name: "Clientes",
+    href: "/clientes",
+    icon: UserCheck,
   },
   {
     name: "Serviços",

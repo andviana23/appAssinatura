@@ -7,9 +7,11 @@ const pageInfo = {
   "/": { title: "Dashboard", subtitle: "Visão geral do sistema" },
   "/dashboard": { title: "Dashboard", subtitle: "Visão geral do sistema" },
   "/barbeiros": { title: "Barbeiros", subtitle: "Gerencie a equipe de barbeiros" },
+  "/clientes": { title: "Clientes", subtitle: "Clientes com assinaturas ativas" },
   "/servicos": { title: "Serviços", subtitle: "Configure os serviços oferecidos" },
   "/planos": { title: "Planos de Assinatura", subtitle: "Gerencie planos e benefícios" },
   "/distribuicao": { title: "Distribuição de Pontos", subtitle: "Calcule comissões baseadas em tempo" },
+  "/total-servicos": { title: "Controle de Totais", subtitle: "Defina limites mensais de serviços" },
   "/barber": { title: "Meu Dashboard", subtitle: "Seus atendimentos e comissões" },
 };
 
