@@ -651,18 +651,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Validar CPF obrigatório
+      if (!cpf || !cpf.trim()) {
+        throw new Error('CPF é obrigatório para criar cobrança');
+      }
+
       // Se não encontrou, criar novo cliente
       if (!customerId) {
         const customerPayload: any = {
           name: nome,
-          email: email
+          email: email,
+          cpfCnpj: cpf.replace(/\D/g, '') // Remove formatação
         };
-
-        // CPF é obrigatório
-        if (!cpf || !cpf.trim()) {
-          throw new Error('CPF é obrigatório para criar cobrança');
-        }
-        customerPayload.cpfCnpj = cpf.replace(/\D/g, ''); // Remove formatação
 
         const customerResponse = await fetch(`${baseUrl}/customers`, {
           method: 'POST',
@@ -682,11 +682,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId = customerData.id;
       }
 
-      // 2. Criar cobrança PIX
+      // 2. Criar cobrança com tipo específico
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      const chargePayload = {
+      let chargePayload: any = {
         customer: customerId,
         billingType: billingType || 'CREDIT_CARD',
         value: 5.00,
@@ -694,6 +694,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: 'Clube do Trato Único - Teste de Funcionalidade',
         externalReference: `teste-${Date.now()}`
       };
+
+      // Para PIX, adicionar configurações específicas
+      if (billingType === 'PIX') {
+        chargePayload.pixKey = '5c6276e0-1645-4bc5-a790-8e6e6048702b';
+        chargePayload.pixDescription = 'Clube do Trato Único - Teste de Funcionalidade';
+      }
 
       const chargeResponse = await fetch(`${baseUrl}/payments`, {
         method: 'POST',
