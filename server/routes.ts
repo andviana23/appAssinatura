@@ -667,19 +667,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (customerResponse.ok) {
                 const customerData = await customerResponse.json();
                 
-                // Buscar o último pagamento confirmado para calcular próximo vencimento
-                const paymentsResponse = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=CONFIRMED&limit=1`, {
+                // Buscar pagamentos do mês atual para determinar status
+                const currentMonth = new Date().toISOString().slice(0, 7);
+                const currentMonthPayments = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=CONFIRMED&dateCreated[ge]=${currentMonth}-01&dateCreated[le]=${currentMonth}-31`, {
                   headers: {
                     'access_token': asaasApiKey,
                     'Content-Type': 'application/json'
                   }
                 });
 
+                // Determinar status real baseado em pagamentos confirmados no mês atual
+                let realStatus = 'INACTIVE';
+                if (currentMonthPayments.ok) {
+                  const currentPayments = await currentMonthPayments.json();
+                  if (currentPayments.data && currentPayments.data.length > 0) {
+                    realStatus = 'ACTIVE';
+                  }
+                }
+
+                // Buscar último pagamento confirmado para calcular próximo vencimento
+                const lastPaymentResponse = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=CONFIRMED&limit=1`, {
+                  headers: {
+                    'access_token': asaasApiKey,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                // Buscar dados do link de pagamento
+                let paymentLinkName = 'Link não informado';
+                if (subscription.paymentLink) {
+                  const linkResponse = await fetch(`${baseUrl}/paymentLinks/${subscription.paymentLink}`, {
+                    headers: {
+                      'access_token': asaasApiKey,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  if (linkResponse.ok) {
+                    const linkData = await linkResponse.json();
+                    paymentLinkName = linkData.name || 'Link de pagamento';
+                  }
+                }
+
                 let calculatedNextDueDate = subscription.nextDueDate;
                 let daysRemaining = 0;
 
-                if (paymentsResponse.ok) {
-                  const paymentsData = await paymentsResponse.json();
+                if (lastPaymentResponse.ok) {
+                  const paymentsData = await lastPaymentResponse.json();
                   if (paymentsData.data && paymentsData.data.length > 0) {
                     const lastPayment = paymentsData.data[0];
                     const lastPaymentDate = new Date(lastPayment.paymentDate || lastPayment.dateCreated);
@@ -689,7 +722,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (subscription.cycle === 'MONTHLY') {
                       nextDue.setMonth(nextDue.getMonth() + 1);
                     } else {
-                      // Para outros ciclos, usar a data do Asaas
                       nextDue.setTime(new Date(subscription.nextDueDate).getTime());
                     }
                     
@@ -721,13 +753,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   customerEmail: customerData.email,
                   customerPhone: customerData.phone,
                   customerCpfCnpj: customerData.cpfCnpj,
-                  status: subscription.status,
+                  status: realStatus, // Status baseado em pagamentos confirmados do mês atual
                   value: parseFloat(subscription.value),
                   cycle: subscription.cycle,
                   billingType: subscription.billingType,
                   nextDueDate: calculatedNextDueDate,
                   daysRemaining: daysRemaining,
                   planName: subscription.description || 'Plano Mensal',
+                  paymentLinkName: paymentLinkName,
                   createdAt: subscription.dateCreated
                 });
               }

@@ -23,13 +23,14 @@ interface AsaasSubscription {
   customerEmail: string;
   customerPhone?: string;
   customerCpfCnpj?: string;
-  status: 'ACTIVE' | 'OVERDUE';
+  status: 'ACTIVE' | 'INACTIVE';
   value: number;
   cycle: string;
   billingType: string;
   nextDueDate: string;
   daysRemaining: number;
   planName: string;
+  paymentLinkName: string;
   createdAt: string;
 }
 
@@ -72,10 +73,10 @@ export default function Clientes() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       ACTIVE: { label: "Ativo", variant: "default" as const },
-      OVERDUE: { label: "Inadimplente", variant: "destructive" as const },
+      INACTIVE: { label: "Inativo", variant: "secondary" as const },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.ACTIVE;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.INACTIVE;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -230,18 +231,19 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="hidden md:table-cell">Forma de pagamento</TableHead>
-                  <TableHead className="text-center">Data de vencimento</TableHead>
-                  <TableHead className="text-center">Ações</TableHead>
+                  <TableHead>Nome do Cliente</TableHead>
+                  <TableHead>Nome do Plano</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Valor Mensal</TableHead>
+                  <TableHead className="text-center">Dias Restantes</TableHead>
+                  <TableHead className="text-center">Próximo Vencimento</TableHead>
+                  <TableHead className="hidden lg:table-cell">Nome do Link de Pagamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma assinatura encontrada
                     </TableCell>
                   </TableRow>
@@ -251,48 +253,30 @@ export default function Clientes() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${
-                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
+                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'
                           }`}></div>
                           <span className="text-blue-600 hover:underline cursor-pointer">
                             {subscription.customerName}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(subscription.value)}
-                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {subscription.planName}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {getBillingTypeLabel(subscription.billingType)}
+                      <TableCell>
+                        {getStatusBadge(subscription.status)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(subscription.value)}
+                      </TableCell>
+                      <TableCell className={`text-center ${getDaysRemainingColor(subscription.daysRemaining, subscription.status)}`}>
+                        {formatDaysRemaining(subscription.daysRemaining, subscription.status)}
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
-                          {subscription.daysRemaining <= 3 && subscription.status === 'ACTIVE' && (
-                            <span className="text-orange-500">⚠</span>
-                          )}
-                        </div>
+                        {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            💰
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            ℹ️
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            📧
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            📋
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            💳
-                          </Button>
-                        </div>
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {subscription.paymentLinkName}
                       </TableCell>
                     </TableRow>
                   ))
