@@ -20,6 +20,7 @@ import TotalServicos from "@/pages/total-servicos";
 import BarbeiroDashboard from "@/pages/barbeiro-dashboard";
 import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
+import Configuracoes from "@/pages/configuracoes";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -40,6 +41,7 @@ function AuthenticatedRoutes() {
           <Route path="/distribuicao" component={Distribuicao} />
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />
+          <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
@@ -53,6 +55,7 @@ function AuthenticatedRoutes() {
         <Switch>
           <Route path="/" component={BarbeiroDashboard} />
           <Route path="/barbeiro" component={BarbeiroDashboard} />
+          <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
           </Route>
@@ -71,6 +74,7 @@ function AuthenticatedRoutes() {
           <Route path="/agendamento" component={Agendamento} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/planos" component={Planos} />
+          <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
           </Route>

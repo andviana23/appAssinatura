@@ -12,6 +12,7 @@ import {
   Calendar,
   FileText,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 const navigation = [
