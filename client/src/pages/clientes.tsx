@@ -29,7 +29,7 @@ interface AsaasSubscription {
   billingType: string;
   nextDueDate: string;
   daysRemaining: number;
-  description?: string;
+  planName: string;
   createdAt: string;
 }
 
@@ -217,10 +217,10 @@ export default function Clientes() {
         </Card>
       </div>
 
-      {/* Cobranças Recorrentes - Padrão Asaas */}
+      {/* Recorrentes (Assinaturas) - Layout igual ao Asaas */}
       <Card className="rounded-2xl border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg">Cobranças Recorrentes</CardTitle>
+          <CardTitle className="text-lg">Recorrentes (Assinaturas)</CardTitle>
           <p className="text-sm text-muted-foreground">
             Assinaturas ativas e inadimplentes do mês atual
           </p>
@@ -230,53 +230,69 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Nome</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Forma de Pagamento</TableHead>
-                  <TableHead className="hidden lg:table-cell">Ciclo</TableHead>
-                  <TableHead className="text-center">Data de Vencimento</TableHead>
-                  <TableHead className="text-center hidden xl:table-cell">Dias</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="hidden md:table-cell">Forma de pagamento</TableHead>
+                  <TableHead className="text-center">Data de vencimento</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Nenhuma cobrança recorrente encontrada
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Nenhuma assinatura encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
                   subscriptions.map((subscription) => (
                     <TableRow key={subscription.subscriptionId}>
                       <TableCell className="font-medium">
-                        <div>
-                          <div className="font-semibold">{subscription.customerName}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {subscription.customerEmail}
-                          </div>
-                          {subscription.description && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {subscription.description}
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
+                          }`}></div>
+                          <span className="text-blue-600 hover:underline cursor-pointer">
+                            {subscription.customerName}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(subscription.value)}
                       </TableCell>
-                      <TableCell>{getStatusBadge(subscription.status)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {subscription.planName}
+                      </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {getBillingTypeLabel(subscription.billingType)}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {getCycleLabel(subscription.cycle)}
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
+                          {subscription.daysRemaining <= 3 && subscription.status === 'ACTIVE' && (
+                            <span className="text-orange-500">⚠</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className={`text-center hidden xl:table-cell ${getDaysRemainingColor(subscription.daysRemaining, subscription.status)}`}>
-                        {formatDaysRemaining(subscription.daysRemaining, subscription.status)}
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            💰
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            ℹ️
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            📧
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            📋
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            💳
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

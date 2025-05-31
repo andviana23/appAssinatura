@@ -667,10 +667,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (customerResponse.ok) {
                 const customerData = await customerResponse.json();
                 
-                // Calcular dias restantes usando a data real da próxima cobrança
-                const nextDue = new Date(subscription.nextDueDate);
-                const today = new Date();
-                const daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                // Buscar o último pagamento confirmado para calcular próximo vencimento
+                const paymentsResponse = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=CONFIRMED&limit=1`, {
+                  headers: {
+                    'access_token': asaasApiKey,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                let calculatedNextDueDate = subscription.nextDueDate;
+                let daysRemaining = 0;
+
+                if (paymentsResponse.ok) {
+                  const paymentsData = await paymentsResponse.json();
+                  if (paymentsData.data && paymentsData.data.length > 0) {
+                    const lastPayment = paymentsData.data[0];
+                    const lastPaymentDate = new Date(lastPayment.paymentDate || lastPayment.dateCreated);
+                    
+                    // Calcular próximo vencimento: último pagamento + 30 dias (mensal)
+                    const nextDue = new Date(lastPaymentDate);
+                    if (subscription.cycle === 'MONTHLY') {
+                      nextDue.setMonth(nextDue.getMonth() + 1);
+                    } else {
+                      // Para outros ciclos, usar a data do Asaas
+                      nextDue.setTime(new Date(subscription.nextDueDate).getTime());
+                    }
+                    
+                    calculatedNextDueDate = nextDue.toISOString().split('T')[0];
+                    
+                    // Calcular dias restantes
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    nextDue.setHours(0, 0, 0, 0);
+                    daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  } else {
+                    // Se não há pagamentos, usar a data do Asaas
+                    const nextDue = new Date(subscription.nextDueDate);
+                    const today = new Date();
+                    daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  }
+                } else {
+                  // Fallback para data do Asaas
+                  const nextDue = new Date(subscription.nextDueDate);
+                  const today = new Date();
+                  daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                }
 
                 subscriptions.push({
                   id: subscription.id,
@@ -684,9 +725,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   value: parseFloat(subscription.value),
                   cycle: subscription.cycle,
                   billingType: subscription.billingType,
-                  nextDueDate: subscription.nextDueDate,
+                  nextDueDate: calculatedNextDueDate,
                   daysRemaining: daysRemaining,
-                  description: subscription.description,
+                  planName: subscription.description || 'Plano Mensal',
                   createdAt: subscription.dateCreated
                 });
               }
