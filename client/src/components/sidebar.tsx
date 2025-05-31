@@ -44,26 +44,45 @@ const navigation = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobile?: boolean;
+  collapsed?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps = {}) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
 
+  const sidebarWidth = collapsed ? "w-20" : mobile ? "w-80" : "w-72";
+
   return (
-    <div className="w-72 bg-card shadow-lg border-r border-border/50 flex flex-col">
+    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'}`}>
       {/* Logo */}
-      <div className="p-6">
-        <div className="flex items-center space-x-4 mb-8 pb-6 border-b border-border/50">
-          <div className="h-14 w-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">TB</span>
+      <div className={`${collapsed ? 'p-4' : 'p-6'}`}>
+        <div className={`flex items-center ${collapsed ? 'justify-center mb-6' : 'space-x-4 mb-8'} pb-6 border-b border-border/50`}>
+          <div className={`${collapsed ? 'h-12 w-12' : 'h-14 w-14'} bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg`}>
+            <span className={`text-white font-bold ${collapsed ? 'text-lg' : 'text-xl'}`}>TB</span>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-primary">Trato de Barbados</h2>
-            <p className="text-sm text-muted-foreground font-medium">Sistema de Gestão</p>
-          </div>
+          {!collapsed && (
+            <div>
+              <h2 className="text-xl font-bold text-primary">Trato de Barbados</h2>
+              <p className="text-sm text-muted-foreground font-medium">Sistema de Gestão</p>
+            </div>
+          )}
+          {mobile && onClose && (
+            <button 
+              onClick={onClose}
+              className="ml-auto p-2 hover:bg-muted rounded-xl"
+            >
+              <span className="sr-only">Fechar menu</span>
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-3">
+        <nav className={`space-y-3 ${collapsed ? 'space-y-2' : ''}`}>
           {navigation.map((item) => {
             const isActive = location === item.href || 
               (item.href === "/dashboard" && location === "/");
@@ -73,17 +92,21 @@ export function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center space-x-4 px-5 py-4 rounded-2xl font-semibold transition-all duration-200 group",
+                  "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
+                  collapsed 
+                    ? "justify-center p-3 mx-2" 
+                    : "space-x-4 px-5 py-4",
                   isActive
                     ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:scale-[1.02]"
                 )}
+                title={collapsed ? item.name : undefined}
               >
                 <item.icon className={cn(
                   "h-5 w-5 transition-all duration-200",
                   isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
                 )} />
-                <span>{item.name}</span>
+                {!collapsed && <span>{item.name}</span>}
               </Link>
             );
           })}

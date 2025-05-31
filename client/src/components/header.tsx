@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const pageInfo = {
@@ -13,7 +13,12 @@ const pageInfo = {
   "/barber": { title: "Meu Dashboard", subtitle: "Seus atendimentos e comissões" },
 };
 
-export function Header() {
+interface HeaderProps {
+  showMenuButton?: boolean;
+  onMenuToggle?: () => void;
+}
+
+export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {}) {
   const [location] = useLocation();
   const { user, logout, isAdmin } = useAuth();
   
@@ -28,45 +33,63 @@ export function Header() {
   });
 
   return (
-    <header className="bg-card shadow-lg border-b border-border/50">
-      <div className="px-6 py-5">
+    <header className="bg-card shadow-lg border-b border-border/50 sticky top-0 z-40">
+      <div className="px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* Botão Menu Mobile */}
+            {showMenuButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onMenuToggle}
+                className="p-2 lg:hidden rounded-xl"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            )}
+            
             {/* Logo da Trato de Barbados */}
-            <div className="h-14 w-14 bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">TB</span>
+            <div className="h-12 w-12 sm:h-14 sm:w-14 bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-base sm:text-lg">TB</span>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-primary">
+            <div className="hidden sm:block">
+              <h1 className="text-xl sm:text-2xl font-bold text-primary">
                 Trato de Barbados
               </h1>
-              <p className="text-muted-foreground text-sm font-medium">
+              <p className="text-muted-foreground text-xs sm:text-sm font-medium">
                 {currentPageInfo.title} • {currentPageInfo.subtitle}
               </p>
             </div>
+            {/* Título mobile simplificado */}
+            <div className="block sm:hidden">
+              <h1 className="text-lg font-bold text-primary">
+                {currentPageInfo.title}
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground capitalize">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <span className="hidden lg:block text-xs sm:text-sm text-muted-foreground capitalize">
               {currentDate}
             </span>
             
             {isAdmin && (
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4 mr-2" />
-                Notificações
+              <Button variant="outline" size="sm" className="hidden md:flex">
+                <Bell className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Notificações</span>
               </Button>
             )}
 
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:block text-right">
-                <p className="font-semibold text-foreground">{user?.email}</p>
-                <p className="text-sm text-muted-foreground uppercase tracking-wide">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="hidden md:block text-right">
+                <p className="font-semibold text-foreground text-sm">{user?.email}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   {user?.role === "admin" ? "Administrador" : "Barbeiro"}
                 </p>
               </div>
-              <div className="h-12 w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-sm sm:text-lg">
                   {user?.email?.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -74,9 +97,9 @@ export function Header() {
                 variant="outline"
                 size="sm"
                 onClick={() => logout()}
-                className="rounded-xl border-2 hover:bg-muted/50 transition-all duration-200"
+                className="rounded-xl border-2 hover:bg-muted/50 transition-all duration-200 p-2 sm:px-4"
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline font-medium">Sair</span>
               </Button>
             </div>
