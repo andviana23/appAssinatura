@@ -110,6 +110,17 @@ export const totalServicos = pgTable("total_servicos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Agendamentos table
+export const agendamentos = pgTable("agendamentos", {
+  id: serial("id").primaryKey(),
+  clienteId: integer("cliente_id").references(() => clientes.id).notNull(),
+  barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull(),
+  servicoId: integer("servico_id").references(() => servicos.id).notNull(),
+  dataHora: timestamp("data_hora").notNull(),
+  status: text("status", { enum: ["AGENDADO", "FINALIZADO"] }).notNull().default("AGENDADO"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
   id: true,

@@ -109,7 +109,7 @@ export default function Servicos() {
   });
 
   const resetForm = () => {
-    setFormData({ nome: "", tempoMinutos: 30, isAssinatura: false });
+    setFormData({ nome: "", tempoMinutos: 30, percentualComissao: 40 });
     setEditingServico(null);
   };
 
@@ -119,7 +119,7 @@ export default function Servicos() {
       setFormData({
         nome: servico.nome,
         tempoMinutos: servico.tempoMinutos,
-        isAssinatura: servico.isAssinatura,
+        percentualComissao: Number(servico.percentualComissao) || 40,
       });
     } else {
       resetForm();
@@ -210,15 +210,19 @@ export default function Servicos() {
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isAssinatura"
-                  checked={formData.isAssinatura}
-                  onChange={(e) => setFormData({ ...formData, isAssinatura: e.target.checked })}
-                  className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+              <div>
+                <Label htmlFor="percentualComissao">% Comissão</Label>
+                <Input
+                  id="percentualComissao"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.percentualComissao}
+                  onChange={(e) => setFormData({ ...formData, percentualComissao: Number(e.target.value) })}
+                  placeholder="40"
+                  required
                 />
-                <Label htmlFor="isAssinatura">Serviço de assinatura</Label>
               </div>
               
               <div className="flex space-x-4 pt-4">
@@ -255,7 +259,7 @@ export default function Servicos() {
               <TableRow>
                 <TableHead>Serviço</TableHead>
                 <TableHead>Tempo</TableHead>
-                <TableHead>Tipo</TableHead>
+                <TableHead>% Comissão</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -280,8 +284,8 @@ export default function Servicos() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={servico.isAssinatura ? "default" : "secondary"}>
-                      {servico.isAssinatura ? "Assinatura" : "Avulso"}
+                    <Badge variant="default">
+                      {Number(servico.percentualComissao || 40)}%
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
