@@ -172,6 +172,12 @@ export const insertTotalServicoSchema = createInsertSchema(totalServicos).omit({
   createdAt: true,
 });
 
+export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
 // Types
 export type Barbeiro = typeof barbeiros.$inferSelect;
 export type InsertBarbeiro = z.infer<typeof insertBarbeiroSchema>;
@@ -202,3 +208,6 @@ export type InsertAtendimento = z.infer<typeof insertAtendimentoSchema>;
 
 export type TotalServico = typeof totalServicos.$inferSelect;
 export type InsertTotalServico = z.infer<typeof insertTotalServicoSchema>;
+
+export type Agendamento = typeof agendamentos.$inferSelect;
+export type InsertAgendamento = z.infer<typeof insertAgendamentoSchema>;

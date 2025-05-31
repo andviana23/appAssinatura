@@ -77,10 +77,7 @@ export default function Agendamento() {
 
   const criarAgendamento = useMutation({
     mutationFn: async (data: AgendamentoForm) => {
-      return await apiRequest("/api/agendamentos", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("/api/agendamentos", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
@@ -102,9 +99,7 @@ export default function Agendamento() {
 
   const finalizarAtendimento = useMutation({
     mutationFn: async (agendamentoId: number) => {
-      return await apiRequest(`/api/agendamentos/${agendamentoId}/finalizar`, {
-        method: "PATCH",
-      });
+      return await apiRequest(`/api/agendamentos/${agendamentoId}/finalizar`, "PATCH");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
