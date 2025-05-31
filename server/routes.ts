@@ -616,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asaas API Integration
+  // Asaas API Integration - Cobranças Recorrentes
   app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -630,9 +630,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://api.asaas.com/v3' 
         : 'https://sandbox.asaas.com/api/v3';
 
-      // Buscar todas as assinaturas (ativas, vencidas, inadimplentes)
-      const allStatuses = ['ACTIVE', 'OVERDUE', 'EXPIRED'];
-      const clientes = [];
+      // Buscar apenas assinaturas ativas e inadimplentes do mês atual
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const allStatuses = ['ACTIVE', 'OVERDUE'];
+      const subscriptions = [];
 
       for (const status of allStatuses) {
         const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=${status}&limit=100`, {
@@ -646,6 +647,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const subscriptionsData = await subscriptionsResponse.json();
 
           for (const subscription of subscriptionsData.data || []) {
+            // Para inadimplentes, verificar se é do mês atual
+            if (status === 'OVERDUE') {
+              const dueMonth = subscription.nextDueDate?.slice(0, 7);
+              if (dueMonth !== currentMonth) {
+                continue; // Pular inadimplentes de outros meses
+              }
+            }
+
             try {
               // Buscar dados do cliente
               const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
@@ -658,35 +667,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (customerResponse.ok) {
                 const customerData = await customerResponse.json();
                 
-                // Calcular dias restantes baseado no status da assinatura
-                let daysRemaining = 0;
-                let nextDueDate = subscription.nextDueDate;
-                
-                if (status === 'ACTIVE') {
-                  const nextDue = new Date(subscription.nextDueDate);
-                  const today = new Date();
-                  daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                } else if (status === 'OVERDUE') {
-                  // Para inadimplentes, mostrar dias em atraso como negativo
-                  const dueDate = new Date(subscription.nextDueDate);
-                  const today = new Date();
-                  daysRemaining = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                } else {
-                  // Para expiradas, definir como 0
-                  daysRemaining = 0;
-                }
+                // Calcular dias restantes usando a data real da próxima cobrança
+                const nextDue = new Date(subscription.nextDueDate);
+                const today = new Date();
+                const daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-                clientes.push({
-                  id: customerData.id,
-                  name: customerData.name,
-                  email: customerData.email,
-                  phone: customerData.phone,
-                  cpfCnpj: customerData.cpfCnpj,
-                  subscriptionStatus: status,
-                  monthlyValue: parseFloat(subscription.value),
+                subscriptions.push({
+                  id: subscription.id,
+                  subscriptionId: subscription.id,
+                  customerId: customerData.id,
+                  customerName: customerData.name,
+                  customerEmail: customerData.email,
+                  customerPhone: customerData.phone,
+                  customerCpfCnpj: customerData.cpfCnpj,
+                  status: subscription.status,
+                  value: parseFloat(subscription.value),
+                  cycle: subscription.cycle,
+                  billingType: subscription.billingType,
+                  nextDueDate: subscription.nextDueDate,
                   daysRemaining: daysRemaining,
-                  nextDueDate: nextDueDate,
-                  createdAt: customerData.dateCreated
+                  description: subscription.description,
+                  createdAt: subscription.dateCreated
                 });
               }
             } catch (error) {
@@ -696,9 +697,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json(clientes);
+      res.json(subscriptions);
     } catch (error: any) {
-      console.error("Erro ao buscar clientes do Asaas:", error);
+      console.error("Erro ao buscar cobranças recorrentes do Asaas:", error);
       res.status(500).json({ message: error.message });
     }
   });

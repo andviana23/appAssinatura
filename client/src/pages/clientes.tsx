@@ -15,16 +15,21 @@ import { UserCheck, Calendar, DollarSign, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 
-interface AsaasClient {
+interface AsaasSubscription {
   id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  cpfCnpj?: string;
-  subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'OVERDUE' | 'EXPIRED';
-  monthlyValue: number;
-  daysRemaining: number;
+  subscriptionId: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  customerCpfCnpj?: string;
+  status: 'ACTIVE' | 'OVERDUE';
+  value: number;
+  cycle: string;
+  billingType: string;
   nextDueDate: string;
+  daysRemaining: number;
+  description?: string;
   createdAt: string;
 }
 
@@ -43,7 +48,7 @@ export default function Clientes() {
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
-  const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<AsaasClient[]>({
+  const { data: subscriptions = [], isLoading: subscriptionsLoading, refetch } = useQuery<AsaasSubscription[]>({
     queryKey: ['/api/asaas/clientes'],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
@@ -68,12 +73,33 @@ export default function Clientes() {
     const statusConfig = {
       ACTIVE: { label: "Ativo", variant: "default" as const },
       OVERDUE: { label: "Inadimplente", variant: "destructive" as const },
-      EXPIRED: { label: "Expirado", variant: "secondary" as const },
-      INACTIVE: { label: "Inativo", variant: "outline" as const },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.INACTIVE;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.ACTIVE;
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const getBillingTypeLabel = (billingType: string) => {
+    const types = {
+      BOLETO: "Boleto",
+      CREDIT_CARD: "Cartão de Crédito",
+      DEBIT_CARD: "Cartão de Débito",
+      PIX: "PIX",
+      BANK_SLIP: "Boleto Bancário"
+    };
+    return types[billingType as keyof typeof types] || billingType;
+  };
+
+  const getCycleLabel = (cycle: string) => {
+    const cycles = {
+      MONTHLY: "Mensal",
+      WEEKLY: "Semanal",
+      BIWEEKLY: "Quinzenal",
+      QUARTERLY: "Trimestral",
+      SEMIANNUALLY: "Semestral",
+      YEARLY: "Anual"
+    };
+    return cycles[cycle as keyof typeof cycles] || cycle;
   };
 
   const getDaysRemainingColor = (days: number, status: string) => {
@@ -94,7 +120,7 @@ export default function Clientes() {
     return `${days} ${days === 1 ? 'dia' : 'dias'}`;
   };
 
-  if (statsLoading || clientesLoading) {
+  if (statsLoading || subscriptionsLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -191,52 +217,66 @@ export default function Clientes() {
         </Card>
       </div>
 
-      {/* Clientes Table */}
+      {/* Cobranças Recorrentes - Padrão Asaas */}
       <Card className="rounded-2xl border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg">Lista de Clientes</CardTitle>
+          <CardTitle className="text-lg">Cobranças Recorrentes</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Assinaturas ativas e inadimplentes do mês atual
+          </p>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="hidden md:table-cell">Email</TableHead>
-                  <TableHead className="hidden sm:table-cell">Telefone</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Valor Mensal</TableHead>
-                  <TableHead className="text-center hidden lg:table-cell">Dias Restantes</TableHead>
-                  <TableHead className="hidden xl:table-cell">Próximo Vencimento</TableHead>
+                  <TableHead className="hidden md:table-cell">Forma de Pagamento</TableHead>
+                  <TableHead className="hidden lg:table-cell">Ciclo</TableHead>
+                  <TableHead className="text-center">Data de Vencimento</TableHead>
+                  <TableHead className="text-center hidden xl:table-cell">Dias</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clientes.length === 0 ? (
+                {subscriptions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Nenhum cliente encontrado
+                      Nenhuma cobrança recorrente encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  clientes.map((cliente) => (
-                    <TableRow key={cliente.id}>
+                  subscriptions.map((subscription) => (
+                    <TableRow key={subscription.subscriptionId}>
                       <TableCell className="font-medium">
                         <div>
-                          <div className="font-semibold">{cliente.name}</div>
-                          <div className="text-sm text-muted-foreground md:hidden">{cliente.email}</div>
+                          <div className="font-semibold">{subscription.customerName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {subscription.customerEmail}
+                          </div>
+                          {subscription.description && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {subscription.description}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{cliente.email}</TableCell>
-                      <TableCell className="hidden sm:table-cell">{cliente.phone || '-'}</TableCell>
-                      <TableCell>{getStatusBadge(cliente.subscriptionStatus)}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        {formatCurrency(cliente.monthlyValue)}
+                        {formatCurrency(subscription.value)}
                       </TableCell>
-                      <TableCell className={`text-center hidden lg:table-cell ${getDaysRemainingColor(cliente.daysRemaining, cliente.subscriptionStatus)}`}>
-                        {formatDaysRemaining(cliente.daysRemaining, cliente.subscriptionStatus)}
+                      <TableCell>{getStatusBadge(subscription.status)}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {getBillingTypeLabel(subscription.billingType)}
                       </TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        {new Date(cliente.nextDueDate).toLocaleDateString('pt-BR')}
+                      <TableCell className="hidden lg:table-cell">
+                        {getCycleLabel(subscription.cycle)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className={`text-center hidden xl:table-cell ${getDaysRemainingColor(subscription.daysRemaining, subscription.status)}`}>
+                        {formatDaysRemaining(subscription.daysRemaining, subscription.status)}
                       </TableCell>
                     </TableRow>
                   ))
