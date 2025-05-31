@@ -54,7 +54,7 @@ export default function LoginAprimorado() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoginError("");
-      await login(data.email, data.password);
+      await login({ email: data.email, password: data.password });
     } catch (error) {
       setLoginError("Email ou senha incorretos.");
     }
