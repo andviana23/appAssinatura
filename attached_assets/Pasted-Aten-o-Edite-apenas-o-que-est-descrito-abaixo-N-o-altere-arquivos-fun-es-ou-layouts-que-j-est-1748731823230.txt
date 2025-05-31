@@ -1,0 +1,357 @@
+Atenção: Edite apenas o que está descrito abaixo. Não altere arquivos, funções ou layouts que já estejam funcionando corretamente.
+
+1. CORRIGIR ERROS DE LISTAS DINÂMICAS (.map / .filter)
+Arquivo: src/pages/total-servicos.tsx (linha aproximada 190 e em qualquer outro ponto que use .map ou .filter)
+
+Substituir TODO uso de barbeiros.map(...) ou analytics.servicosMaisFeitos.map(...) por um guard padrão:
+
+tsx
+Copiar
+Editar
+{Array.isArray(barbeiros)
+  ? barbeiros.filter(b => b.ativo).map((barbeiro, index) => (
+      <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
+        {barbeiro.nome}
+      </SelectItem>
+    ))
+  : null}
+Substituir TODO uso de analytics.servicosMaisFeitos.map((entry, index) => ...) por:
+
+tsx
+Copiar
+Editar
+{Array.isArray(analytics?.servicosMaisFeitos)
+  ? analytics.servicosMaisFeitos.map((entry: any, index: number) => (
+      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+    ))
+  : null}
+Procure também por .filter( em qualquer ponto do projeto e aplique:
+
+tsx
+Copiar
+Editar
+Array.isArray(dado) ? dado.filter(condição) : []
+Caso exista algum outro objeto que não seja array (como um objeto vindo do back-end), transforme em array antes:
+
+tsx
+Copiar
+Editar
+const listaSegura = Array.isArray(obj) ? obj : (obj && typeof obj === "object" ? Object.values(obj) : []);
+listaSegura.map(...)
+2. CORRIGIR ERRO AO CRIAR AGENDAMENTO
+Arquivo: src/pages/agendamento.tsx (ou nome equivalente da página de criação de agendamento)
+
+Adicione validação em TODOS os campos do formulário antes de chamar a função de criação:
+
+tsx
+Copiar
+Editar
+if (!clienteSelecionado || !data || !servico) {
+  alert("Preencha todos os campos obrigatórios.");
+  return;
+}
+Garanta que o objeto enviado ao back-end tem as chaves certas. Exemplo (mock):
+
+tsx
+Copiar
+Editar
+const payload = {
+  clienteId: clienteSelecionado.id,
+  barbeiroId: barbeiroSelecionado.id,
+  dataHora: dayjs(data).toISOString(),
+  servicoId: servico.id,
+  observacoes: observacaoText,
+};
+fazerPost("/api/agendamentos", payload)
+  .then(...)
+  .catch(err => {
+    console.error("Erro ao criar agendamento:", err);
+    alert("Não foi possível criar o agendamento. Verifique os dados e tente novamente.");
+  });
+Na resposta da API, trate possíveis erros 400 ou 500 e exiba mensagem amigável.
+
+Teste a criação de agendamento com dados válidos: cliente, barbeiro, data futura, serviço. Não deve gerar erro de console nem tela em branco.
+
+3. EXIBIR “TEMPO TOTAL TRABALHADO” NO DASHBOARD
+Arquivo: src/components/DashboardBarbeiro.tsx (ou equivalente)
+
+Verifique no back-end a rota / consulta que retorna o total de horas de trabalho de cada barbeiro. Exemplo fictício:
+
+js
+Copiar
+Editar
+// API (exemplo)
+GET /api/relatorios/tempo-trabalhado?barbeiroId=123
+// retorna { totalHoras: 35.5 } // em horas decimais
+No frontend, importe e consuma esta rota ao montar o componente:
+
+tsx
+Copiar
+Editar
+useEffect(() => {
+  fetch(`/api/relatorios/tempo-trabalhado?barbeiroId=${barbeiroId}`)
+    .then(res => res.json())
+    .then(data => {
+      const horas = Math.floor(data.totalHoras);
+      const minutos = Math.round((data.totalHoras - horas) * 60);
+      setTempoTrabalhado(`${horas}h ${minutos}min`);
+    })
+    .catch(err => {
+      console.error("Erro ao buscar tempo trabalhado:", err);
+      setTempoTrabalhado("0h 0min");
+    });
+}, [barbeiroId]);
+Exiba no DashboardBarbeiro, abaixo do nome ou em local visível:
+
+jsx
+Copiar
+Editar
+<div className="tempo-trabalhado">
+  <strong>Tempo trabalhado:</strong> {tempoTrabalhado || "0h 0min"}
+</div>
+4. ADICIONAR BOTÃO “VOLTAR” EM TODAS AS PÁGINAS
+Em cada página (exceto Dashboard), no topo, insira um botão de voltar que navegue para a rota anterior ou para o menu principal:
+
+tsx
+Copiar
+Editar
+import { useNavigate } from "react-router-dom";
+
+function PaginaX() {
+  const navigate = useNavigate();
+  return (
+    <>
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "16px",
+          display: "flex",
+          alignItems: "center",
+          marginBottom: "16px",
+        }}
+      >
+        ← Voltar
+      </button>
+      {/* conteudo da página */}
+    </>
+  );
+}
+Copie exatamente esse snippet para todas as páginas:
+
+total-servicos.tsx
+
+agendamento.tsx
+
+relatorios.tsx
+
+profissionais.tsx (nova, ver seção 5)
+
+qualquer outra rota que não seja dashboard.
+
+5. RENOMEAR MENU “BARBEIROS” PARA “PROFISSIONAIS” E CADASTRO
+Arquivo de menu principal: src/components/MenuLateral.tsx (ou equivalente)
+
+Mude o texto do item de menu:
+
+diff
+Copiar
+Editar
+- <MenuItem to="/barbeiros">Barbeiros</MenuItem>
++ <MenuItem to="/profissionais">Profissionais</MenuItem>
+Crie uma nova página src/pages/profissionais.tsx com conteúdo inicial:
+
+tsx
+Copiar
+Editar
+import React from "react";
+import { useNavigate, Link } from "react-router-dom";
+
+export default function Profissionais() {
+  const navigate = useNavigate();
+  return (
+    <div style={{ padding: "24px" }}>
+      <button onClick={() => navigate(-1)} style={{ background: "transparent", border: "none", cursor: "pointer", marginBottom: "16px" }}>
+        ← Voltar
+      </button>
+      <h1 style={{ fontSize: "24px", marginBottom: "16px" }}>Profissionais</h1>
+      <div style={{ marginBottom: "24px" }}>
+        <Link to="/profissionais/novo?tipo=barbeiro" style={estiloBotao}>+ Cadastrar Barbeiro</Link>
+        <Link to="/profissionais/novo?tipo=recepcionista" style={{ ...estiloBotao, marginLeft: "12px" }}>+ Cadastrar Recepcionista</Link>
+      </div>
+      {/* Aqui, listar todos os profissionais cadastrados em tabela ou cards */}
+    </div>
+  );
+}
+
+const estiloBotao = {
+  background: "#365e78",
+  color: "#fff",
+  padding: "8px 16px",
+  borderRadius: "8px",
+  textDecoration: "none",
+};
+Crie rotas no arquivo de rotas (src/App.tsx ou src/routes.tsx):
+
+tsx
+Copiar
+Editar
+<Route path="/profissionais" element={<Profissionais />} />
+<Route path="/profissionais/novo" element={<FormProfissional />} />
+Crie o componente FormProfissional.tsx para cadastrar barbeiros ou recepcionistas:
+
+tsx
+Copiar
+Editar
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+export default function FormProfissional() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const tipo = query.get("tipo") || "barbeiro"; // padrão barbeiro
+
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [ativo, setAtivo] = useState(true);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nome || !email || !senha) {
+      alert("Preencha nome, email e senha.");
+      return;
+    }
+    const payload = { nome, email, senha, tipo, ativo };
+    fetch("/api/profissionais", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro no cadastro");
+        return res.json();
+      })
+      .then(() => {
+        alert(`${tipo.charAt(0).toUpperCase() + tipo.slice(1)} cadastrado(a) com sucesso!`);
+        navigate("/profissionais");
+      })
+      .catch(err => {
+        console.error("Erro ao cadastrar:", err);
+        alert("Erro ao cadastrar profissional.");
+      });
+  };
+
+  return (
+    <div style={{ padding: "24px" }}>
+      <button onClick={() => navigate(-1)} style={{ background: "transparent", border: "none", cursor: "pointer", marginBottom: "16px" }}>
+        ← Voltar
+      </button>
+      <h2 style={{ marginBottom: "16px" }}>
+        Cadastrar {tipo === "barbeiro" ? "Barbeiro" : "Recepcionista"}
+      </h2>
+      <form onSubmit={handleSubmit} style={{ maxWidth: "400px" }}>
+        <label>Nome:</label>
+        <input type="text" value={nome} onChange={e => setNome(e.target.value)} style={campoStyle} />
+        <label>Email:</label>
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={campoStyle} />
+        <label>Senha:</label>
+        <input type="password" value={senha} onChange={e => setSenha(e.target.value)} style={campoStyle} />
+        <label>
+          <input type="checkbox" checked={ativo} onChange={e => setAtivo(e.target.checked)} />
+          Ativo
+        </label>
+        <button type="submit" style={botaoStyle}>Salvar</button>
+      </form>
+    </div>
+  );
+}
+
+const campoStyle = {
+  display: "block",
+  width: "100%",
+  padding: "8px",
+  margin: "8px 0 16px",
+  borderRadius: "4px",
+  border: "1px solid #ccc",
+};
+
+const botaoStyle = {
+  background: "#365e78",
+  color: "#fff",
+  padding: "10px 20px",
+  border: "none",
+  borderRadius: "8px",
+  cursor: "pointer",
+};
+Ajuste onde referência “barbeiros” no menu/rota para “profissionais”:
+
+diff
+Copiar
+Editar
+- <Link to="/barbeiros">Barbeiros</Link>
++ <Link to="/profissionais">Profissionais</Link>
+Garanta que a API /api/profissionais trate tipo (barbeiro ou recepcionista) e salve em tabela ou coleção apropriada.
+
+6. MANUTENÇÃO DO CÓDIGO QUE JÁ FUNCIONA
+Não altere nada que já esteja renderizando corretamente (dashboard, relatórios, páginas sem erro).
+
+Edite somente:
+
+Guard clauses (Array.isArray) para listas.
+
+Função de criação de agendamento (validação e payload).
+
+Inclusão do botão de voltar no topo de cada página (páginas de rota).
+
+Renomeação e criação das novas páginas de “Profissionais” e “FormProfissional”.
+
+Exibição de tempo total trabalhado no dashboard (consumo de API).
+
+Qualquer outro arquivo ou função que esteja rodando sem erro, permaneça inalterado.
+
+7. TESTES DE VALIDAÇÃO
+Teste cada lista dinâmica (barbeiros, serviços mais feitos, profissionais, clientes) e confirm
+
+Teste criação de agendamento:
+
+Escolha cliente, barbeiro, data e serviço.
+
+Ao clicar em “Salvar”, não deve ocorrer erro no console nem crash.
+
+Teste tempo trabalhado:
+
+Acesse DashboardBarbeiro e valide se mostra “Xh Ymin” corretamente.
+
+Se não houver dados, exiba “0h 0min” sem quebrar.
+
+Teste botão “Voltar” em todas as páginas (FormProfissional, Agendamento, Relatórios, etc.):
+
+O botão volta à página anterior sem erro.
+
+Teste cadastro de Profissionais:
+
+Cadastre um novo barbeiro.
+
+Cadastre um novo recepcionista.
+
+Valide se aparecem na lista de profissionais com o tipo correto.
+
+Resumo para Replit AI:
+
+Aplique Array.isArray() antes de .map ou .filter em todas as listas.
+
+Corrija validação e payload de criação de agendamento para não gerar erro.
+
+No Dashboard, busque e exiba o tempo total trabalhado de cada barbeiro.
+
+Insira botão de “← Voltar” no topo de cada página de rota.
+
+Renomeie menu “Barbeiros” para “Profissionais” e crie páginas para listar/cadastrar barbeiros e recepcionistas.
+
+Não toque em nenhum código já funcionando.
+
+Teste todos os fluxos para garantir que nada quebre.

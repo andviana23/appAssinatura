@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 const COLORS = ['#8B4513', '#A0522D', '#CD853F', '#DEB887', '#F4A460'];
 
 export default function Relatorios() {
+  const [, setLocation] = useLocation();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedBarbeiro, setSelectedBarbeiro] = useState("all");
 
@@ -245,7 +246,7 @@ export default function Relatorios() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={analytics.horasPorBarbeiro} layout="horizontal">
+              <BarChart data={Array.isArray(analytics?.horasPorBarbeiro) ? analytics.horasPorBarbeiro : []} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="barbeiro" type="category" width={80} />
@@ -274,7 +275,7 @@ export default function Relatorios() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.comissaoMensal}>
+            <BarChart data={Array.isArray(analytics?.comissaoMensal) ? analytics.comissaoMensal : []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="mes" />
               <YAxis />
@@ -286,7 +287,7 @@ export default function Relatorios() {
       </Card>
 
       {/* Tabela Detalhada - Horas por Barbeiro */}
-      {analytics.horasPorBarbeiro.length > 0 && (
+      {Array.isArray(analytics?.horasPorBarbeiro) && analytics.horasPorBarbeiro.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-[#8B4513]">
@@ -306,15 +307,17 @@ export default function Relatorios() {
                   </tr>
                 </thead>
                 <tbody>
-                  {analytics.horasPorBarbeiro.map((item: any, index: number) => (
-                    <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                      <td className="border border-gray-300 p-3 font-medium">{item.barbeiro}</td>
-                      <td className="border border-gray-300 p-3 text-center">{item.horas}h</td>
-                      <td className="border border-gray-300 p-3 text-center">{item.atendimentos || 0}</td>
-                      <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.faturamento || 0)}</td>
-                      <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.comissao || 0)}</td>
-                    </tr>
-                  ))}
+                  {Array.isArray(analytics?.horasPorBarbeiro)
+                    ? analytics.horasPorBarbeiro.map((item: any, index: number) => (
+                        <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                          <td className="border border-gray-300 p-3 font-medium">{item.barbeiro}</td>
+                          <td className="border border-gray-300 p-3 text-center">{item.horas}h</td>
+                          <td className="border border-gray-300 p-3 text-center">{item.atendimentos || 0}</td>
+                          <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.faturamento || 0)}</td>
+                          <td className="border border-gray-300 p-3 text-right">{formatCurrency(item.comissao || 0)}</td>
+                        </tr>
+                      ))
+                    : null}
                 </tbody>
               </table>
             </div>
