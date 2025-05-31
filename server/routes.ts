@@ -726,6 +726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (customerResponse.ok) {
                   const customer = await customerResponse.json();
                   
+                  // Calcular data de validade: data do pagamento + 30 dias
+                  const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
+                  const dataValidade = new Date(dataPagamento);
+                  dataValidade.setDate(dataValidade.getDate() + 30);
+                  
                   clientesUnicos.set(payment.customer, {
                     id: `asaas_${payment.customer}`,
                     nome: customer.name,
@@ -738,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                    payment.billingType === 'PIX' ? 'PIX' : 
                                    payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
                     dataInicio: payment.paymentDate || payment.confirmedDate,
-                    dataValidade: payment.dueDate,
+                    dataValidade: dataValidade.toISOString(),
                     status: 'ATIVO',
                     origem: 'ASAAS',
                     billingType: payment.billingType

@@ -113,10 +113,10 @@ export default function Clientes() {
   const formatDaysRemaining = (days: number) => {
     if (days < 0) {
       const daysOverdue = Math.abs(days);
-      return `${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} vencido`;
+      return `${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} em atraso`;
     }
     if (days === 0) return 'Vence hoje';
-    return `${days} ${days === 1 ? 'dia' : 'dias'}`;
+    return `${days} ${days === 1 ? 'dia' : 'dias'} restantes`;
   };
 
   if (statsLoading || clientesLoading) {
@@ -248,7 +248,7 @@ export default function Clientes() {
                   <TableHead>Valor</TableHead>
                   <TableHead>Forma de Pagamento</TableHead>
                   <TableHead>Data do Pagamento</TableHead>
-                  <TableHead>Válido até</TableHead>
+                  <TableHead>Próximo Pagamento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Dias Restantes</TableHead>
                 </TableRow>
