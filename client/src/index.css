@@ -4,57 +4,58 @@
 @tailwind utilities;
 
 :root {
-  /* Nova paleta moderna Trato de Barbados */
-  --background: 215 25% 97%; /* #f7fafc - fundo principal bem leve */
-  --foreground: 214 32% 16%; /* #23272f - texto principal */
-  --card: 0 0% 100%; /* #ffffff - fundo dos cards */
-  --card-foreground: 214 32% 16%; /* #23272f */
+  /* Trato de Barbados - Paleta Oficial do Manual */
+  --background: 0 0% 100%; /* Branco predominante - ambiente claro */
+  --foreground: 210 15% 27%; /* #424e56 - Complementar */
+  --card: 0 0% 100%; /* Cards sempre brancos */
+  --card-foreground: 210 15% 27%;
   --popover: 0 0% 100%;
-  --popover-foreground: 214 32% 16%;
-  --muted: 220 14% 96%; /* #f1f5f9 */
-  --muted-foreground: 215 16% 47%; /* #64748b */
-  --border: 220 13% 91%; /* #e5e7eb - cinza para bordas */
-  --input: 220 13% 91%;
-  --ring: 199 89% 62%; /* #38bdf8 - azul claro para focos */
+  --popover-foreground: 210 15% 27%;
+  --muted: 210 40% 96%; /* Fundo neutro claro */
+  --muted-foreground: 215 16% 47%;
+  --border: 214.3 31.8% 91.4%; /* Bordas sutis */
+  --input: 214.3 31.8% 91.4%;
+  --ring: 205 37% 28%; /* Azul primário para focus */
   
-  /* Cores principais do tema */
-  --primary: 214 100% 12%; /* #1e293b - azul marinho escuro moderno */
+  /* Cores oficiais da marca Trato de Barbados */
+  --primary: 205 37% 28%; /* #365b78 - Azul primário oficial */
   --primary-foreground: 0 0% 100%;
-  --secondary: 48 96% 52%; /* #eab308 - dourado vibrante */
-  --secondary-foreground: 214 32% 16%;
-  --accent: 199 89% 62%; /* #38bdf8 - azul claro para interação */
-  --accent-foreground: 0 0% 100%;
+  --secondary: 41 35% 72%; /* #d9be94 - Dourado secundário oficial */
+  --secondary-foreground: 205 37% 28%;
+  --accent: 41 35% 72%; /* Dourado para acentos */
+  --accent-foreground: 205 37% 28%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  --radius: 1rem; /* border-radius mais arredondado (2xl) */
+  --radius: 0.75rem; /* Bordas arredondadas modernas */
   
-  /* Cores específicas da barbearia */
-  --barbershop-navy: 214 100% 12%; /* #1e293b */
-  --barbershop-gold: 48 96% 52%; /* #eab308 */
-  --barbershop-blue: 199 89% 62%; /* #38bdf8 */
+  /* Cores específicas da marca conforme manual */
+  --trato-primary: 205 37% 28%; /* #365b78 */
+  --trato-secondary: 41 35% 72%; /* #d9be94 */
+  --trato-complementar: 210 15% 27%; /* #424e56 */
 }
 
 .dark {
-  --background: 215 28% 8%; /* #0F172A */
-  --foreground: 210 40% 98%; /* #F8FAFC */
-  --muted: 215 28% 15%; /* #1E293B */
-  --muted-foreground: 217 10% 64%; /* #94A3B8 */
-  --popover: 215 28% 8%; /* #0F172A */
-  --popover-foreground: 210 40% 98%; /* #F8FAFC */
-  --card: 215 28% 8%; /* #0F172A */
-  --card-foreground: 210 40% 98%; /* #F8FAFC */
-  --border: 215 28% 15%; /* #1E293B */
-  --input: 215 28% 15%; /* #1E293B */
-  --primary: 207 90% 54%; /* #2563EB */
-  --primary-foreground: 210 40% 98%; /* #F8FAFC */
-  --secondary: 215 28% 15%; /* #1E293B */
-  --secondary-foreground: 210 40% 98%; /* #F8FAFC */
-  --accent: 215 28% 15%; /* #1E293B */
-  --accent-foreground: 210 40% 98%; /* #F8FAFC */
-  --destructive: 0 62% 30%; /* #991B1B */
-  --destructive-foreground: 210 40% 98%; /* #F8FAFC */
-  --ring: 207 90% 54%; /* #2563EB */
+  /* Modo escuro com identidade Trato de Barbados */
+  --background: 210 15% 27%; /* #424e56 - Complementar como fundo */
+  --foreground: 0 0% 100%;
+  --card: 205 37% 25%; /* Azul primário mais escuro */
+  --card-foreground: 0 0% 100%;
+  --popover: 205 37% 25%;
+  --popover-foreground: 0 0% 100%;
+  --muted: 205 37% 20%;
+  --muted-foreground: 210 15% 70%;
+  --border: 205 37% 20%;
+  --input: 205 37% 20%;
+  --primary: 41 35% 72%; /* Dourado no modo escuro */
+  --primary-foreground: 210 15% 27%;
+  --secondary: 205 37% 35%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 41 35% 72%;
+  --accent-foreground: 210 15% 27%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 41 35% 72%;
 }
 
 @layer base {
@@ -64,78 +65,65 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Tipografia conforme manual - NÃO usar Slovic, usar sans-serif moderna */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     font-weight: 400;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
   }
 
+  /* Hierarquia tipográfica - nunca Slovic */
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* Custom spacing for 24px */
-  .space-24 {
-    @apply space-y-6;
+  /* Classes utilitárias da marca Trato de Barbados */
+  .trato-primary {
+    color: hsl(var(--trato-primary));
   }
 
-  .gap-24 {
-    @apply gap-6;
+  .trato-secondary {
+    color: hsl(var(--trato-secondary));
   }
 
-  .p-24 {
-    @apply p-6;
+  .trato-complementar {
+    color: hsl(var(--trato-complementar));
   }
 
-  .px-24 {
-    @apply px-6;
+  .bg-trato-primary {
+    background-color: hsl(var(--trato-primary));
   }
 
-  .py-24 {
-    @apply py-6;
+  .bg-trato-secondary {
+    background-color: hsl(var(--trato-secondary));
   }
 
-  .m-24 {
-    @apply m-6;
+  .bg-trato-complementar {
+    background-color: hsl(var(--trato-complementar));
   }
 
-  .mx-24 {
-    @apply mx-6;
+  /* Cards com identidade da marca */
+  .trato-card {
+    @apply bg-white border border-border/50 rounded-xl shadow-sm;
   }
 
-  .my-24 {
-    @apply my-6;
+  /* Botões com cores da marca */
+  .trato-button-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl;
   }
 
-  .mb-24 {
-    @apply mb-6;
+  .trato-button-secondary {
+    @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded-xl;
   }
 
-  .mt-24 {
-    @apply mt-6;
+  /* Área de respiro conforme manual */
+  .trato-spacing {
+    @apply p-6 md:p-8;
   }
 
-  /* Barbershop theme utilities */
-  .bg-barbershop-brown {
-    background-color: hsl(var(--barbershop-brown));
-  }
-
-  .bg-barbershop-gold {
-    background-color: hsl(var(--barbershop-gold));
-  }
-
-  .bg-barbershop-dark {
-    background-color: hsl(var(--barbershop-dark));
-  }
-
-  .text-barbershop-brown {
-    color: hsl(var(--barbershop-brown));
-  }
-
-  .text-barbershop-gold {
-    color: hsl(var(--barbershop-gold));
-  }
-
-  .text-barbershop-dark {
-    color: hsl(var(--barbershop-dark));
+  .trato-spacing-sm {
+    @apply p-4 md:p-6;
   }
 
   /* Rounded corners - 2xl everywhere */

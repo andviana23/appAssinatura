@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { LogOut, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoTratoBarbados from "@/assets/logo-trato-barbados.jpg";
 
 const pageInfo = {
   "/": { title: "Dashboard", subtitle: "Visão geral do sistema" },

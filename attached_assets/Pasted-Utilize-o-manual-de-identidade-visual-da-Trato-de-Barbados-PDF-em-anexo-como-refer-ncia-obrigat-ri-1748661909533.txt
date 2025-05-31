@@ -1,0 +1,73 @@
+Utilize o manual de identidade visual da Trato de Barbados (PDF em anexo) como referência obrigatória para toda criação e ajuste de UI/UX do sistema.
+O objetivo é garantir máxima consistência visual da marca, mantendo o ambiente claro, limpo, moderno e profissional.
+
+Diretrizes obrigatórias:
+Cores
+
+Utilize a paleta oficial da marca:
+
+Primário: #365b78
+
+Secundário: #d9be94
+
+Complementar: #424e56
+
+Tons neutros e branco predominante no fundo, ambiente sempre claro.
+
+Tipografia
+
+NÃO utilize a fonte Slovic em nenhuma parte do sistema.
+
+Para títulos, menus e textos, utilize fontes sem serifa, modernas e legíveis: exemplos recomendados são DIN Next LT Pro (conforme manual), Inter, Helvetica ou Roboto.
+
+Mantenha a hierarquia visual e a legibilidade sempre como prioridade.
+
+Nunca distorça ou redesenhe a tipografia do logotipo.
+
+Logotipo
+
+Use o arquivo oficial enviado (PDF/logo).
+
+Exiba a versão completa do logo nas telas principais (header, splash).
+
+Utilize versões reduzidas/alternativas em telas secundárias, sempre conforme exemplos do manual.
+
+Não redesenhe, não aplique efeitos, nem altere as proporções da marca.
+
+Elementos gráficos
+
+Utilize arabescos, linhas e ornamentos recomendados no manual apenas para destacar seções, banners ou cards especiais, mantendo leveza e não poluindo a tela.
+
+Caso use algum padrão gráfico da marca (ex: detalhes do brasão), siga o ângulo e proporção original.
+
+Contraste e aplicação
+
+Priorize sempre fundos claros.
+
+Caso precise usar fundo escuro (ex: rodapé), use a marca na versão negativa indicada pelo manual.
+
+Área de proteção
+
+Respeite a área de respiro mínima ao redor do logo, conforme especificado no manual (altura da letra "E").
+
+Não reduza a marca abaixo do tamanho mínimo recomendado para web.
+
+Ambiente clean
+
+Interface deve ser clara, com bastante espaço em branco, cards com bordas arredondadas, espaçamento confortável e responsividade total.
+
+Evite excesso de informação visual, priorize a usabilidade.
+
+Referência:
+Manual de identidade visual completo em PDF está anexo a este projeto. Consulte para cores, exemplos de uso da marca, restrições e aplicações gráficas.
+
+Resumo:
+
+Use sempre os arquivos e paleta oficiais.
+
+NÃO utilize a fonte Slovic em nenhuma hipótese.
+
+Priorize fonte sem serifa, moderna e legível.
+
+Interface clara, leve, alinhada à marca.
+
