@@ -33,58 +33,31 @@ interface ClientesStats {
   totalAsaasClients: number;
 }
 
-interface BarbeiroRanking {
-  barbeiro: {
-    id: number;
-    nome: string;
-    email: string;
-  };
-  faturamento: number;
-  comissao: number;
-  horas: number;
-}
-
-interface AssinaturaVencendo {
-  id: string;
-  clientName: string;
-  planName: string;
-  expiryDate: string;
-  daysLeft: number;
-  origem: string;
-}
-
 export default function AdminDashboard() {
-  const { data: clientesStats, isLoading: clientesStatsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/clientes/unified-stats'],
-    refetchInterval: 300000,
-  });
-
-  const { data: ranking, isLoading: rankingLoading } = useQuery<BarbeiroRanking[]>({
-    queryKey: ["/api/dashboard/ranking"],
-  });
-
-  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery<AssinaturaVencendo[]>({
-    queryKey: ['/api/clientes/expiring'],
-    refetchInterval: 300000,
+  const { data: clientesStats, isLoading: statsLoading } = useQuery<ClientesStats>({
+    queryKey: ["/api/clientes/unified-stats"],
   });
 
   const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery<any[]>({
-    queryKey: ['/api/asaas/faturamento-diario'],
-    refetchInterval: 300000,
+    queryKey: ["/api/asaas/faturamento-diario"],
   });
 
+  const { data: ranking, isLoading: rankingLoading } = useQuery<any[]>({
+    queryKey: ["/api/dashboard/ranking"],
+  });
 
+  const { data: expiring, isLoading: expiringLoading } = useQuery<any[]>({
+    queryKey: ["/api/clientes/expiring"],
+  });
 
-  if (clientesStatsLoading) {
+  if (statsLoading) {
     return (
       <div className="space-y-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-24">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
               <CardContent className="p-6">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32 mb-4" />
-                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-20 w-full" />
               </CardContent>
             </Card>
           ))}
@@ -128,18 +101,18 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Assinaturas Ativas
+                  Clientes Ativos
                 </p>
                 <p className="text-2xl font-bold text-foreground">
                   {clientesStats?.totalActiveClients || 0}
                 </p>
-                <p className="text-sm text-blue-600 mt-1">
-                  <Users className="inline h-3 w-3 mr-1" />
-                  Clientes ativos
+                <p className="text-sm text-green-600 mt-1">
+                  <CreditCard className="inline h-3 w-3 mr-1" />
+                  Com assinaturas válidas
                 </p>
               </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                <CreditCard className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -150,18 +123,18 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Total Comissão Barbeiros
+                  Comissões (40%)
                 </p>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(totalComissaoBarbeiros)}
                 </p>
-                <p className="text-sm text-green-600 mt-1">
-                  <DollarSign className="inline h-3 w-3 mr-1" />
-                  40% da receita de assinatura
+                <p className="text-sm text-blue-600 mt-1">
+                  <Clock className="inline h-3 w-3 mr-1" />
+                  Total do mês
                 </p>
               </div>
-              <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+              <div className="h-12 w-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+                <Clock className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -172,33 +145,30 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Horas Trabalhadas
+                  Em Atraso
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  0h0m
+                  {clientesStats?.overdueClients || 0}
                 </p>
-                <p className="text-sm text-purple-600 mt-1">
-                  <Clock className="inline h-3 w-3 mr-1" />
-                  Minutos convertidos
+                <p className="text-sm text-orange-600 mt-1">
+                  <AlertTriangle className="inline h-3 w-3 mr-1" />
+                  Necessitam atenção
                 </p>
               </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                <Clock className="h-6 w-6 text-purple-600" />
+              <div className="h-12 w-12 bg-orange-100 rounded-2xl flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráfico de Faturamento Diário */}
+      {/* Gráfico de Faturamento */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            Faturamento Diário de Assinaturas
-          </CardTitle>
+        <CardHeader className="pb-6">
+          <CardTitle className="text-lg">Faturamento Diário</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Pagamentos confirmados nos últimos 30 dias
+            Receita dos últimos 30 dias baseada em pagamentos confirmados
           </p>
         </CardHeader>
         <CardContent>
@@ -270,9 +240,9 @@ export default function AdminDashboard() {
             ) : ranking && Array.isArray(ranking) && ranking.length > 0 ? (
               <div className="space-y-4">
                 {ranking
-                  .sort((a, b) => b.comissao - a.comissao)
+                  .sort((a: any, b: any) => b.comissao - a.comissao)
                   .slice(0, 5)
-                  .map((item, index) => (
+                  .map((item: any, index: number) => (
                   <div 
                     key={item.barbeiro.id} 
                     className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -320,9 +290,9 @@ export default function AdminDashboard() {
             ) : Array.isArray(expiring) && expiring.length > 0 ? (
               <div className="space-y-3">
                 {expiring
-                  .sort((a, b) => a.diasRestantes - b.diasRestantes)
+                  .sort((a: any, b: any) => a.diasRestantes - b.diasRestantes)
                   .slice(0, 5)
-                  .map((cliente) => (
+                  .map((cliente: any) => (
                   <div
                     key={cliente.id}
                     className="flex items-center justify-between p-3 rounded-xl border-l-4 border-orange-500 bg-orange-50"
@@ -350,112 +320,6 @@ export default function AdminDashboard() {
                 <p>Nenhuma assinatura vencendo</p>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-                        <p className="text-sm text-muted-foreground">
-                          {item.horas}h trabalhadas
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-foreground">
-                        {formatCurrency(item.faturamento)}
-                      </p>
-                      <p className="text-sm text-green-600">
-                        {formatCurrency(item.comissao)} comissão
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Assinaturas Vencendo */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Assinaturas Vencendo</CardTitle>
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                {assinaturasVencendo?.length || 0} próximas
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {vencendoLoading ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-24 mb-2" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                    <div className="text-right">
-                      <Skeleton className="h-4 w-16 mb-2" />
-                      <Skeleton className="h-3 w-12" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : assinaturasVencendo && assinaturasVencendo.length > 0 ? (
-              <div className="space-y-4">
-                {assinaturasVencendo.map((subscription, index) => (
-                  <div
-                    key={subscription.id}
-                    className={`flex items-center justify-between p-4 rounded-2xl border-l-4 ${
-                      subscription.daysLeft <= 1
-                        ? "border-red-400 bg-red-50"
-                        : subscription.daysLeft <= 3
-                        ? "border-yellow-400 bg-yellow-50"
-                        : "border-orange-400 bg-orange-50"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <AlertTriangle className={`h-5 w-5 ${
-                        subscription.daysLeft <= 1
-                          ? "text-red-600"
-                          : subscription.daysLeft <= 3
-                          ? "text-yellow-600"
-                          : "text-orange-600"
-                      }`} />
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {subscription.clientName}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {subscription.planName} • {subscription.origem}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-medium ${
-                        subscription.daysLeft <= 1
-                          ? "text-red-600"
-                          : subscription.daysLeft <= 3
-                          ? "text-yellow-600"
-                          : "text-orange-600"
-                      }`}>
-                        {subscription.daysLeft === 1 ? "Amanhã" : `${subscription.daysLeft} dias`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(subscription.expiryDate).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma assinatura vencendo nos próximos 7 dias</p>
-              </div>
-            )}
-            <Button variant="ghost" className="w-full mt-4">
-              Ver todas as assinaturas
-            </Button>
           </CardContent>
         </Card>
       </div>
