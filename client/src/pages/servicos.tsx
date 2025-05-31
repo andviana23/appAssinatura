@@ -52,20 +52,26 @@ export default function Servicos() {
 
   const createMutation = useMutation({
     mutationFn: (data: ServicoFormData) =>
-      apiRequest("POST", "/api/servicos", data),
+      fetch("/api/servicos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) throw new Error("Erro ao criar serviço");
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
       setIsDialogOpen(false);
       resetForm();
       toast({
-        title: "Serviço criado",
-        description: "Serviço criado com sucesso",
+        title: "Serviço criado com sucesso",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erro ao criar serviço:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao criar serviço",
+        title: "Não foi possível criar o serviço",
         variant: "destructive",
       });
     },
@@ -73,20 +79,26 @@ export default function Servicos() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<ServicoFormData> }) =>
-      apiRequest("PUT", `/api/servicos/${id}`, data),
+      fetch(`/api/servicos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) throw new Error("Erro ao atualizar serviço");
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
       setIsDialogOpen(false);
       resetForm();
       toast({
-        title: "Serviço atualizado",
-        description: "Serviço atualizado com sucesso",
+        title: "Serviço atualizado com sucesso",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erro ao atualizar serviço:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar serviço",
+        title: "Não foi possível atualizar o serviço",
         variant: "destructive",
       });
     },
@@ -175,11 +187,7 @@ export default function Servicos() {
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja remover este serviço?")) {
-      deleteMutation.mutate(id);
-    }
-  };
+
 
   if (isLoading) {
     return (
@@ -203,6 +211,21 @@ export default function Servicos() {
 
   return (
     <div className="space-y-24">
+      {/* Botão Voltar */}
+      <button
+        onClick={() => setLocation("/")}
+        className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "16px",
+        }}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Voltar
+      </button>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -338,7 +361,7 @@ export default function Servicos() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(servico.id)}
+                        onClick={() => handleDeleteServico(servico)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
