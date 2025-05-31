@@ -49,16 +49,16 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="w-64 bg-card shadow-soft-lg flex flex-col">
+    <div className="w-72 bg-card shadow-lg border-r border-border/50 flex flex-col">
       {/* Logo */}
-      <div className="p-24">
-        <div className="flex items-center space-x-3 mb-24">
-          <div className="h-10 w-10 bg-gradient-to-r from-primary to-barbershop-brown rounded-2xl flex items-center justify-center">
-            <Scissors className="h-5 w-5 text-white" />
+      <div className="p-6">
+        <div className="flex items-center space-x-4 mb-8 pb-6 border-b border-border/50">
+          <div className="h-14 w-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-xl">TB</span>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Trato de Barbados</h2>
-            <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+            <h2 className="text-xl font-bold text-primary">Trato de Barbados</h2>
+            <p className="text-sm text-muted-foreground font-medium">Sistema de Gestão</p>
           </div>
         </div>
 

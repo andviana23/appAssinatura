@@ -1,0 +1,75 @@
+Ajuste de UX/UI – Sistema Trato de Barbados
+1. Visual Clean e Moderno
+
+Aplique um design mais moderno e clean, com bastante espaço em branco e elementos bem organizados.
+
+Todos os componentes devem ter cantos arredondados (border-radius 2xl), sombras suaves e separação clara entre áreas/telas.
+
+2. Responsividade
+
+O sistema deve ser 100% responsivo, funcionando perfeitamente em desktop, tablet e celular.
+
+Menu lateral deve se transformar em menu inferior ou menu sanduíche em telas menores.
+
+Componentes devem se ajustar, com fontes e botões grandes o suficiente para toque.
+
+3. Paleta de Cores Moderna (sugestão by ChatGPT)
+
+Primário: #1e293b (azul marinho escuro, moderno)
+
+Secundário: #eab308 (dourado vibrante, traz energia)
+
+Realce: #38bdf8 (azul claro para detalhes/interação)
+
+Neutros:
+
+Fundo principal: #f7fafc (quase branco, bem leve)
+
+Texto principal: #23272f (cinza escuro, bem legível)
+
+Fundo de cards/componentes: #fff
+
+Cinza para bordas/divisores: #e5e7eb
+
+4. Tipografia
+
+Use fontes modernas e sem serifa: Inter, Roboto, ou similar.
+
+Títulos grandes e destacados, corpo de texto confortável para leitura.
+
+Utilize diferentes pesos de fonte para hierarquia visual (bold nos títulos, regular no texto).
+
+5. Formas & Componentes
+
+Inputs, botões e selects grandes, com animação suave ao clicar/hover.
+
+Modal e formulários centralizados, com overlay escurecido no fundo.
+
+Gráficos do dashboard com visual minimalista, fundo claro e cores do tema.
+
+6. Feedback Visual
+
+Confirmações de ação (salvo, erro, etc.) devem ser claras e rápidas.
+
+Use ícones minimalistas (heroicons/lucide) para facilitar navegação e ações rápidas.
+
+7. Logo Trato de Barbados
+
+Incorpore a logo da Trato de Barbados no cabeçalho do sistema.
+
+Se necessário, pesquise e faça o download da logo direto do perfil do Google Meu Negócio da barbearia.
+
+(Basta buscar “Trato de Barbados Nova Lima” no Google, baixar a logo/foto oficial e usar no sistema).
+
+8. Detalhes Extras
+
+Layouts devem ser claros, sem excesso de informações na tela.
+
+Espaçamento generoso entre os elementos.
+
+Animações de transição suaves (ao abrir modal, navegar, etc.).
+
+Resumão para o dev/IA:
+Deixe o sistema visualmente atraente, responsivo, fácil de usar em qualquer dispositivo e com uma identidade visual marcante e profissional.
+Use a logo da empresa (baixe do Google Meu Negócio) e siga a paleta acima para dar um aspecto sofisticado e atual.
+Capriche nos detalhes para que até o cliente mais exigente fique satisfeito!

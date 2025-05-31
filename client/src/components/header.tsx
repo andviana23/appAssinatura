@@ -28,16 +28,22 @@ export function Header() {
   });
 
   return (
-    <header className="bg-card shadow-sm border-b border-border">
-      <div className="px-24 py-6">
+    <header className="bg-card shadow-lg border-b border-border/50">
+      <div className="px-6 py-5">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {currentPageInfo.title}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {currentPageInfo.subtitle}
-            </p>
+          <div className="flex items-center space-x-4">
+            {/* Logo da Trato de Barbados */}
+            <div className="h-14 w-14 bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">TB</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-primary">
+                Trato de Barbados
+              </h1>
+              <p className="text-muted-foreground text-sm font-medium">
+                {currentPageInfo.title} • {currentPageInfo.subtitle}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -52,25 +58,26 @@ export function Header() {
               </Button>
             )}
 
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 bg-primary rounded-2xl flex items-center justify-center">
-                <span className="text-white font-semibold">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="hidden sm:block">
-                <p className="font-medium text-foreground">{user?.email}</p>
-                <p className="text-sm text-muted-foreground">
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:block text-right">
+                <p className="font-semibold text-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wide">
                   {user?.role === "admin" ? "Administrador" : "Barbeiro"}
                 </p>
               </div>
+              <div className="h-12 w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-lg">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => logout()}
-                className="text-muted-foreground hover:text-foreground"
+                className="rounded-xl border-2 hover:bg-muted/50 transition-all duration-200"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline font-medium">Sair</span>
               </Button>
             </div>
           </div>

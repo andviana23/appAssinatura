@@ -1,33 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: 210 11% 98%; /* #F8FAFC */
-  --foreground: 215 25% 16%; /* #1E293B */
-  --muted: 215 12% 91%; /* #E2E8F0 */
-  --muted-foreground: 215 16% 46%; /* #64748B */
-  --popover: 0 0% 100%; /* #FFFFFF */
-  --popover-foreground: 215 25% 16%; /* #1E293B */
-  --card: 0 0% 100%; /* #FFFFFF */
-  --card-foreground: 215 25% 16%; /* #1E293B */
-  --border: 215 12% 91%; /* #E2E8F0 */
-  --input: 215 12% 91%; /* #E2E8F0 */
-  --primary: 207 90% 54%; /* #2563EB */
-  --primary-foreground: 0 0% 100%; /* #FFFFFF */
-  --secondary: 215 12% 91%; /* #E2E8F0 */
-  --secondary-foreground: 215 25% 16%; /* #1E293B */
-  --accent: 215 12% 91%; /* #E2E8F0 */
-  --accent-foreground: 215 25% 16%; /* #1E293B */
-  --destructive: 0 84% 60%; /* #EF4444 */
-  --destructive-foreground: 0 0% 100%; /* #FFFFFF */
-  --ring: 207 90% 54%; /* #2563EB */
-  --radius: 1rem; /* 16px for 2xl rounded corners */
+  /* Nova paleta moderna Trato de Barbados */
+  --background: 215 25% 97%; /* #f7fafc - fundo principal bem leve */
+  --foreground: 214 32% 16%; /* #23272f - texto principal */
+  --card: 0 0% 100%; /* #ffffff - fundo dos cards */
+  --card-foreground: 214 32% 16%; /* #23272f */
+  --popover: 0 0% 100%;
+  --popover-foreground: 214 32% 16%;
+  --muted: 220 14% 96%; /* #f1f5f9 */
+  --muted-foreground: 215 16% 47%; /* #64748b */
+  --border: 220 13% 91%; /* #e5e7eb - cinza para bordas */
+  --input: 220 13% 91%;
+  --ring: 199 89% 62%; /* #38bdf8 - azul claro para focos */
   
-  /* Barbershop theme colors */
-  --barbershop-brown: 27 70% 35%; /* #8B5A2B */
-  --barbershop-gold: 43 96% 49%; /* #F59E0B */
-  --barbershop-dark: 215 25% 16%; /* #1F2937 */
+  /* Cores principais do tema */
+  --primary: 214 100% 12%; /* #1e293b - azul marinho escuro moderno */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 48 96% 52%; /* #eab308 - dourado vibrante */
+  --secondary-foreground: 214 32% 16%;
+  --accent: 199 89% 62%; /* #38bdf8 - azul claro para interação */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --radius: 1rem; /* border-radius mais arredondado (2xl) */
+  
+  /* Cores específicas da barbearia */
+  --barbershop-navy: 214 100% 12%; /* #1e293b */
+  --barbershop-gold: 48 96% 52%; /* #eab308 */
+  --barbershop-blue: 199 89% 62%; /* #38bdf8 */
 }
 
 .dark {
@@ -58,8 +63,9 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
   }
 
   h1, h2, h3, h4, h5, h6 {
