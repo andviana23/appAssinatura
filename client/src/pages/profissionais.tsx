@@ -95,6 +95,7 @@ export default function Profissionais() {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
       queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
       toast({ title: "Profissional cadastrado com sucesso!" });
       setLocation("/profissionais");
@@ -117,6 +118,7 @@ export default function Profissionais() {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
       queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
       toast({ title: "Profissional atualizado com sucesso!" });
       setLocation("/profissionais");
@@ -138,6 +140,7 @@ export default function Profissionais() {
       return res.json();
     }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
       queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
       toast({ title: "Profissional excluído com sucesso" });
     },

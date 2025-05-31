@@ -1024,11 +1024,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/agendamentos', requireAuth, async (req, res) => {
     try {
-      const agendamento = await storage.createAgendamento(req.body);
+      const validatedData = insertAgendamentoSchema.parse(req.body);
+      const agendamento = await storage.createAgendamento(validatedData);
       res.json(agendamento);
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      if (error.name === 'ZodError') {
+        res.status(400).json({ message: 'Dados inválidos para criação do agendamento' });
+      } else {
+        res.status(500).json({ message: 'Erro interno do servidor' });
+      }
     }
   });
 
