@@ -733,29 +733,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         externalReference: `teste-${Date.now()}`
       };
 
-      // Para PIX, verificar se há chaves disponíveis primeiro
+      // Para PIX, usar chave fixa configurada
       if (billingType === 'PIX') {
-        // Verificar chaves PIX disponíveis
-        const pixKeysResponse = await fetch(`${baseUrl}/pix/addressKeys`, {
-          headers: {
-            'access_token': asaasApiKey,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!pixKeysResponse.ok || pixKeysResponse.status === 404) {
-          throw new Error('Nenhuma chave PIX cadastrada na conta. Configure uma chave PIX no painel do Asaas primeiro.');
-        }
-
-        const pixKeysData = await pixKeysResponse.json();
-        
-        if (!pixKeysData.data || pixKeysData.data.length === 0) {
-          throw new Error('Nenhuma chave PIX ativa encontrada. Configure uma chave PIX no painel do Asaas primeiro.');
-        }
-
-        // Usar a primeira chave PIX disponível
-        const firstPixKey = pixKeysData.data[0];
-        chargePayload.pixKey = firstPixKey.key;
+        // Remover pixKey da configuração - usar PIX simples sem chave específica
+        // O Asaas gerará o QR Code automaticamente
         chargePayload.pixDescription = 'Clube do Trato Único - Teste de Funcionalidade';
       }
 
