@@ -58,6 +58,8 @@ export default function Distribuicao() {
   } | null>(null);
   const [selectedBarbeiro, setSelectedBarbeiro] = useState<Barbeiro | null>(null);
   const [showAtendimentoModal, setShowAtendimentoModal] = useState(false);
+  const [barbeirosAtivos, setBarbeirosAtivos] = useState<Set<string>>(new Set());
+  const [showAllBarbeiros, setShowAllBarbeiros] = useState(false);
   const currentMonth = getCurrentMonth();
 
   const { toast } = useToast();
@@ -76,7 +78,7 @@ export default function Distribuicao() {
       faturamentoTotal: number;
       percentualComissao: number;
       distribuicaoData: DistribuicaoData;
-    }) => apiRequest("POST", "/api/distribuicao/calcular", data),
+    }) => apiRequest("/api/distribuicao/calcular", "POST", data),
     onSuccess: async (response) => {
       const result: CalculationResult = await response.json();
       setResultados(result.resultados);
@@ -320,13 +322,22 @@ export default function Distribuicao() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Grade de Distribuição de Pontos</CardTitle>
-            <Button 
-              onClick={handleCalculate}
-              disabled={calculateMutation.isPending}
-            >
-              <Calculator className="h-4 w-4 mr-2" />
-              {calculateMutation.isPending ? "Calculando..." : "Calcular"}
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowAllBarbeiros(!showAllBarbeiros)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {showAllBarbeiros ? "Mostrar Apenas Ativos" : "Adicionar Barbeiro"}
+              </Button>
+              <Button 
+                onClick={handleCalculate}
+                disabled={calculateMutation.isPending}
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                {calculateMutation.isPending ? "Calculando..." : "Calcular"}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         
@@ -351,7 +362,12 @@ export default function Distribuicao() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {barbeiros?.filter(b => b.ativo).map((barbeiro) => (
+                {/* Barbeiros com serviços executados */}
+                {barbeiros?.filter(b => b.ativo && (
+                  showAllBarbeiros || 
+                  barbeirosAtivos.has(b.id.toString()) ||
+                  Object.keys(distribuicaoData[b.id] || {}).length > 0
+                )).map((barbeiro) => (
                   <TableRow key={barbeiro.id}>
                     <TableCell>
                       <div className="flex items-center justify-between">
