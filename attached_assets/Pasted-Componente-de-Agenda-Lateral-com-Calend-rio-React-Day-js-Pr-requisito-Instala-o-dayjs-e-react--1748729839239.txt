@@ -1,0 +1,155 @@
+Componente de Agenda Lateral com Calendário (React + Day.js)
+Pré-requisito: Instala o dayjs e react-day-picker
+
+sql
+Copiar
+Editar
+npm install dayjs react-day-picker
+Componente: AgendaLateral.jsx
+
+jsx
+Copiar
+Editar
+import React, { useState } from "react";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import dayjs from "dayjs";
+
+export default function AgendaLateral({
+  onDataSelecionada,
+  agendamentos = [],
+}) {
+  const [dataSelecionada, setDataSelecionada] = useState(new Date());
+
+  // Converte as datas dos agendamentos para string YYYY-MM-DD
+  const datasOcupadas = agendamentos.map(item =>
+    dayjs(item.data).format("YYYY-MM-DD")
+  );
+
+  function handleDiaClick(day) {
+    setDataSelecionada(day);
+    if (onDataSelecionada) {
+      onDataSelecionada(day);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: "20px",
+        padding: "20px",
+        boxShadow: "0 2px 8px #0002",
+        minWidth: "320px",
+        margin: "16px 0",
+      }}
+    >
+      <h3
+        style={{
+          fontWeight: "bold",
+          fontSize: "18px",
+          marginBottom: "12px",
+          color: "#365e78",
+        }}
+      >
+        Agenda por Categorias
+      </h3>
+
+      <DayPicker
+        mode="single"
+        selected={dataSelecionada}
+        onSelect={handleDiaClick}
+        modifiers={{
+          ocupada: (date) =>
+            datasOcupadas.includes(dayjs(date).format("YYYY-MM-DD")),
+        }}
+        modifiersClassNames={{
+          ocupada: "ocupada",
+        }}
+        weekStartsOn={0}
+        showOutsideDays
+        locale="pt-BR"
+        footer={
+          <div style={{ marginTop: "12px" }}>
+            <button
+              style={{
+                background: "#365e78",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 20px",
+                cursor: "pointer",
+              }}
+              onClick={() => alert("Exibir horários disponíveis")}
+            >
+              Horários disponíveis
+            </button>
+          </div>
+        }
+      />
+
+      <style>
+        {`
+          .ocupada {
+            background-color: #d3b791 !important;
+            color: #fff !important;
+            border-radius: 50%;
+          }
+          .rdp-day_selected:not([disabled]) { 
+            background: #365e78 !important;
+            color: #fff !important;
+            border-radius: 50%;
+          }
+        `}
+      </style>
+
+      <div style={{ marginTop: "24px" }}>
+        <button
+          style={{
+            width: "100%",
+            background: "#eee",
+            border: "none",
+            borderRadius: "6px",
+            padding: "8px 0",
+            marginBottom: "8px",
+            cursor: "pointer",
+          }}
+        >
+          Lista de Agendamentos
+        </button>
+        <button
+          style={{
+            width: "100%",
+            background: "#d3b791",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            padding: "8px 0",
+            cursor: "pointer",
+          }}
+        >
+          Lista de Espera
+        </button>
+      </div>
+    </div>
+  );
+}
+Como usar no seu projeto React:
+Copia o código acima pra um arquivo chamado AgendaLateral.jsx
+
+Importa e usa na sua tela assim:
+
+jsx
+Copiar
+Editar
+<AgendaLateral 
+  agendamentos={[
+    { data: '2025-05-31' },
+    { data: '2025-06-01' }
+    // ...adiciona as datas dos agendamentos ocupados aqui
+  ]}
+  onDataSelecionada={(data) => {
+    // aqui você faz o que quiser ao selecionar a data
+    console.log("Data escolhida:", data);
+  }}
+/>

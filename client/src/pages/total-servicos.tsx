@@ -119,7 +119,7 @@ export default function Relatorios() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Barbeiros</SelectItem>
-              {(barbeiros as any[]).filter(b => b.ativo).map((barbeiro: any) => (
+              {(Array.isArray(barbeiros) ? barbeiros : []).filter(b => b.ativo).map((barbeiro: any) => (
                 <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
                   {barbeiro.nome}
                 </SelectItem>

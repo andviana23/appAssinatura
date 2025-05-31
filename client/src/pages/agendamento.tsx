@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import AgendaLateral from "@/components/agenda-lateral";
 
 interface Agendamento {
   id: number;
@@ -362,6 +363,18 @@ export default function Agendamento() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Agenda Lateral */}
+      <div className="w-80">
+        <AgendaLateral
+          agendamentos={agendamentos.map((agendamento: Agendamento) => ({
+            data: format(new Date(agendamento.dataHora), "yyyy-MM-dd")
+          }))}
+          onDataSelecionada={(data) => {
+            setSelectedDate(data);
+          }}
+        />
+      </div>
     </div>
   );
 }
