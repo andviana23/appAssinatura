@@ -616,6 +616,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para buscar planos autorizados via API Asaas
+  app.get('/api/asaas/planos', async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
+      }
+
+      const baseUrl = asaasEnvironment === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Lista de planos autorizados
+      const planosAutorizados = [
+        'Clube do Trato One - Corte Barba',
+        'Clube do Trato One - Corte',
+        'Clube do Trato Gold - Corte + Barba',
+        'Clube do Trato Gold - Corte',
+        'Clube do Trato Gold - Barba',
+        'Clube do Trato - Corte e Barba 2x',
+        'Clube do Trato - Corte 2x Barba 4x',
+        'Clube do Trato - Corte 2x',
+        'Clube do Trato - Barba 4x'
+      ];
+
+      // Buscar links de pagamento do Asaas
+      const response = await fetch(`${baseUrl}/paymentLinks?limit=100`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro na API do Asaas: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const links = data.data || [];
+
+      // Filtrar apenas os planos autorizados
+      const planosDisponiveis = links
+        .filter((link: any) => planosAutorizados.includes(link.name))
+        .map((link: any) => ({
+          id: link.id,
+          nome: link.name,
+          valor: parseFloat(link.value),
+          descricao: link.description || '',
+          urlCheckout: link.url,
+          ativo: link.active,
+          criadoEm: link.dateCreated
+        }));
+
+      res.json(planosDisponiveis);
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Asaas API Integration - Cobranças Recorrentes
   app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
     try {

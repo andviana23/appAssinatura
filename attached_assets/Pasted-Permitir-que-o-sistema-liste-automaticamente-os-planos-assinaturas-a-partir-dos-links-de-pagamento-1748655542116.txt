@@ -1,0 +1,79 @@
+Permitir que o sistema liste automaticamente os planos (assinaturas) a partir dos links de pagamento do Asaas, exibindo apenas os planos autorizados, e direcione o cliente para a página de checkout do Asaas para realizar a assinatura.
+
+Requisitos Funcionais
+Lista de Planos
+
+Na aba “Planos”, o sistema deve exibir APENAS os planos que tenham nome exatamente igual a um dos abaixo, conforme encontrado via API do Asaas:
+
+Clube do Trato One - Corte Barba
+
+Clube do Trato One - Corte
+
+Clube do Trato Gold - Corte + Barba
+
+Clube do Trato Gold - Corte
+
+Clube do Trato Gold - Barba
+
+Clube do Trato - Corte e Barba 2x
+
+Clube do Trato - Corte 2x Barba 4x
+
+Clube do Trato - Corte 2x
+
+Clube do Trato - Barba 4x
+
+Busca dos Links
+
+O sistema deve integrar via API Asaas para listar automaticamente todos os links de pagamento criados na conta.
+
+Apenas os links cujo nome for idêntico à lista acima devem ser considerados planos do sistema.
+
+Exibição dos Planos
+
+Cada plano deve aparecer com:
+
+Nome (igual ao nome do link de pagamento no Asaas)
+
+Valor mensal (puxado do Asaas)
+
+Breve resumo do que inclui (opcional, se disponível na API)
+
+Botão “Assinar”
+
+Processo de Assinatura
+
+Ao clicar em “Assinar”, o usuário deve ser redirecionado automaticamente para a página de checkout do Asaas usando o link de pagamento correspondente.
+
+O usuário finaliza o pagamento e sua assinatura será registrada pelo sistema normalmente após a confirmação do Asaas.
+
+Manutenção dos Planos
+
+Sempre que for criada ou atualizada a lista de links no Asaas, o sistema deve atualizar a lista de planos exibidos automaticamente, sem necessidade de manutenção manual.
+
+Requisitos Técnicos
+Buscar os links pela API de “Listar links de pagamento” do Asaas.
+
+Usar apenas os links com nome exato igual aos da lista.
+
+Para cada link, pegar:
+
+Nome do plano (title)
+
+Valor (amount/value)
+
+URL de checkout (checkout URL)
+
+Exibir cada plano em card/modulo separado, botão destacado para assinar.
+
+O sistema deve ser responsivo e seguir o padrão visual da Trato de Barbados.
+
+Qualquer alteração nos links no Asaas (nome, valor, etc.) deve refletir no sistema.
+
+Resumo Visual:
+Aba “Planos” → Cards com nome, valor, botão “Assinar”.
+
+Clicou? Vai pro checkout do Asaas correspondente.
+
+Apenas planos da lista aparecem.
+
