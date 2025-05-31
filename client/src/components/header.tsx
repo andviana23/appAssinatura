@@ -52,9 +52,13 @@ export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {
               </Button>
             )}
             
-            {/* Logo da Trato de Barbados */}
-            <div className="h-12 w-12 sm:h-14 sm:w-14 bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-base sm:text-lg">TB</span>
+            {/* Logo oficial da Trato de Barbados */}
+            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-white shadow-lg border border-border/30">
+              <img 
+                src={logoTratoBarbados} 
+                alt="Trato de Barbados" 
+                className="w-full h-full object-contain p-1"
+              />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl sm:text-2xl font-bold text-primary">
