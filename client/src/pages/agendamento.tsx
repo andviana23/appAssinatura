@@ -44,6 +44,8 @@ export default function Agendamento() {
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [selectedHour, setSelectedHour] = useState("");
   const [selectedBarbeiro, setSelectedBarbeiro] = useState("");
+  const [selectedCliente, setSelectedCliente] = useState("");
+  const [selectedServico, setSelectedServico] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -144,11 +146,8 @@ export default function Agendamento() {
     setSelectedDate(date);
   };
 
-  const handleCreateAgendamento = (formData: FormData) => {
-    const clienteId = formData.get("clienteId");
-    const servicoId = formData.get("servicoId");
-    
-    if (!clienteId || !servicoId || !selectedHour || !selectedBarbeiro) {
+  const handleCreateAgendamento = () => {
+    if (!selectedCliente || !selectedServico || !selectedHour || !selectedBarbeiro) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
       return;
     }
@@ -158,9 +157,9 @@ export default function Agendamento() {
     dataHora.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
     createAgendamento.mutate({
-      clienteId: parseInt(clienteId as string),
+      clienteId: parseInt(selectedCliente),
       barbeiroId: parseInt(selectedBarbeiro),
-      servicoId: parseInt(servicoId as string),
+      servicoId: parseInt(selectedServico),
       dataHora: dataHora.toISOString(),
     });
   };
@@ -295,11 +294,7 @@ export default function Agendamento() {
             <DialogTitle>Novo Agendamento</DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            handleCreateAgendamento(formData);
-          }} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Data e Horário</label>
               <div className="text-sm text-gray-600">
@@ -316,7 +311,7 @@ export default function Agendamento() {
 
             <div>
               <label className="text-sm font-medium">Cliente</label>
-              <Select name="clienteId" required>
+              <Select value={selectedCliente} onValueChange={setSelectedCliente} required>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
@@ -363,7 +358,7 @@ export default function Agendamento() {
                 {createAgendamento.isPending ? "Criando..." : "Agendar"}
               </Button>
             </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
