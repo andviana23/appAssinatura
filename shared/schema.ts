@@ -180,6 +180,10 @@ export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   id: true,
   createdAt: true,
   status: true,
+}).extend({
+  dataHora: z.union([z.string(), z.date()]).transform(val => 
+    typeof val === 'string' ? new Date(val) : val
+  )
 });
 
 // Types

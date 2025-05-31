@@ -265,7 +265,7 @@ export class DatabaseStorage implements IStorage {
       })),
       ...recepcionistasList.map(recepcionista => ({
         id: recepcionista.id,
-        nome: recepcionista.nome || recepcionista.email,
+        nome: recepcionista.nome || recepcionista.email.split('@')[0],
         email: recepcionista.email,
         ativo: true, // Assumir que usuários cadastrados estão ativos
         tipo: 'recepcionista',
