@@ -295,7 +295,11 @@ export default function Agendamento() {
             <DialogTitle>Novo Agendamento</DialogTitle>
           </DialogHeader>
           
-          <form action={handleCreateAgendamento} className="space-y-4">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            handleCreateAgendamento(formData);
+          }} className="space-y-4">
             <div>
               <label className="text-sm font-medium">Data e Horário</label>
               <div className="text-sm text-gray-600">
@@ -317,11 +321,11 @@ export default function Agendamento() {
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientes.map((cliente: Cliente) => (
+                  {Array.isArray(clientes) ? clientes.map((cliente: any) => (
                     <SelectItem key={cliente.id} value={cliente.id.toString()}>
                       {cliente.nome}
                     </SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -333,11 +337,11 @@ export default function Agendamento() {
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servicos.map((servico: Servico) => (
+                  {Array.isArray(servicos) ? servicos.map((servico: any) => (
                     <SelectItem key={servico.id} value={servico.id.toString()}>
                       {servico.nome} ({servico.tempoMinutos}min)
                     </SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
             </div>
@@ -362,115 +366,6 @@ export default function Agendamento() {
           </form>
         </DialogContent>
       </Dialog>
-        </div>
-
-        {/* Calendário Lateral */}
-      <div className="w-80">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#365e78] flex items-center">
-              <CalendarDays className="h-5 w-5 mr-2" />
-              Calendário
-            </h3>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={previousMonth}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextMonth}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-center mb-4">
-            <h4 className="text-lg font-semibold text-gray-900">
-              {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
-            </h4>
-          </div>
-
-          {/* Dias da semana */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-              <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Dias do mês */}
-          <div className="grid grid-cols-7 gap-1">
-            {daysInMonth.map((day) => {
-              const hasEvents = hasAgendamentos(day);
-              const isSelected = isSameDay(day, selectedDate);
-              const isTodayDate = isToday(day);
-              const isFuture = isAfter(day, new Date()) || isToday(day);
-
-              return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => isFuture && selectCalendarDate(day)}
-                  disabled={!isFuture}
-                  className={`
-                    relative h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105
-                    ${isSelected 
-                      ? 'bg-[#365e78] text-white shadow-lg' 
-                      : isTodayDate
-                      ? 'bg-blue-100 text-blue-700 font-bold'
-                      : isFuture
-                      ? 'text-gray-700 hover:bg-gray-100'
-                      : 'text-gray-300 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {format(day, "d")}
-                  {hasEvents && (
-                    <div className={`
-                      absolute bottom-1 right-1 h-2 w-2 rounded-full
-                      ${isSelected ? 'bg-white' : 'bg-[#365e78]'}
-                    `} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center space-x-2 text-xs text-gray-600">
-              <div className="h-2 w-2 rounded-full bg-[#365e78]"></div>
-              <span>Dias com agendamentos</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-600">
-              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-              <span>Hoje</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-gray-600">
-              <div className="h-2 w-2 rounded-full bg-gray-300"></div>
-              <span>Datas passadas</span>
-            </div>
-          </div>
-
-          {/* Data selecionada */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-            <p className="text-sm font-medium text-gray-700">Data selecionada:</p>
-            <p className="text-lg font-semibold text-[#365e78]">
-              {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-            </p>
-            <p className="text-xs text-gray-500">
-              {format(selectedDate, "EEEE", { locale: ptBR })}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
