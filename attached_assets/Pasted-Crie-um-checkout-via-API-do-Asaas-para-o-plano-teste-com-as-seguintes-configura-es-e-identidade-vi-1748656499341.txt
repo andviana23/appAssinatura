@@ -1,0 +1,76 @@
+Crie um checkout via API do Asaas para o plano teste, com as seguintes configurações e identidade visual:
+
+Nome do clube: Clube do Trato Unico
+
+Forma de pagamento: PIX
+
+Valor: R$ 2,00
+
+Descrição: Pagamento Teste de funcionalidade
+
+Personalização Visual (usando a API do Asaas):
+Identidade Visual:
+
+Utilize as cores principais da Trato de Barbados:
+
+Primário: #365e78 (azul aço)
+
+Secundário: #d3b791 (dourado areia)
+
+Fundo: #f7fafc (quase branco)
+
+Utilize a logo oficial da Trato de Barbados no checkout (faça upload do arquivo ou puxe do link disponível).
+
+Insira um título e subtítulo seguindo a comunicação da marca.
+
+Se possível, coloque a descrição ou instrução de pagamento destacada no topo.
+
+Configuração do Checkout:
+
+Ative as opções de customização via API do Asaas:
+Veja a doc de personalização de checkout aqui.
+
+Defina a URL de redirecionamento pós-pagamento para uma página de agradecimento do sistema.
+
+Exiba a imagem do produto (pode ser a logo ou imagem de teste).
+
+Use o layout mais clean possível, sem poluição visual, focando em clareza e confiança para o cliente.
+
+Fluxo de Teste:
+
+O usuário deve clicar em “Assinar” ou “Testar Checkout”.
+
+O sistema gera o checkout personalizado, exibe o link ou redireciona para o formulário do Asaas com a personalização aplicada.
+
+Exemplo de Payload (adapte para sua linguagem):
+
+json
+Copiar
+Editar
+{
+  "name": "Clube do Trato Unico",
+  "billingType": "PIX",
+  "value": 2,
+  "description": "Pagamento Teste de funcionalidade",
+  "checkout": {
+    "customization": {
+      "primaryColor": "#365e78",
+      "secondaryColor": "#d3b791",
+      "backgroundColor": "#f7fafc",
+      "logoUrl": "URL_DA_LOGO_TRATO_DE_BARBADOS",
+      "headerText": "Clube do Trato Unico",
+      "description": "Pagamento Teste de funcionalidade"
+    },
+    "redirectUrl": "https://seudominio.com/obrigado" // adapte conforme seu sistema
+  }
+}
+Obs: Consulte a documentação do Asaas Checkout para saber todos os campos disponíveis para customização.
+
+Resumo:
+
+O checkout precisa ser visualmente igual ao sistema Trato de Barbados.
+
+Use as cores, logo e comunicação da marca no checkout.
+
+Garanta que o processo seja intuitivo, limpo e transmita confiança.
+

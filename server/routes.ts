@@ -616,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para criar checkout personalizado do Asaas
+  // Endpoint para criar link de pagamento personalizado do Asaas
   app.post('/api/asaas/checkout', async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -635,8 +635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 1. Criar ou buscar cliente
       let customerId;
       
-      // Primeiro, tentar buscar cliente existente
-      const searchCustomerResponse = await fetch(`${baseUrl}/customers?email=${email}`, {
+      // Primeiro, tentar buscar cliente existente por email
+      const searchUrl = `${baseUrl}/customers?email=${encodeURIComponent(email)}`;
+      const searchCustomerResponse = await fetch(searchUrl, {
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
@@ -654,9 +655,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!customerId) {
         const customerPayload = {
           name: nome,
-          email: email,
-          ...(cpf && { cpfCnpj: cpf })
+          email: email
         };
+
+        // Adicionar CPF apenas se fornecido
+        if (cpf && cpf.trim()) {
+          customerPayload.cpfCnpj = cpf.replace(/\D/g, ''); // Remove formatação
+        }
 
         const customerResponse = await fetch(`${baseUrl}/customers`, {
           method: 'POST',
@@ -668,36 +673,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         if (!customerResponse.ok) {
-          throw new Error('Erro ao criar cliente no Asaas');
+          const errorData = await customerResponse.json();
+          throw new Error(`Erro ao criar cliente: ${JSON.stringify(errorData)}`);
         }
 
         const customerData = await customerResponse.json();
         customerId = customerData.id;
       }
 
-      // 2. Criar cobrança com checkout personalizado
+      // 2. Criar cobrança PIX
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
       const chargePayload = {
         customer: customerId,
         billingType: 'PIX',
-        value: 2,
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Vence em 1 dia
-        description: 'Clube do Trato Unico - Pagamento Teste de funcionalidade',
-        checkout: {
-          enablePostalCode: false,
-          enableAddress: false,
-          enablePhone: false,
-          enableDiscount: false,
-          enableSplit: false,
-          theme: {
-            primaryColor: '#365e78',
-            backgroundColor: '#f7fafc',
-            logoUrl: 'https://via.placeholder.com/200x80/365e78/ffffff?text=Trato+de+Barbados', // Placeholder até ter logo real
-            headerText: 'Clube do Trato Unico',
-            headerDescription: 'Pagamento Teste de funcionalidade - Trato de Barbados'
-          },
-          successUrl: `${req.protocol}://${req.get('host')}/checkout/sucesso`,
-          maxInstallmentCount: 1
-        }
+        value: 2.00,
+        dueDate: tomorrow.toISOString().split('T')[0],
+        description: 'Clube do Trato Único - Teste de Funcionalidade',
+        externalReference: `teste-${Date.now()}`
       };
 
       const chargeResponse = await fetch(`${baseUrl}/payments`, {
@@ -716,6 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const chargeData = await chargeResponse.json();
 
+      // Retornar dados da cobrança criada
       res.json({
         id: chargeData.id,
         checkoutUrl: chargeData.invoiceUrl,
@@ -723,12 +718,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pixQrCodeImage: chargeData.pixTransaction?.qrCode?.encodedImage,
         status: chargeData.status,
         value: chargeData.value,
-        dueDate: chargeData.dueDate
+        dueDate: chargeData.dueDate,
+        customer: {
+          id: customerId,
+          name: nome,
+          email: email
+        }
       });
 
     } catch (error) {
       console.error('Erro ao criar checkout:', error);
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      res.status(500).json({ 
+        message: 'Erro interno do servidor',
+        error: error.message 
+      });
     }
   });
 
