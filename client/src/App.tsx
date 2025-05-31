@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Pages
 import Login from "@/pages/login-aprimorado";
-import AdminDashboard from "@/pages/admin-dashboard-aprimorado";
+import AdminDashboard from "@/pages/admin-dashboard";
 import Barbeiros from "@/pages/barbeiros";
 import Clientes from "@/pages/clientes";
 import Servicos from "@/pages/servicos";
@@ -18,7 +18,7 @@ import Distribuicao from "@/pages/distribuicao";
 import TotalServicos from "@/pages/total-servicos";
 import BarberDashboard from "@/pages/barber-dashboard";
 import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
-import Agendamento from "@/pages/agendamento-aprimorado";
+import Agendamento from "@/pages/agendamento";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {

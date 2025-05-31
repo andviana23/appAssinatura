@@ -59,19 +59,19 @@ interface AssinaturaVencendo {
 }
 
 export default function AdminDashboardAprimorado() {
-  const { data: clientesStats, isLoading: statsLoading } = useQuery({
+  const { data: clientesStats, isLoading: statsLoading } = useQuery<ClientesStats>({
     queryKey: ["/api/clientes/unified-stats"],
   });
 
-  const { data: ranking, isLoading: rankingLoading } = useQuery({
+  const { data: ranking, isLoading: rankingLoading } = useQuery<BarbeiroRanking[]>({
     queryKey: ["/api/dashboard/ranking"],
   });
 
-  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery({
+  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery<AssinaturaVencendo[]>({
     queryKey: ["/api/clientes/expiring"],
   });
 
-  const { data: faturamentoDiario, isLoading: faturamentoLoading } = useQuery({
+  const { data: faturamentoDiario, isLoading: faturamentoLoading } = useQuery<any[]>({
     queryKey: ["/api/asaas/faturamento-diario"],
   });
 
