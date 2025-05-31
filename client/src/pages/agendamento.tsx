@@ -366,6 +366,47 @@ export default function Agendamento() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Calendário Lateral */}
+      <div className="w-80">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[#365e78] flex items-center">
+              <CalendarDays className="h-5 w-5 mr-2" />
+              Calendário
+            </h3>
+          </div>
+
+          <div className="text-center mb-4">
+            <h4 className="text-lg font-semibold text-gray-900">
+              {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
+            </h4>
+          </div>
+
+          {/* Data selecionada */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-xl">
+            <p className="text-sm font-medium text-gray-700">Data selecionada:</p>
+            <p className="text-lg font-semibold text-[#365e78]">
+              {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+            <p className="text-xs text-gray-500">
+              {format(selectedDate, "EEEE", { locale: ptBR })}
+            </p>
+          </div>
+
+          {/* Legenda */}
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center space-x-2 text-xs text-gray-600">
+              <div className="h-2 w-2 rounded-full bg-[#365e78]"></div>
+              <span>Dias com agendamentos</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-gray-600">
+              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <span>Hoje</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

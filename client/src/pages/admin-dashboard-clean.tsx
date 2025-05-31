@@ -240,7 +240,7 @@ export default function AdminDashboard() {
             ) : ranking && Array.isArray(ranking) && ranking.length > 0 ? (
               <div className="space-y-4">
                 {ranking
-                  .sort((a: any, b: any) => b.comissao - a.comissao)
+                  .sort((a: any, b: any) => b.totalComissao - a.totalComissao)
                   .slice(0, 5)
                   .map((item: any, index: number) => (
                   <div 
@@ -253,12 +253,12 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <div className="font-semibold text-gray-900">{item.barbeiro.nome}</div>
-                        <div className="text-sm text-gray-600">{item.horas}h trabalhadas</div>
+                        <div className="text-sm text-gray-600">{item.totalMinutos}min trabalhados</div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-green-600">
-                        {formatCurrency(item.comissao)}
+                        {formatCurrency(item.totalComissao)}
                       </div>
                       <div className="text-xs text-gray-500">Comissão</div>
                     </div>
