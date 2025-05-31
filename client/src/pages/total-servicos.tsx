@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 const COLORS = ['#8B4513', '#A0522D', '#CD853F', '#DEB887', '#F4A460'];
 
-export default function TotalServicos() {
+export default function Relatorios() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedBarbeiro, setSelectedBarbeiro] = useState("all");
 
@@ -77,7 +77,7 @@ export default function TotalServicos() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Analytics e Controle de Totais</h1>
+        <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Relatórios</h1>
         <p className="text-gray-600">
           Relatórios detalhados e métricas de performance da barbearia
         </p>

@@ -8,7 +8,7 @@ import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Pages
-import Login from "@/pages/login";
+import Login from "@/pages/login-aprimorado";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Barbeiros from "@/pages/barbeiros";
 import Clientes from "@/pages/clientes";
