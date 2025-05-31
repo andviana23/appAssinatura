@@ -616,6 +616,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Asaas API Integration
+  app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
+      }
+
+      const baseUrl = asaasEnv === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Buscar assinaturas ativas
+      const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!subscriptionsResponse.ok) {
+        throw new Error(`Erro na API do Asaas: ${subscriptionsResponse.status}`);
+      }
+
+      const subscriptionsData = await subscriptionsResponse.json();
+      const clientes = [];
+
+      for (const subscription of subscriptionsData.data || []) {
+        try {
+          // Buscar dados do cliente
+          const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (customerResponse.ok) {
+            const customerData = await customerResponse.json();
+            
+            // Calcular dias restantes para o próximo vencimento
+            const nextDueDate = new Date(subscription.nextDueDate);
+            const today = new Date();
+            const daysRemaining = Math.ceil((nextDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+            clientes.push({
+              id: customerData.id,
+              name: customerData.name,
+              email: customerData.email,
+              phone: customerData.phone,
+              cpfCnpj: customerData.cpfCnpj,
+              subscriptionStatus: subscription.status,
+              monthlyValue: parseFloat(subscription.value),
+              daysRemaining: daysRemaining,
+              nextDueDate: subscription.nextDueDate,
+              createdAt: customerData.dateCreated
+            });
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar cliente ${subscription.customer}:`, error);
+        }
+      }
+
+      res.json(clientes);
+    } catch (error: any) {
+      console.error("Erro ao buscar clientes do Asaas:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/asaas/stats", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
+      }
+
+      const baseUrl = asaasEnv === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Buscar assinaturas ativas
+      const activeSubscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Buscar assinaturas inadimplentes
+      const overdueSubscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=OVERDUE&limit=100`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!activeSubscriptionsResponse.ok || !overdueSubscriptionsResponse.ok) {
+        throw new Error('Erro ao buscar dados do Asaas');
+      }
+
+      const activeData = await activeSubscriptionsResponse.json();
+      const overdueData = await overdueSubscriptionsResponse.json();
+
+      // Calcular estatísticas
+      let totalMonthlyRevenue = 0;
+      let newClientsThisMonth = 0;
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+      for (const subscription of activeData.data || []) {
+        totalMonthlyRevenue += parseFloat(subscription.value);
+        
+        // Verificar se é novo este mês
+        const createdMonth = subscription.dateCreated.slice(0, 7);
+        if (createdMonth === currentMonth) {
+          newClientsThisMonth++;
+        }
+      }
+
+      const stats = {
+        totalActiveClients: activeData.totalCount || 0,
+        totalMonthlyRevenue: totalMonthlyRevenue,
+        newClientsThisMonth: newClientsThisMonth,
+        overdueClients: overdueData.totalCount || 0
+      };
+
+      res.json(stats);
+    } catch (error: any) {
+      console.error("Erro ao buscar estatísticas do Asaas:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
