@@ -11,27 +11,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserCheck, Calendar, DollarSign, RefreshCw } from "lucide-react";
+import { UserCheck, Calendar, DollarSign, RefreshCw, ExternalLink, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
-interface AsaasSubscription {
+interface ClienteUnificado {
   id: string;
-  subscriptionId: string;
-  customerId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone?: string;
-  customerCpfCnpj?: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  value: number;
-  cycle: string;
-  billingType: string;
-  nextDueDate: string;
-  daysRemaining: number;
-  planName: string;
-  paymentLinkName: string;
-  createdAt: string;
+  nome: string;
+  email: string;
+  telefone?: string;
+  cpf?: string;
+  planoNome: string;
+  planoValor: number;
+  formaPagamento: string;
+  dataInicio: string;
+  dataValidade: string;
+  status: 'ATIVO' | 'INATIVO' | 'VENCIDO';
+  origem: 'ASAAS' | 'EXTERNO';
+  billingType?: string;
+  daysRemaining?: number;
 }
 
 interface ClientesStats {
@@ -39,18 +37,20 @@ interface ClientesStats {
   totalMonthlyRevenue: number;
   newClientsThisMonth: number;
   overdueClients: number;
+  totalExternalClients: number;
+  totalAsaasClients: number;
 }
 
 export default function Clientes() {
   const { toast } = useToast();
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/asaas/stats'],
+    queryKey: ['/api/clientes/unified-stats'],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
-  const { data: subscriptions = [], isLoading: subscriptionsLoading, refetch } = useQuery<AsaasSubscription[]>({
-    queryKey: ['/api/asaas/clientes'],
+  const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
+    queryKey: ['/api/clientes/unified'],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
@@ -72,56 +72,54 @@ export default function Clientes() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      ACTIVE: { label: "Ativo", variant: "default" as const },
-      INACTIVE: { label: "Inativo", variant: "secondary" as const },
+      ATIVO: { label: "Ativo", variant: "default" as const },
+      INATIVO: { label: "Inativo", variant: "secondary" as const },
+      VENCIDO: { label: "Vencido", variant: "destructive" as const },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.INACTIVE;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.INATIVO;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getBillingTypeLabel = (billingType: string) => {
-    const types = {
-      BOLETO: "Boleto",
-      CREDIT_CARD: "Cartão de Crédito",
-      DEBIT_CARD: "Cartão de Débito",
-      PIX: "PIX",
-      BANK_SLIP: "Boleto Bancário"
-    };
-    return types[billingType as keyof typeof types] || billingType;
+  const getOrigemIcon = (origem: string) => {
+    if (origem === 'ASAAS') {
+      return <CreditCard className="h-4 w-4 text-blue-500" />;
+    }
+    return <ExternalLink className="h-4 w-4 text-green-500" />;
   };
 
-  const getCycleLabel = (cycle: string) => {
-    const cycles = {
-      MONTHLY: "Mensal",
-      WEEKLY: "Semanal",
-      BIWEEKLY: "Quinzenal",
-      QUARTERLY: "Trimestral",
-      SEMIANNUALLY: "Semestral",
-      YEARLY: "Anual"
-    };
-    return cycles[cycle as keyof typeof cycles] || cycle;
+  const getOrigemLabel = (origem: string, formaPagamento: string) => {
+    if (origem === 'ASAAS') {
+      return `Asaas - ${formaPagamento}`;
+    }
+    return `Externo - ${formaPagamento}`;
   };
 
-  const getDaysRemainingColor = (days: number, status: string) => {
-    if (status === 'OVERDUE') return "text-destructive font-semibold";
-    if (status === 'EXPIRED') return "text-muted-foreground";
+  const getDaysRemaining = (dataValidade: string) => {
+    const hoje = new Date();
+    const validade = new Date(dataValidade);
+    const diffTime = validade.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getDaysRemainingColor = (days: number) => {
+    if (days < 0) return "text-destructive font-semibold";
     if (days <= 3) return "text-destructive font-semibold";
     if (days <= 7) return "text-orange-500 font-medium";
     return "text-muted-foreground";
   };
 
-  const formatDaysRemaining = (days: number, status: string) => {
-    if (status === 'OVERDUE') {
+  const formatDaysRemaining = (days: number) => {
+    if (days < 0) {
       const daysOverdue = Math.abs(days);
-      return `${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} em atraso`;
+      return `${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} vencido`;
     }
-    if (status === 'EXPIRED') return 'Expirado';
-    if (days <= 0) return 'Vence hoje';
+    if (days === 0) return 'Vence hoje';
     return `${days} ${days === 1 ? 'dia' : 'dias'}`;
   };
 
-  if (statsLoading || subscriptionsLoading) {
+  if (statsLoading || clientesLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -153,13 +151,13 @@ export default function Clientes() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Clientes Asaas</h2>
-          <p className="text-muted-foreground">Clientes com assinaturas ativas sincronizados do Asaas</p>
+          <h2 className="text-2xl font-bold text-foreground">Clientes Ativos</h2>
+          <p className="text-muted-foreground">Todos os clientes com assinaturas ativas (Asaas + Pagamentos Externos)</p>
         </div>
         
         <Button onClick={handleRefresh} className="rounded-xl">
           <RefreshCw className="h-4 w-4 mr-2" />
-          Sincronizar
+          Atualizar (5min automático)
         </Button>
       </div>
 
@@ -206,13 +204,26 @@ export default function Clientes() {
 
         <Card className="rounded-2xl border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inadimplentes</CardTitle>
-            <UserCheck className="h-4 w-4 text-destructive" />
+            <CardTitle className="text-sm font-medium">Clientes Asaas</CardTitle>
+            <CreditCard className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats?.overdueClients || 0}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats?.totalAsaasClients || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos em atraso
+              Pagamentos via Asaas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes Externos</CardTitle>
+            <ExternalLink className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats?.totalExternalClients || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Pagamentos externos
             </p>
           </CardContent>
         </Card>
