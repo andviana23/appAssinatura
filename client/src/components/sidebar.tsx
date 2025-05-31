@@ -13,6 +13,7 @@ import {
   FileText,
   LogOut,
   Settings,
+  ListOrdered,
 } from "lucide-react";
 
 const navigation = [
@@ -66,7 +67,70 @@ interface SidebarProps {
 
 export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps = {}) {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
+  
+  // Navegação dinâmica baseada no perfil do usuário
+  const getNavigationItems = () => {
+    if (isAdmin) {
+      return [
+        ...navigation,
+        {
+          name: "Lista da Vez",
+          href: "/lista-da-vez",
+          icon: ListOrdered,
+        },
+      ];
+    }
+    
+    if (isRecepcionista) {
+      return [
+        {
+          name: "Dashboard",
+          href: "/",
+          icon: BarChart3,
+        },
+        {
+          name: "Agendamento",
+          href: "/agendamento",
+          icon: Calendar,
+        },
+        {
+          name: "Clientes",
+          href: "/clientes",
+          icon: UserCheck,
+        },
+        {
+          name: "Planos",
+          href: "/planos",
+          icon: CreditCard,
+        },
+        {
+          name: "Lista da Vez",
+          href: "/lista-da-vez",
+          icon: ListOrdered,
+        },
+      ];
+    }
+    
+    if (isBarbeiro) {
+      return [
+        {
+          name: "Dashboard",
+          href: "/",
+          icon: BarChart3,
+        },
+        {
+          name: "Lista da Vez",
+          href: "/lista-da-vez",
+          icon: ListOrdered,
+        },
+      ];
+    }
+    
+    return navigation;
+  };
+  
+  const navigationItems = getNavigationItems();
 
   const sidebarWidth = collapsed ? "w-20" : mobile ? "w-80" : "w-72";
 
@@ -97,7 +161,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
 
         {/* Navigation */}
         <nav className={`space-y-3 ${collapsed ? 'space-y-2' : ''}`}>
-          {navigation.map((item) => {
+          {navigationItems.map((item) => {
             const isActive = location === item.href || 
               (item.href === "/dashboard" && location === "/");
             

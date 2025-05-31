@@ -21,6 +21,8 @@ import BarbeiroDashboard from "@/pages/barbeiro-dashboard";
 import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
+import ListaDaVezRecepcionista from "@/pages/lista-da-vez-recepcionista";
+import ListaDaVezBarbeiro from "@/pages/lista-da-vez-barbeiro";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -43,6 +45,7 @@ function AuthenticatedRoutes() {
           <Route path="/distribuicao" component={Distribuicao} />
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />
+          <Route path="/lista-da-vez" component={ListaDaVezRecepcionista} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>
@@ -57,6 +60,7 @@ function AuthenticatedRoutes() {
         <Switch>
           <Route path="/" component={BarbeiroDashboard} />
           <Route path="/barbeiro" component={BarbeiroDashboard} />
+          <Route path="/lista-da-vez" component={ListaDaVezBarbeiro} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
@@ -76,6 +80,7 @@ function AuthenticatedRoutes() {
           <Route path="/agendamento" component={Agendamento} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/planos" component={Planos} />
+          <Route path="/lista-da-vez" component={ListaDaVezRecepcionista} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
