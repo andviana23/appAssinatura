@@ -190,10 +190,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBarbeiro(id: number): Promise<void> {
-    // Primeiro, excluir todas as comissões relacionadas ao barbeiro
+    // Primeiro, atualizar usuários que referenciam este barbeiro
+    await db
+      .update(users)
+      .set({ barbeiroId: null })
+      .where(eq(users.barbeiroId, id));
+    
+    // Excluir agendamentos relacionados ao barbeiro
+    await db.delete(agendamentos).where(eq(agendamentos.barbeiroId, id));
+    
+    // Excluir comissões relacionadas ao barbeiro
     await db.delete(comissoes).where(eq(comissoes.barbeiroId, id));
     
-    // Depois, excluir todos os atendimentos relacionados ao barbeiro
+    // Excluir atendimentos relacionados ao barbeiro
     await db.delete(atendimentos).where(eq(atendimentos.barbeiroId, id));
     
     // Por fim, excluir o barbeiro

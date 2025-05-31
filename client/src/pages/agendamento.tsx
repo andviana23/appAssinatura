@@ -75,13 +75,9 @@ export default function Agendamento() {
   // Mutations
   const createAgendamento = useMutation({
     mutationFn: (data: any) => 
-      fetch("/api/agendamentos", {
+      apiRequest("/api/agendamentos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      }).then(res => {
-        if (!res.ok) throw new Error("Erro ao criar agendamento");
-        return res.json();
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
