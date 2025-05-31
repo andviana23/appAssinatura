@@ -1,0 +1,83 @@
+Faça os seguintes ajustes no sistema web de gestão da barbearia. Seja objetivo, execute exatamente como está descrito abaixo, sem alterar cores ou estilos que não foram pedidos. A tela de login deve voltar ao fundo branco padrão.
+
+🔧 1. DASHBOARD (ADMIN)
+Ranking de Barbeiros:
+
+Mostrar ranking real de comissões dos barbeiros no mês atual (top 5).
+
+O botão "Ver todos" deve abrir uma lista paginada ou rolável com o ranking completo.
+
+Ordenar do barbeiro com maior para o menor valor de comissão.
+
+Assinaturas Vencendo:
+
+Mostrar até 5 assinaturas próximas da próxima cobrança, ordenadas por data crescente.
+
+Exibir: nome do cliente, plano e data da próxima cobrança.
+
+📅 2. TELA DE AGENDAMENTOS
+A lista de clientes deve puxar os mesmos dados da tela de “Clientes”, inclusive os importados do Asaas.
+
+Adicionar no lado direito da tela um calendário mensal, para selecionar datas futuras ao agendar.
+
+O calendário deve exibir visualmente as datas já ocupadas com agendamentos.
+
+📊 3. TROCAR NOME DA TELA “Controle Totais” para “Relatórios”
+Renomear no menu e no título da página.
+
+Garantir que os relatórios existentes já citados estejam todos disponíveis nesta tela.
+
+🧾 4. CARDS DE PLANOS DE PAGAMENTO
+Diminuir sutilmente o tamanho dos cards.
+
+Ajustar margens e padding para que fiquem mais compactos, mas ainda legíveis.
+
+👩‍💼 5. FUNCIONALIDADE PARA RECEPCIONISTAS
+Criar um novo perfil “Recepcionista” com permissões limitadas:
+
+Acesso apenas às telas: Agendamentos, Planos e Clientes.
+
+Pode: vender plano, agendar clientes, visualizar clientes.
+
+🧭 6. DASHBOARD PARA RECEPCIONISTAS
+Exibir duas seções:
+
+Assinaturas prestes a vencer (até 5).
+
+Assinaturas vencidas (até 5).
+
+Mostrar: nome do cliente, data de vencimento e plano.
+
+🔐 7. AJUSTES NA TELA DE LOGIN
+Mudar o fundo da tela para branco (#ffffff).
+⚠️ Remover imediatamente o fundo laranja que foi adicionado.
+
+Incluir a logomarca da barbearia já fornecida acima do formulário de login.
+
+Adicionar link “Esqueci a senha” com funcionalidade para recuperar senha.
+
+Mostrar alerta em vermelho com texto: “Email ou senha incorretos” quando as credenciais estiverem erradas.
+
+🎨 8. REGRAS DE UI/UX GERAIS (NÃO MEXA NO QUE NÃO FOR PEDIDO!)
+NÃO altere cores de fundo, botões ou textos, exceto onde indicado.
+
+Mantenha o visual limpo, com:
+
+Espaçamento de 24px entre seções.
+
+Cantos arredondados (border-radius: 2xl).
+
+Animações suaves nos botões (hover com scale 105%).
+
+Use a paleta original:
+
+Azul aço #365e78,
+
+Dourado areia #d3b791,
+
+Preto #000000,
+
+Branco #ffffff.
+
+✅ IMPORTANTE: Cada funcionalidade deve ser testada e validada. Se alguma parte não for clara, pergunte antes de implementar. Não aplique “interpretações” que não estão descritas aqui. Execute exatamente como pedido.
+

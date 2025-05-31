@@ -87,7 +87,7 @@ export default function LoginAprimorado() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#8B4513] to-[#A0522D] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo da Barbearia */}
         <div className="text-center mb-8">
@@ -96,13 +96,13 @@ export default function LoginAprimorado() {
             alt="Trato de Barbados - Logo" 
             className="mx-auto h-20 w-auto mb-4 rounded-xl shadow-lg"
           />
-          <h1 className="text-2xl font-bold text-white mb-2">Sistema Trato de Barbados</h1>
-          <p className="text-[#DEB887]">Gestão Completa de Assinaturas</p>
+          <h1 className="text-2xl font-bold text-black mb-2">Sistema Trato de Barbados</h1>
+          <p className="text-[#365e78]">Gestão Completa de Assinaturas</p>
         </div>
 
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl text-center text-[#8B4513]">Entrar</CardTitle>
+            <CardTitle className="text-2xl text-center text-[#365e78]">Entrar</CardTitle>
             <CardDescription className="text-center">
               Acesse sua conta para gerenciar a barbearia
             </CardDescription>
@@ -124,7 +124,7 @@ export default function LoginAprimorado() {
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
-                  className="h-11 border-gray-300 focus:border-[#8B4513] focus:ring-[#8B4513]"
+                  className="h-11 border-gray-300 focus:border-[#365e78] focus:ring-[#365e78]"
                   {...register("email")}
                 />
                 {errors.email && (
@@ -139,7 +139,7 @@ export default function LoginAprimorado() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Digite sua senha"
-                    className="h-11 pr-10 border-gray-300 focus:border-[#8B4513] focus:ring-[#8B4513]"
+                    className="h-11 pr-10 border-gray-300 focus:border-[#365e78] focus:ring-[#365e78]"
                     {...register("password")}
                   />
                   <Button
@@ -165,7 +165,7 @@ export default function LoginAprimorado() {
                 <Button
                   type="button"
                   variant="link"
-                  className="p-0 h-auto text-[#8B4513] hover:text-[#A0522D]"
+                  className="p-0 h-auto text-[#365e78] hover:text-[#d3b791]"
                   onClick={() => setIsForgotPasswordOpen(true)}
                 >
                   Esqueci a senha
@@ -174,7 +174,7 @@ export default function LoginAprimorado() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-[#8B4513] hover:bg-[#A0522D] text-white font-semibold transition-all duration-200 hover:scale-105"
+                className="w-full h-11 bg-[#365e78] hover:bg-[#d3b791] text-white font-semibold transition-all duration-200 hover:scale-105"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Entrando..." : "Entrar"}
@@ -186,7 +186,7 @@ export default function LoginAprimorado() {
                 Problemas para acessar?{" "}
                 <Button
                   variant="link"
-                  className="p-0 h-auto text-[#8B4513] hover:text-[#A0522D]"
+                  className="p-0 h-auto text-[#365e78] hover:text-[#d3b791]"
                   onClick={() => setIsForgotPasswordOpen(true)}
                 >
                   Solicite ajuda
