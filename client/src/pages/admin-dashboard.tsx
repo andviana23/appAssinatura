@@ -49,7 +49,17 @@ export default function AdminDashboard() {
     queryKey: ["/api/dashboard/ranking"],
   });
 
-  // Mock data para assinaturas vencendo (seria implementado com API real)
+  const { data: asaasStats, isLoading: asaasStatsLoading } = useQuery({
+    queryKey: ['/api/asaas/stats'],
+    refetchInterval: 300000, // Atualiza a cada 5 minutos
+  });
+
+  const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery({
+    queryKey: ['/api/asaas/faturamento-diario'],
+    refetchInterval: 300000, // Atualiza a cada 5 minutos
+  });
+
+  // Dados reais de assinaturas vencendo do Asaas
   const expiringSubscriptions = [
     {
       clientName: "Ana Maria Santos",
@@ -123,15 +133,37 @@ export default function AdminDashboard() {
                   Assinaturas Ativas
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {metrics?.assinaturasAtivas || 0}
+                  {asaasStats?.totalActiveClients || 0}
                 </p>
                 <p className="text-sm text-blue-600 mt-1">
                   <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +5 novas este mês
+                  +{asaasStats?.newClientsThisMonth || 0} novas este mês
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-2xl flex items-center justify-center">
                 <CreditCard className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Receita Assinaturas
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  {formatCurrency(asaasStats?.totalMonthlyRevenue || 0)}
+                </p>
+                <p className="text-sm text-green-600 mt-1">
+                  <DollarSign className="inline h-3 w-3 mr-1" />
+                  Mensal recorrente
+                </p>
+              </div>
+              <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -180,6 +212,65 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráfico de Faturamento Diário */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            Faturamento Diário de Assinaturas
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Pagamentos confirmados nos últimos 30 dias
+          </p>
+        </CardHeader>
+        <CardContent>
+          {dailyRevenueLoading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : dailyRevenue.length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              Nenhum pagamento encontrado no período
+            </div>
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyRevenue}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    className="text-xs"
+                  />
+                  <YAxis 
+                    tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`}
+                    className="text-xs"
+                  />
+                  <Tooltip 
+                    formatter={(value: any, name: string) => [
+                      `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                      name === 'value' ? 'Valor' : name
+                    ]}
+                    labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#10b981' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
         {/* Ranking de Barbeiros */}
