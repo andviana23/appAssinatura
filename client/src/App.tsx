@@ -23,7 +23,7 @@ import Agendamento from "@/pages/agendamento";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
 
   if (isAdmin) {
     return (
@@ -47,7 +47,7 @@ function AuthenticatedRoutes() {
   }
 
   // Verificar se é barbeiro
-  if (user?.role === "barbeiro") {
+  if (isBarbeiro) {
     return (
       <Layout>
         <Switch>
@@ -62,7 +62,7 @@ function AuthenticatedRoutes() {
   }
 
   // Verificar se é recepcionista
-  if (user?.role === "recepcionista") {
+  if (isRecepcionista) {
     return (
       <Layout>
         <Switch>
