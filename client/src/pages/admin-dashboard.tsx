@@ -22,11 +22,13 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-interface DashboardMetrics {
-  faturamentoMensal: number;
-  assinaturasAtivas: number;
-  horasTrabalhadas: number;
-  comissoesPagas: number;
+interface ClientesStats {
+  totalActiveClients: number;
+  totalMonthlyRevenue: number;
+  newClientsThisMonth: number;
+  overdueClients: number;
+  totalExternalClients: number;
+  totalAsaasClients: number;
 }
 
 interface BarbeiroRanking {
@@ -40,9 +42,19 @@ interface BarbeiroRanking {
   horas: number;
 }
 
+interface AssinaturaVencendo {
+  id: string;
+  clientName: string;
+  planName: string;
+  expiryDate: string;
+  daysLeft: number;
+  origem: string;
+}
+
 export default function AdminDashboard() {
-  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
-    queryKey: ["/api/dashboard/metrics"],
+  const { data: clientesStats, isLoading: clientesStatsLoading } = useQuery({
+    queryKey: ['/api/clientes/unified-stats'],
+    refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
   const { data: ranking, isLoading: rankingLoading } = useQuery<BarbeiroRanking[]>({
@@ -52,6 +64,11 @@ export default function AdminDashboard() {
   const { data: asaasStats, isLoading: asaasStatsLoading } = useQuery({
     queryKey: ['/api/asaas/stats'],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
+  });
+
+  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery({
+    queryKey: ['/api/clientes/expiring'],
+    refetchInterval: 300000,
   });
 
   const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery({
@@ -81,7 +98,7 @@ export default function AdminDashboard() {
     },
   ];
 
-  if (metricsLoading) {
+  if (clientesStatsLoading) {
     return (
       <div className="space-y-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-24">
@@ -99,6 +116,10 @@ export default function AdminDashboard() {
     );
   }
 
+  // Calcular total de comissão de barbeiros (40% da receita de assinatura)
+  const receitaAssinatura = clientesStats?.totalMonthlyRevenue || 0;
+  const totalComissaoBarbeiros = receitaAssinatura * 0.4;
+
   return (
     <div className="space-y-24">
       {/* KPI Cards */}
@@ -108,14 +129,14 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Faturamento do Mês
+                  Receita de Assinatura
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(metrics?.faturamentoMensal || 0)}
+                  {formatCurrency(clientesStats?.totalMonthlyRevenue || 0)}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
-                  <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +12% vs mês anterior
+                  <DollarSign className="inline h-3 w-3 mr-1" />
+                  Valor da aba Clientes
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
@@ -133,11 +154,11 @@ export default function AdminDashboard() {
                   Assinaturas Ativas
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {asaasStats?.totalActiveClients || 0}
+                  {clientesStats?.totalActiveClients || 0}
                 </p>
                 <p className="text-sm text-blue-600 mt-1">
-                  <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +{asaasStats?.newClientsThisMonth || 0} novas este mês
+                  <Users className="inline h-3 w-3 mr-1" />
+                  Clientes ativos
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-2xl flex items-center justify-center">
@@ -152,14 +173,14 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Receita Assinaturas
+                  Total Comissão Barbeiros
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(asaasStats?.totalMonthlyRevenue || 0)}
+                  {formatCurrency(totalComissaoBarbeiros)}
                 </p>
                 <p className="text-sm text-green-600 mt-1">
                   <DollarSign className="inline h-3 w-3 mr-1" />
-                  Mensal recorrente
+                  40% da receita de assinatura
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
@@ -177,36 +198,15 @@ export default function AdminDashboard() {
                   Horas Trabalhadas
                 </p>
                 <p className="text-2xl font-bold text-foreground">
-                  {metrics?.horasTrabalhadas || 0}h
+                  0h0m
                 </p>
                 <p className="text-sm text-purple-600 mt-1">
                   <Clock className="inline h-3 w-3 mr-1" />
-                  Tempo total no mês
+                  Minutos convertidos
                 </p>
               </div>
               <div className="h-12 w-12 bg-purple-100 rounded-2xl flex items-center justify-center">
                 <Clock className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Comissões Pagas
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(metrics?.comissoesPagas || 0)}
-                </p>
-                <p className="text-sm text-barbershop-gold mt-1">
-                  40% do faturamento
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-yellow-100 rounded-2xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-barbershop-gold" />
               </div>
             </div>
           </CardContent>

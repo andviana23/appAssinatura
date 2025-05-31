@@ -1,0 +1,70 @@
+Ei Replit, vamos direto ao ponto:  
+Precisamos ajustar várias funcionalidades do nosso AppBarber/Clube Trato para atender à lógica real de negócios. Use o mínimo de agentes possível e faça tudo em uma única tacada. Segue o passo a passo:
+
+1. **Dashboard**  
+- Remova imediatamente o campo “Faturamento do Mês”.  
+- Puxe o valor de “Receita de Assinatura” da aba Clientes (Receita Mensal); exiba exatamente esse valor.  
+- Insira um campo “Total de Comissão de Barbeiros” = 40% (ou percentual configurável) da Receita de Assinatura. Não exiba detalhes, só o total.  
+- Altere “Horas Trabalhadas” para somar todos os minutos de serviços de assinatura finalizados no mês e converter pra horas (formato XhYm).  
+- Exiba o “Ranking de Barbeiros” em ordem real de desempenho e garanta que o botão “Ver Todos” liste todos os barbeiros corretamente.  
+- Adicione uma seção “Assinaturas Vencendo” que mostre apenas as 3 assinaturas com vencimento mais próximo (puxe a data de vencimento dos registros de Clientes).  
+
+2. **Serviços**  
+- No cadastro, aceite apenas serviços de assinatura (retire opção avulso).  
+- Campos obrigatórios:  
+  • Nome do Serviço  
+  • Tempo em Minutos (ex: 30, 20, 45)  
+  • % Comissão (ex: 40%) – configurável.  
+- Não precisa de preço por sessão; preço vem da assinatura padrão.  
+
+3. **Agendamento**  
+- Implemente tela de agenda idêntica à imagem de referência, colunas por barbeiro e horários.  
+- Funcionalidade mínima: “Agendar Cliente” (define data/hora e serviço) e, ao término, “Finalizar Atendimento”.  
+- Ao clicar em “Finalizar Atendimento”, deve-se:  
+  • Marcar o serviço como executado  
+  • Somar o tempo (minutos) do serviço ao total mensal do barbeiro para cálculo de comissão  
+  • Contabilizar +1 no número de serviços do barbeiro no mês  
+- Não inclua opções de remarcar, cancelar, reagendar ou outros status. Apenas finalize e contabilize.  
+
+4. **Tela de Comissão (antiga Distribuição)**  
+- Exiba lista com todos os barbeiros. Para cada um, exiba no resumo:  
+  • Faturamento de Assinatura (veja cálculo abaixo)  
+  • Tempo Total Trabalhado em Minutos  
+  • Número de Serviços Feitos no Mês  
+- Ao clicar num barbeiro, abra um painel lateral com:  
+  • Nome completo  
+  • **Faturamento de Assinatura** (R$)  
+  • **Comissão de Assinatura** (R$) = (Faturamento de Assinatura × % Comissão configurável)  
+  • **Número de Serviços Feitos no Mês**  
+  • **Tempo Total Trabalhado em Horas**  
+
+**Cálculo do Faturamento de Assinatura por Barbeiro**  
+- Definições:  
+  • Faturamento Total de Assinatura do Salão = soma de todas as assinaturas ativas (ex: R$ 1.000).  
+  • Somatório de Minutos Gerais = soma dos minutos de todos os atendimentos de assinatura finalizados por todos os barbeiros no mês (ex: 190 minutos).  
+  • Para cada barbeiro “B”:  
+    – Minutos Trabalhados pelo B = soma dos minutos de cada atendimento finalizado por B (ex: 80 minutos).  
+    – Percentual de Tempo do B = (Minutos Trabalhados pelo B / Somatório de Minutos Gerais) × 100 (ex: 80/190 = 42,10%).  
+    – Faturamento de Assinatura do B = (Percentual de Tempo do B / 100) × Faturamento Total de Assinatura (ex: 0,4210 × R$1.000 = R$421,00).  
+
+**Cálculo da Comissão de Assinatura para B**  
+- % Comissão Configurável (ex: 40%).  
+- Valor Comissão de B = (Faturamento de Assinatura do B) × (% Comissão / 100) (ex: R$421,00 × 0,40 = R$168,40).  
+
+5. **Tela de Controle de Totais (Analytics)**  
+- Adicione uma seção analítica contendo:  
+  • Gráfico “Atendimentos por Dia” (barra) mostrando dias do mês onde houve mais atendimentos.  
+  • Gráfico “Serviços Mais Feitos” (pizza ou barra) com top 5 serviços de assinatura.  
+  • Gráfico “Receita de Assinatura por Dia” (linha ou barra) para ver distribuição de receita ao longo do mês.  
+  • Tabela “Horas Trabalhadas por Barbeiro” (mês atual vs meses anteriores).  
+  • Gráfico “Comissão Total Pago” (barra mês a mês).  
+- Permita filtro por período (mês/ano) e por barbeiro; recalcule todos os gráficos/tabelas dinamicamente.  
+- Inclua botão de exportar CSV para cada relatório.  
+
+6. **Outros Ajustes**  
+- Garanta que o campo “% Comissão” no cadastro de serviços seja utilizado em todos os cálculos.  
+- Feedback visual: avisos de sucesso e erro na hora de gravar cadastros.  
+- Verifique performance: indexe consultas de agendamentos por data e barbeiro.  
+- Uso mínimo de agentes: concentre lógica de cálculo no backend, evitando chamadas desnecessárias.  
+
+**Entendeu a lógica?** Faça tudo exatamente conforme descrito. Qualquer dúvida sobre cálculo, reveja esta seção de “Cálculo do Faturamento de Assinatura” e “Cálculo da Comissão”. Ao final, quero testar manualmente e ver todos os valores batendo certinho. Obrigado.  

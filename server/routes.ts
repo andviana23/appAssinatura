@@ -854,6 +854,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para assinaturas vencendo (3 mais próximas)
+  app.get("/api/clientes/expiring", requireAuth, async (req, res) => {
+    try {
+      const agora = new Date();
+      const clientesVencendo: any[] = [];
+
+      // Buscar clientes externos
+      const clientesExternos = await storage.getAllClientes();
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const dataValidade = new Date(cliente.dataVencimentoAssinatura);
+          const diasRestantes = Math.ceil((dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diasRestantes <= 7 && diasRestantes >= 0) {
+            clientesVencendo.push({
+              id: `ext_${cliente.id}`,
+              clientName: cliente.nome,
+              planName: cliente.planoNome || 'Plano Externo',
+              expiryDate: cliente.dataVencimentoAssinatura,
+              daysLeft: diasRestantes,
+              origem: 'EXTERNO'
+            });
+          }
+        }
+      }
+
+      // Buscar assinaturas do Asaas próximas do vencimento
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      if (asaasApiKey) {
+        try {
+          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://api.asaas.com/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
+
+          // Buscar próximas cobranças (due date nos próximos 7 dias)
+          const proximasCobranças = await fetch(`${baseUrl}/payments?status=PENDING&limit=100`, {
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (proximasCobranças.ok) {
+            const cobrancasData = await proximasCobranças.json();
+            
+            for (const payment of cobrancasData.data || []) {
+              const dataVencimento = new Date(payment.dueDate);
+              const diasRestantes = Math.ceil((dataVencimento.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (diasRestantes <= 7 && diasRestantes >= 0) {
+                // Buscar dados do cliente
+                const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+                  headers: {
+                    'access_token': asaasApiKey,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                if (customerResponse.ok) {
+                  const customer = await customerResponse.json();
+                  
+                  clientesVencendo.push({
+                    id: `asaas_${payment.customer}`,
+                    clientName: customer.name,
+                    planName: payment.description || 'Cobrança Asaas',
+                    expiryDate: payment.dueDate,
+                    daysLeft: diasRestantes,
+                    origem: 'ASAAS'
+                  });
+                }
+              }
+            }
+          }
+        } catch (asaasError) {
+          console.error("Erro ao buscar assinaturas vencendo do Asaas:", asaasError);
+        }
+      }
+
+      // Ordenar por dias restantes e pegar apenas as 3 mais próximas
+      const top3Vencendo = clientesVencendo
+        .sort((a, b) => a.daysLeft - b.daysLeft)
+        .slice(0, 3);
+
+      res.json(top3Vencendo);
+    } catch (error) {
+      console.error("Erro ao buscar assinaturas vencendo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {
