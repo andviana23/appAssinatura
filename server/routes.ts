@@ -616,6 +616,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para criar checkout personalizado do Asaas
+  app.post('/api/asaas/checkout', async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
+      }
+
+      const baseUrl = asaasEnvironment === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      const { nome, email, cpf } = req.body;
+
+      // 1. Criar ou buscar cliente
+      let customerId;
+      
+      // Primeiro, tentar buscar cliente existente
+      const searchCustomerResponse = await fetch(`${baseUrl}/customers?email=${email}`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (searchCustomerResponse.ok) {
+        const searchData = await searchCustomerResponse.json();
+        if (searchData.data && searchData.data.length > 0) {
+          customerId = searchData.data[0].id;
+        }
+      }
+
+      // Se não encontrou, criar novo cliente
+      if (!customerId) {
+        const customerPayload = {
+          name: nome,
+          email: email,
+          ...(cpf && { cpfCnpj: cpf })
+        };
+
+        const customerResponse = await fetch(`${baseUrl}/customers`, {
+          method: 'POST',
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(customerPayload)
+        });
+
+        if (!customerResponse.ok) {
+          throw new Error('Erro ao criar cliente no Asaas');
+        }
+
+        const customerData = await customerResponse.json();
+        customerId = customerData.id;
+      }
+
+      // 2. Criar cobrança com checkout personalizado
+      const chargePayload = {
+        customer: customerId,
+        billingType: 'PIX',
+        value: 2,
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Vence em 1 dia
+        description: 'Clube do Trato Unico - Pagamento Teste de funcionalidade',
+        checkout: {
+          enablePostalCode: false,
+          enableAddress: false,
+          enablePhone: false,
+          enableDiscount: false,
+          enableSplit: false,
+          theme: {
+            primaryColor: '#365e78',
+            backgroundColor: '#f7fafc',
+            logoUrl: 'https://via.placeholder.com/200x80/365e78/ffffff?text=Trato+de+Barbados', // Placeholder até ter logo real
+            headerText: 'Clube do Trato Unico',
+            headerDescription: 'Pagamento Teste de funcionalidade - Trato de Barbados'
+          },
+          successUrl: `${req.protocol}://${req.get('host')}/checkout/sucesso`,
+          maxInstallmentCount: 1
+        }
+      };
+
+      const chargeResponse = await fetch(`${baseUrl}/payments`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(chargePayload)
+      });
+
+      if (!chargeResponse.ok) {
+        const errorData = await chargeResponse.json();
+        throw new Error(`Erro ao criar cobrança: ${JSON.stringify(errorData)}`);
+      }
+
+      const chargeData = await chargeResponse.json();
+
+      res.json({
+        id: chargeData.id,
+        checkoutUrl: chargeData.invoiceUrl,
+        pixQrCode: chargeData.pixTransaction?.qrCode?.payload,
+        pixQrCodeImage: chargeData.pixTransaction?.qrCode?.encodedImage,
+        status: chargeData.status,
+        value: chargeData.value,
+        dueDate: chargeData.dueDate
+      });
+
+    } catch (error) {
+      console.error('Erro ao criar checkout:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint para buscar planos autorizados via API Asaas
   app.get('/api/asaas/planos', async (req, res) => {
     try {

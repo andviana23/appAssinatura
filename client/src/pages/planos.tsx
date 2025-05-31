@@ -1,11 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, CreditCard, Sparkles, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 
 interface PlanoAsaas {
   id: string;
@@ -19,10 +24,39 @@ interface PlanoAsaas {
 
 export default function Planos() {
   const { toast } = useToast();
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkoutData, setCheckoutData] = useState({
+    nome: '',
+    email: '',
+    cpf: ''
+  });
 
   const { data: planos, isLoading, refetch, isRefetching } = useQuery<PlanoAsaas[]>({
     queryKey: ["/api/asaas/planos"],
     refetchInterval: 30000, // Atualiza a cada 30 segundos
+  });
+
+  const createCheckoutMutation = useMutation({
+    mutationFn: (data: { nome: string; email: string; cpf?: string }) => 
+      apiRequest("POST", "/api/asaas/checkout", data),
+    onSuccess: (data: any) => {
+      if (data.checkoutUrl) {
+        window.open(data.checkoutUrl, '_blank');
+        setShowCheckoutModal(false);
+        setCheckoutData({ nome: '', email: '', cpf: '' });
+        toast({
+          title: "Checkout criado com sucesso!",
+          description: "Você será redirecionado para o pagamento.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar checkout",
+        description: error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleAssinar = (plano: PlanoAsaas) => {
@@ -126,6 +160,65 @@ export default function Planos() {
           Atualizar
         </Button>
       </div>
+
+      {/* Card do Plano Teste */}
+      <Card className="relative overflow-hidden border-2 border-dashed border-orange-300 bg-orange-50/50 mb-6">
+        <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
+        
+        <CardHeader className="pb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-12 w-12 rounded-full flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500">
+                <TestTube className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg leading-tight">Clube do Trato Único</CardTitle>
+              </div>
+            </div>
+            <Badge className="bg-orange-500 text-orange-50">Teste</Badge>
+          </div>
+          
+          <CardDescription className="text-sm">
+            Pagamento teste de funcionalidade - R$ 2,00 via PIX
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-orange-600">
+              R$ 2,00
+            </div>
+            <div className="text-sm text-muted-foreground">pagamento único</div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-foreground">Para teste:</h4>
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                Checkout personalizado
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                Identidade visual Trato de Barbados
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                Pagamento via PIX
+              </li>
+            </ul>
+          </div>
+
+          <Button 
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 text-white border-0"
+            onClick={() => setShowCheckoutModal(true)}
+            disabled={createCheckoutMutation.isPending}
+          >
+            <TestTube className="h-4 w-4 mr-2" />
+            {createCheckoutMutation.isPending ? 'Criando...' : 'Testar Checkout'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Planos Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -262,6 +355,93 @@ export default function Planos() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Checkout Teste */}
+      <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TestTube className="h-5 w-5 text-orange-500" />
+              Checkout Teste - Clube do Trato Único
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (checkoutData.nome && checkoutData.email) {
+                createCheckoutMutation.mutate(checkoutData);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <Label htmlFor="nome">Nome completo *</Label>
+              <Input
+                id="nome"
+                value={checkoutData.nome}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Seu nome completo"
+                required
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="email">E-mail *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={checkoutData.email}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="seu@email.com"
+                required
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="cpf">CPF (opcional)</Label>
+              <Input
+                id="cpf"
+                value={checkoutData.cpf}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
+                placeholder="000.000.000-00"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <h4 className="font-medium text-orange-800 mb-2">Detalhes do teste:</h4>
+              <ul className="text-sm text-orange-700 space-y-1">
+                <li>• Valor: R$ 2,00</li>
+                <li>• Pagamento: PIX</li>
+                <li>• Checkout personalizado com identidade visual</li>
+                <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCheckoutModal(false)}
+                disabled={createCheckoutMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90"
+                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email}
+              >
+                {createCheckoutMutation.isPending ? 'Criando...' : 'Criar Checkout'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
