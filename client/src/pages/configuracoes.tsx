@@ -39,10 +39,7 @@ export default function Configuracoes() {
 
   const updatePerfil = useMutation({
     mutationFn: (data: any) => 
-      apiRequest("/api/user/perfil", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("/api/users/update-profile", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({ title: "Perfil atualizado com sucesso!" });
@@ -58,10 +55,7 @@ export default function Configuracoes() {
 
   const updateSenha = useMutation({
     mutationFn: (data: any) => 
-      apiRequest("/api/user/senha", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("/api/users/change-password", "POST", data),
     onSuccess: () => {
       toast({ title: "Senha alterada com sucesso!" });
       setFormData(prev => ({

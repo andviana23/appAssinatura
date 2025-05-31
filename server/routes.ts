@@ -100,10 +100,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         role: user.role,
+        nome: user.nome,
+        fotoPerfil: user.fotoPerfil,
         barbeiroId: user.barbeiroId
       });
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // User configuration routes
+  app.post("/api/users/change-password", requireAuth, async (req, res) => {
+    try {
+      const { senhaAtual, novaSenha } = req.body;
+      const userId = req.session?.userId;
+
+      if (!senhaAtual || !novaSenha) {
+        return res.status(400).json({ message: "Senha atual e nova senha são obrigatórias" });
+      }
+
+      const user = await storage.getUserById(userId as number);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      const isValidPassword = await bcrypt.compare(senhaAtual, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+
+      const hashedPassword = await bcrypt.hash(novaSenha, 10);
+      await storage.updateUser(userId as number, { password: hashedPassword });
+
+      res.json({ message: "Senha alterada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao alterar senha:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/users/update-profile", requireAuth, async (req, res) => {
+    try {
+      const { nome, fotoPerfil } = req.body;
+      const userId = req.session?.userId;
+
+      await storage.updateUser(userId as number, { nome, fotoPerfil });
+
+      res.json({ message: "Perfil atualizado com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
