@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Clock, Scissors } from "lucide-react";
+import { Plus, Edit, Trash2, Clock, Scissors, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import type { Servico } from "@shared/schema";
 
 interface ServicoFormData {
@@ -33,6 +34,7 @@ interface ServicoFormData {
 }
 
 export default function Servicos() {
+  const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingServico, setEditingServico] = useState<Servico | null>(null);
   const [formData, setFormData] = useState<ServicoFormData>({
@@ -91,22 +93,33 @@ export default function Servicos() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `/api/servicos/${id}`),
+    mutationFn: (id: number) => fetch(`/api/servicos/${id}`, {
+      method: "DELETE",
+    }).then(res => {
+      if (!res.ok) throw new Error("Erro ao excluir serviço");
+      return res.json();
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
       toast({
-        title: "Serviço removido",
-        description: "Serviço removido com sucesso",
+        title: "Serviço excluído com sucesso",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erro ao excluir serviço:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao remover serviço",
+        title: "Não foi possível excluir este serviço",
         variant: "destructive",
       });
     },
   });
+
+  const handleDeleteServico = (servico: Servico) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o serviço "${servico.nome}"?`)) {
+      return;
+    }
+    deleteMutation.mutate(servico.id);
+  };
 
   const resetForm = () => {
     setFormData({ nome: "", tempoMinutos: 30, percentualComissao: 40 });
@@ -129,6 +142,31 @@ export default function Servicos() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação dos campos obrigatórios
+    if (!formData.nome || !formData.tempoMinutos || !formData.percentualComissao) {
+      toast({
+        title: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.tempoMinutos <= 0) {
+      toast({
+        title: "O tempo deve ser maior que zero",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.percentualComissao < 0 || formData.percentualComissao > 100) {
+      toast({
+        title: "O percentual de comissão deve estar entre 0 e 100",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (editingServico) {
       updateMutation.mutate({ id: editingServico.id, data: formData });

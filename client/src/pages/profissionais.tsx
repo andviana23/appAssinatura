@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, User, UserCheck, Edit, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +18,39 @@ interface Profissional {
 
 export default function Profissionais() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: barbeiros = [], isLoading } = useQuery({
     queryKey: ["/api/barbeiros"],
   });
+
+  const deleteProfissional = useMutation({
+    mutationFn: (id: number) => fetch(`/api/barbeiros/${id}`, {
+      method: "DELETE",
+    }).then(res => {
+      if (!res.ok) throw new Error("Erro ao excluir profissional");
+      return res.json();
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
+      toast({ title: "Profissional excluído com sucesso" });
+    },
+    onError: (error) => {
+      console.error("Erro ao excluir profissional:", error);
+      toast({ 
+        title: "Não foi possível excluir este profissional", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleDelete = (profissional: Profissional) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o profissional ${profissional.nome}?`)) {
+      return;
+    }
+    deleteProfissional.mutate(profissional.id);
+  };
 
   if (isLoading) {
     return (
@@ -120,6 +151,8 @@ export default function Profissionais() {
                       variant="outline"
                       size="sm"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(profissional)}
+                      disabled={deleteProfissional.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

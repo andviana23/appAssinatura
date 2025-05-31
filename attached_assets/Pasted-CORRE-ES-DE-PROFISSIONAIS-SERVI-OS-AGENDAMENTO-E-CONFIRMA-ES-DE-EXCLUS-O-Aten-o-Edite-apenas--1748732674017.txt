@@ -1,0 +1,307 @@
+CORREÇÕES DE PROFISSIONAIS, SERVIÇOS, AGENDAMENTO E CONFIRMAÇÕES DE EXCLUSÃO
+
+Atenção: Edite apenas o que está descrito abaixo. Não altere nada que já funciona no sistema.
+
+1. TELA “Profissionais” — Botões que não funcionam
+Arquivos envolvidos (exemplos):
+
+src/pages/profissionais.tsx
+
+src/components/ListaProfissionais.tsx (ou componente equivalente que renderiza a lista)
+
+1.1 Botão “Cadastrar Barbeiro” e “Cadastrar Recepcionista” não funcionam
+Abra profissionais.tsx (ou o componente que contém os botões de “Cadastrar”). Verifique se os botões chamam a função correta de navegação ou de abertura de modal.
+
+Exemplo de correção (React Router):
+
+tsx
+Copiar
+Editar
+import { useNavigate } from "react-router-dom";
+// ...
+const navigate = useNavigate();
+// ...
+<button onClick={() => navigate("/profissionais/novo?tipo=barbeiro")}>  
+  + Cadastrar Barbeiro  
+</button>
+<button onClick={() => navigate("/profissionais/novo?tipo=recepcionista")}>  
+  + Cadastrar Recepcionista  
+</button>
+Se estiver usando <Link> do react-router-dom, confirme que o to está correto:
+
+tsx
+Copiar
+Editar
+<Link to="/profissionais/novo?tipo=barbeiro">+ Cadastrar Barbeiro</Link>
+<Link to="/profissionais/novo?tipo=recepcionista">+ Cadastrar Recepcionista</Link>
+Teste: ao clicar, deve abrir a tela de cadastro de profissional respectivo. Se não abrir, ajuste a rota para a URL exata definida em App.tsx ou routes.tsx.
+
+1.2 Botão “Apagar Barbeiro” não funciona
+No componente que lista profissionais, localize a função chamada pelo botão “Apagar” para barbeiro (por ex. handleDelete(barbeiro.id)).
+
+Confirme que existe uma função handleDelete definida e que chama corretamente a API:
+
+tsx
+Copiar
+Editar
+const handleDelete = (id: number) => {
+  // Antes de excluir, exiba confirmação
+  if (!window.confirm("Tem certeza que deseja excluir este profissional?")) {
+    return;
+  }
+  fetch(`/api/profissionais/${id}`, {
+    method: "DELETE",
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao excluir");
+      // Recarregar lista após exclusão
+      carregarProfissionais(); 
+      alert("Profissional excluído com sucesso.");
+    })
+    .catch(err => {
+      console.error("Erro ao excluir profissional:", err);
+      alert("Não foi possível excluir este profissional.");
+    });
+};
+Certifique-se de que o botão “Apagar” passe o id correto:
+
+tsx
+Copiar
+Editar
+<button onClick={() => handleDelete(profissional.id)}>
+  Apagar
+</button>
+Teste: ao clicar em “Apagar”, deve aparecer o window.confirm.
+
+Se clicar “OK”, chama a rota DELETE /api/profissionais/:id.
+
+Se clicar “Cancelar”, nada acontece.
+
+Após exclusão bem-sucedida, lista deve atualizar e mostrar mensagem de sucesso.
+
+2. TELA “Serviços” — Erros ao criar e excluir
+Arquivos envolvidos (exemplos):
+
+src/pages/servicos.tsx
+
+src/components/ListaServicos.tsx
+
+src/components/FormServico.tsx
+
+2.1 Erro ao criar novo serviço
+No componente de formulário de serviço (FormServico.tsx), adicione validação antes de enviar:
+
+tsx
+Copiar
+Editar
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!nome || !duracao || !valor) {
+    alert("Preencha todos os campos obrigatórios.");
+    return;
+  }
+  const payload = { nome, duracao, valor };
+  fetch("/api/servicos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao criar serviço");
+      return res.json();
+    })
+    .then(() => {
+      alert("Serviço criado com sucesso.");
+      // Retorna para lista de serviços ou recarrega lista
+      navigate("/servicos");
+    })
+    .catch(err => {
+      console.error("Erro ao criar serviço:", err);
+      alert("Não foi possível criar o serviço. Tente novamente.");
+    });
+};
+Teste: ao submeter com todos os campos preenchidos, a rota POST /api/servicos deve retornar 201/200. Se a API devolver erro, exiba mensagem ao usuário: “Não foi possível criar o serviço. Tente novamente.” e logue err no console.
+
+2.2 Erro ao excluir serviço
+No componente de lista de serviços (ListaServicos.tsx), localize a função de exclusão:
+
+tsx
+Copiar
+Editar
+const handleDeleteServico = (id: number) => {
+  if (!window.confirm("Tem certeza que deseja excluir este serviço?")) {
+    return;
+  }
+  fetch(`/api/servicos/${id}`, { method: "DELETE" })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao excluir serviço");
+      carregarServicos();
+      alert("Serviço excluído com sucesso.");
+    })
+    .catch(err => {
+      console.error("Erro ao excluir serviço:", err);
+      alert("Não foi possível excluir este serviço.");
+    });
+};
+Ajuste o botão “Excluir” para chamar corretamente:
+
+tsx
+Copiar
+Editar
+<button onClick={() => handleDeleteServico(servico.id)}>
+  Excluir
+</button>
+Teste:
+
+Ao clicar “Excluir”, deve aparecer window.confirm.
+
+Confirmando, chama DELETE /api/servicos/:id, recarrega lista e mostra toast ou alert de sucesso.
+
+Cancelando, não faz nada.
+
+3. TELA “Agendamento” — Erro ao criar agendamento
+Arquivos envolvidos (exemplos):
+
+src/pages/agendamento.tsx
+
+src/components/FormAgendamento.tsx
+
+3.1 Mensagem “Erro nos dados selecionados, por favor tente novamente”
+Localize a função que faz o POST para /api/agendamentos.
+
+Antes de chamar a API, valide campos obrigatórios (cliente, barbeiro, data, serviço). Exemplo:
+
+tsx
+Copiar
+Editar
+if (!clienteSelecionado || !barbeiroSelecionado || !data || !servicoSelecionado) {
+  alert("Por favor, selecione cliente, barbeiro, data e serviço.");
+  return;
+}
+Certifique-se de montar payload correto:
+
+tsx
+Copiar
+Editar
+const payload = {
+  clienteId: clienteSelecionado.id,
+  barbeiroId: barbeiroSelecionado.id,
+  servicoId: servicoSelecionado.id,
+  dataHora: dayjs(data).toISOString(),
+  termos: observacaoText,
+};
+Envie a requisição:
+
+tsx
+Copiar
+Editar
+fetch("/api/agendamentos", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+})
+  .then(res => {
+    if (!res.ok) throw new Error("Erro ao criar agendamento");
+    return res.json();
+  })
+  .then(() => {
+    alert("Agendamento criado com sucesso.");
+    navigate("/agendamentos"); // ou reload
+  })
+  .catch(err => {
+    console.error("Erro ao criar agendamento:", err);
+    alert("Erro nos dados selecionados, por favor tente novamente.");
+  });
+Teste o fluxo:
+
+Se faltar algum campo, a função aborta com alert.
+
+Se todos preenchidos e API retornar ok, mostra sucesso e redireciona.
+
+Se a API falhar, loga o erro e exibe o alert “Erro nos dados selecionados, por favor tente novamente.”
+
+4. CONFIRMAÇÃO DE EXCLUSÃO EM “Clientes”
+Arquivos envolvidos (exemplos):
+
+src/pages/clientes.tsx
+
+src/components/ListaClientes.tsx
+
+4.1 Exibir confirm antes de excluir cliente
+No método de exclusão de cliente (handleDeleteCliente), adicione:
+
+tsx
+Copiar
+Editar
+const handleDeleteCliente = (id: number) => {
+  if (!window.confirm("Tem certeza que deseja excluir este cliente?")) {
+    return;
+  }
+  fetch(`/api/clientes/${id}`, { method: "DELETE" })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro ao excluir cliente");
+      carregarClientes();
+      alert("Cliente excluído com sucesso.");
+    })
+    .catch(err => {
+      console.error("Erro ao excluir cliente:", err);
+      alert("Não foi possível excluir este cliente.");
+    });
+};
+Ajuste o botão “Excluir” para chamar essa função passando cliente.id.
+
+5. BÔNUS: GARANTIR “BOTÃO VOLTAR” EM TODAS AS PÁGINAS NÃO-PRINCIPAIS
+Arquivos apontados (exemplos):
+
+Todas as telas de edição, criação, relatórios, serviços, agendamentos e clientes.
+
+Instruções:
+Em cada página (exceto Dashboard principal), no topo, adicione:
+
+tsx
+Copiar
+Editar
+import { useNavigate } from "react-router-dom";
+// ...
+const navigate = useNavigate();
+// ...
+<button onClick={() => navigate(-1)} style={{ marginBottom: "16px", background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>
+  ← Voltar
+</button>
+Insira exatamente esse snippet no topo do JSX de todas as páginas de rota (Criação/edição de Profissionais, Serviços, Clientes, Agendamentos, Relatórios, etc.).
+
+6. TESTES FINAIS
+Profissionais:
+
+Clicar em “Cadastrar Barbeiro” abre formulário corretamente.
+
+Clicar em “Cadastrar Recepcionista” abre formulário correto.
+
+Em “Lista de Profissionais”, clicar “Apagar” exibe confirmação e exclui com sucesso.
+
+Serviços:
+
+Criar novo serviço sem erro (com todos campos).
+
+Excluir serviço mostra confirmação e remove da lista.
+
+Agendamento:
+
+Tentar salvar com campos vazios exibe alerta de validação.
+
+Preencher tudo corretamente cria agendamento sem erro.
+
+Clientes:
+
+Ao clicar “Excluir”, exibe confirm.
+
+Confirmando, remove cliente e atualiza lista.
+
+Geral:
+
+Em TODAS as páginas, o botão “← Voltar” leva à página anterior.
+
+Em nenhuma página fiquem erros de .map ou .filter.
+
+Em Dashboard, tempo total trabalhado deve aparecer (se já implementado).
+
