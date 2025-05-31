@@ -229,12 +229,12 @@ export default function Clientes() {
         </Card>
       </div>
 
-      {/* Recorrentes (Assinaturas) - Layout igual ao Asaas */}
+      {/* Todos os Clientes Ativos (Asaas + Externos) */}
       <Card className="rounded-2xl border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg">Recorrentes (Assinaturas)</CardTitle>
+          <CardTitle className="text-lg">Todos os Clientes Ativos</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Assinaturas ativas e inadimplentes do mês atual
+            Clientes com assinaturas ativas do Asaas e pagamentos externos (atualização automática a cada 5 minutos)
           </p>
         </CardHeader>
         <CardContent>
@@ -242,51 +242,82 @@ export default function Clientes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome do Cliente</TableHead>
-                  <TableHead>Nome do Link de Pagamento</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Forma de Pagamento</TableHead>
+                  <TableHead>Data Início</TableHead>
+                  <TableHead>Válido até</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Valor Mensal</TableHead>
                   <TableHead className="text-center">Dias Restantes</TableHead>
-                  <TableHead className="text-center">Próximo Vencimento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.length === 0 ? (
+                {clientes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Nenhuma assinatura encontrada
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      Nenhum cliente ativo encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  subscriptions.map((subscription) => (
-                    <TableRow key={subscription.subscriptionId}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
-                          }`}></div>
-                          <span className="text-blue-600 hover:underline cursor-pointer">
-                            {subscription.customerName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {subscription.planName}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(subscription.status)}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(subscription.value)}
-                      </TableCell>
-                      <TableCell className={`text-center ${getDaysRemainingColor(subscription.daysRemaining, subscription.status)}`}>
-                        {formatDaysRemaining(subscription.daysRemaining, subscription.status)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  clientes.map((cliente) => {
+                    const daysRemaining = getDaysRemaining(cliente.dataValidade);
+                    return (
+                      <TableRow key={cliente.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {getOrigemIcon(cliente.origem)}
+                            <div>
+                              <div className="font-medium">{cliente.nome}</div>
+                              {cliente.cpf && (
+                                <div className="text-xs text-muted-foreground">{cliente.cpf}</div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{cliente.email}</div>
+                            {cliente.telefone && (
+                              <div className="text-xs text-muted-foreground">{cliente.telefone}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="text-muted-foreground">
+                          {cliente.planoNome}
+                        </TableCell>
+                        
+                        <TableCell className="font-semibold">
+                          {formatCurrency(cliente.planoValor)}
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            {getOrigemLabel(cliente.origem, cliente.formaPagamento)}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="text-sm">
+                          {formatDate(cliente.dataInicio)}
+                        </TableCell>
+                        
+                        <TableCell className="text-sm">
+                          {formatDate(cliente.dataValidade)}
+                        </TableCell>
+                        
+                        <TableCell>
+                          {getStatusBadge(cliente.status)}
+                        </TableCell>
+                        
+                        <TableCell className={`text-center text-sm ${getDaysRemainingColor(daysRemaining)}`}>
+                          {formatDaysRemaining(daysRemaining)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

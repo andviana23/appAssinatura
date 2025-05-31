@@ -654,6 +654,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para clientes unificados (Asaas + Externos)
+  app.get("/api/clientes/unified", requireAuth, async (req, res) => {
+    try {
+      const clientesUnificados = [];
+      
+      // Buscar clientes externos (nosso banco)
+      const clientesExternos = await storage.getAllClientes();
+      const hoje = new Date();
+      
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const status = validade >= hoje ? 'ATIVO' : 'VENCIDO';
+          
+          // Só incluir clientes ativos
+          if (status === 'ATIVO') {
+            clientesUnificados.push({
+              id: `ext_${cliente.id}`,
+              nome: cliente.nome,
+              email: cliente.email,
+              telefone: cliente.telefone,
+              cpf: cliente.cpf,
+              planoNome: cliente.planoNome || 'Não informado',
+              planoValor: parseFloat(cliente.planoValor?.toString() || '0'),
+              formaPagamento: cliente.formaPagamento || 'Externo',
+              dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
+              dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
+              status: status,
+              origem: 'EXTERNO'
+            });
+          }
+        }
+      }
+
+      // Buscar clientes do Asaas se a API key estiver configurada
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      if (asaasApiKey) {
+        try {
+          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://api.asaas.com/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
+
+          const asaasResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (asaasResponse.ok) {
+            const asaasData = await asaasResponse.json();
+            
+            for (const subscription of asaasData.data || []) {
+              // Buscar dados do cliente
+              const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+                headers: {
+                  'access_token': asaasApiKey,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (customerResponse.ok) {
+                const customer = await customerResponse.json();
+                
+                clientesUnificados.push({
+                  id: `asaas_${subscription.id}`,
+                  nome: customer.name,
+                  email: customer.email,
+                  telefone: customer.phone,
+                  cpf: customer.cpfCnpj,
+                  planoNome: subscription.description || 'Assinatura Asaas',
+                  planoValor: subscription.value,
+                  formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                 subscription.billingType === 'PIX' ? 'PIX' : 'Boleto',
+                  dataInicio: subscription.dateCreated,
+                  dataValidade: subscription.nextDueDate,
+                  status: subscription.status === 'ACTIVE' ? 'ATIVO' : 'INATIVO',
+                  origem: 'ASAAS',
+                  billingType: subscription.billingType
+                });
+              }
+            }
+          }
+        } catch (asaasError) {
+          console.error("Erro ao buscar dados do Asaas:", asaasError);
+        }
+      }
+
+      res.json(clientesUnificados);
+    } catch (error) {
+      console.error("Erro ao buscar clientes unificados:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Rota para estatísticas unificadas
+  app.get("/api/clientes/unified-stats", requireAuth, async (req, res) => {
+    try {
+      let totalActiveClients = 0;
+      let totalMonthlyRevenue = 0;
+      let newClientsThisMonth = 0;
+      let totalExternalClients = 0;
+      let totalAsaasClients = 0;
+      
+      const hoje = new Date();
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+      // Contar clientes externos ativos
+      const clientesExternos = await storage.getAllClientes();
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          if (validade >= hoje) {
+            totalExternalClients++;
+            totalActiveClients++;
+            totalMonthlyRevenue += parseFloat(cliente.planoValor?.toString() || '0');
+            
+            const dataInicio = new Date(cliente.dataInicioAssinatura || cliente.createdAt);
+            if (dataInicio >= inicioMes) {
+              newClientsThisMonth++;
+            }
+          }
+        }
+      }
+
+      // Buscar estatísticas do Asaas se a API key estiver configurada
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      if (asaasApiKey) {
+        try {
+          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://api.asaas.com/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
+
+          const asaasResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (asaasResponse.ok) {
+            const asaasData = await asaasResponse.json();
+            totalAsaasClients = asaasData.totalCount || 0;
+            totalActiveClients += totalAsaasClients;
+            
+            for (const subscription of asaasData.data || []) {
+              totalMonthlyRevenue += subscription.value || 0;
+              
+              const dataInicio = new Date(subscription.dateCreated);
+              if (dataInicio >= inicioMes) {
+                newClientsThisMonth++;
+              }
+            }
+          }
+        } catch (asaasError) {
+          console.error("Erro ao buscar stats do Asaas:", asaasError);
+        }
+      }
+
+      res.json({
+        totalActiveClients,
+        totalMonthlyRevenue,
+        newClientsThisMonth,
+        overdueClients: 0,
+        totalExternalClients,
+        totalAsaasClients
+      });
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas unificadas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {
