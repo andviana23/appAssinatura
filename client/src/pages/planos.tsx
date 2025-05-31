@@ -183,14 +183,14 @@ export default function Planos() {
           </div>
           
           <CardDescription className="text-sm">
-            Pagamento teste de funcionalidade - R$ 2,00 via PIX
+            Pagamento teste de funcionalidade - R$ 5,00 (valor mínimo)
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
           <div className="text-center">
             <div className="text-4xl font-bold text-orange-600">
-              R$ 2,00
+              R$ 5,00
             </div>
             <div className="text-sm text-muted-foreground">pagamento único</div>
           </div>
@@ -437,7 +437,7 @@ export default function Planos() {
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
               <h4 className="font-medium text-orange-800 mb-2">Detalhes do teste:</h4>
               <ul className="text-sm text-orange-700 space-y-1">
-                <li>• Valor: R$ 2,00</li>
+                <li>• Valor: R$ 5,00 (mínimo para cartão)</li>
                 <li>• Pagamento: {checkoutData.billingType === 'PIX' ? 'PIX' : 'Cartão de Crédito'}</li>
                 <li>• Checkout personalizado com identidade visual</li>
                 <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>

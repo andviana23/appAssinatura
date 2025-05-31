@@ -689,7 +689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chargePayload = {
         customer: customerId,
         billingType: billingType || 'CREDIT_CARD',
-        value: 2.00,
+        value: 5.00,
         dueDate: tomorrow.toISOString().split('T')[0],
         description: 'Clube do Trato Único - Teste de Funcionalidade',
         externalReference: `teste-${Date.now()}`
