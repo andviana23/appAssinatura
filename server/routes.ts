@@ -616,6 +616,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para verificar chaves PIX disponíveis
+  app.get('/api/asaas/pix-keys', async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
+      }
+
+      const baseUrl = asaasEnvironment === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      const response = await fetch(`${baseUrl}/pix/addressKeys`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Erro ao buscar chaves PIX: ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+
+    } catch (error) {
+      console.error('Erro ao buscar chaves PIX:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor',
+        error: error.message 
+      });
+    }
+  });
+
   // Endpoint para criar link de pagamento personalizado do Asaas
   app.post('/api/asaas/checkout', async (req, res) => {
     try {
@@ -695,9 +733,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         externalReference: `teste-${Date.now()}`
       };
 
-      // Para PIX, adicionar configurações específicas
+      // Para PIX, verificar se há chaves disponíveis primeiro
       if (billingType === 'PIX') {
-        chargePayload.pixKey = '5c6276e0-1645-4bc5-a790-8e6e6048702b';
+        // Verificar chaves PIX disponíveis
+        const pixKeysResponse = await fetch(`${baseUrl}/pix/addressKeys`, {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!pixKeysResponse.ok || pixKeysResponse.status === 404) {
+          throw new Error('Nenhuma chave PIX cadastrada na conta. Configure uma chave PIX no painel do Asaas primeiro.');
+        }
+
+        const pixKeysData = await pixKeysResponse.json();
+        
+        if (!pixKeysData.data || pixKeysData.data.length === 0) {
+          throw new Error('Nenhuma chave PIX ativa encontrada. Configure uma chave PIX no painel do Asaas primeiro.');
+        }
+
+        // Usar a primeira chave PIX disponível
+        const firstPixKey = pixKeysData.data[0];
+        chargePayload.pixKey = firstPixKey.key;
         chargePayload.pixDescription = 'Clube do Trato Único - Teste de Funcionalidade';
       }
 
