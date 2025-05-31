@@ -16,6 +16,7 @@ import {
   users,
   atendimentos,
   totalServicos,
+  agendamentos,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -122,6 +123,12 @@ export interface IStorage {
     faturamentoProporcional: number;
     percentualParticipacao: number;
   }>;
+
+  // Agendamentos
+  getAllAgendamentos(): Promise<any[]>;
+  getAgendamentosByDate(date: string): Promise<any[]>;
+  createAgendamento(agendamento: any): Promise<any>;
+  finalizarAgendamento(id: number): Promise<any>;
 
   // Métricas
   getDashboardMetrics(): Promise<{
@@ -568,6 +575,112 @@ export class DatabaseStorage implements IStorage {
       comissao: Number(row.comissao),
       horas: Math.floor(Number(row.comissao) / 15), // Estima horas baseado em comissão
     }));
+  }
+
+  // Implementação dos métodos de agendamento
+  async getAllAgendamentos(): Promise<any[]> {
+    const result = await db
+      .select({
+        agendamento: agendamentos,
+        cliente: clientes,
+        barbeiro: barbeiros,
+        servico: servicos,
+      })
+      .from(agendamentos)
+      .leftJoin(clientes, eq(agendamentos.clienteId, clientes.id))
+      .leftJoin(barbeiros, eq(agendamentos.barbeiroId, barbeiros.id))
+      .leftJoin(servicos, eq(agendamentos.servicoId, servicos.id))
+      .orderBy(desc(agendamentos.dataHora));
+
+    return result.map(row => ({
+      ...row.agendamento,
+      cliente: row.cliente,
+      barbeiro: row.barbeiro,
+      servico: row.servico,
+    }));
+  }
+
+  async getAgendamentosByDate(date: string): Promise<any[]> {
+    const startDate = new Date(date + 'T00:00:00');
+    const endDate = new Date(date + 'T23:59:59');
+    
+    const result = await db
+      .select({
+        agendamento: agendamentos,
+        cliente: clientes,
+        barbeiro: barbeiros,
+        servico: servicos,
+      })
+      .from(agendamentos)
+      .leftJoin(clientes, eq(agendamentos.clienteId, clientes.id))
+      .leftJoin(barbeiros, eq(agendamentos.barbeiroId, barbeiros.id))
+      .leftJoin(servicos, eq(agendamentos.servicoId, servicos.id))
+      .where(and(
+        gte(agendamentos.dataHora, startDate),
+        lte(agendamentos.dataHora, endDate)
+      ))
+      .orderBy(agendamentos.dataHora);
+
+    return result.map(row => ({
+      ...row.agendamento,
+      cliente: row.cliente,
+      barbeiro: row.barbeiro,
+      servico: row.servico,
+    }));
+  }
+
+  async createAgendamento(agendamento: any): Promise<any> {
+    const [created] = await db
+      .insert(agendamentos)
+      .values({
+        clienteId: agendamento.clienteId,
+        barbeiroId: agendamento.barbeiroId,
+        servicoId: agendamento.servicoId,
+        dataHora: new Date(agendamento.dataHora),
+      })
+      .returning();
+
+    return created;
+  }
+
+  async finalizarAgendamento(id: number): Promise<any> {
+    // Atualizar status do agendamento
+    const [agendamento] = await db
+      .update(agendamentos)
+      .set({ status: 'FINALIZADO' })
+      .where(eq(agendamentos.id, id))
+      .returning();
+
+    if (!agendamento) {
+      throw new Error('Agendamento não encontrado');
+    }
+
+    // Buscar dados do agendamento para criar atendimento
+    const agendamentoCompleto = await db
+      .select({
+        agendamento: agendamentos,
+        servico: servicos,
+      })
+      .from(agendamentos)
+      .leftJoin(servicos, eq(agendamentos.servicoId, servicos.id))
+      .where(eq(agendamentos.id, id))
+      .limit(1);
+
+    if (agendamentoCompleto.length > 0) {
+      const { agendamento: ag, servico } = agendamentoCompleto[0];
+      const mes = ag.dataHora.toISOString().slice(0, 7);
+
+      // Criar registro de atendimento para cálculo de comissão
+      await db.insert(atendimentos).values({
+        barbeiroId: ag.barbeiroId,
+        servicoId: ag.servicoId,
+        dataAtendimento: ag.dataHora,
+        quantidade: 1,
+        mes: mes,
+      });
+    }
+
+    return agendamento;
   }
 }
 

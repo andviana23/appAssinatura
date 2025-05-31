@@ -9,6 +9,7 @@ import {
   Calculator,
   Target,
   UserCheck,
+  Calendar,
   LogOut,
 } from "lucide-react";
 
@@ -39,7 +40,12 @@ const navigation = [
     icon: CreditCard,
   },
   {
-    name: "Distribuição",
+    name: "Agendamento",
+    href: "/agendamento",
+    icon: Calendar,
+  },
+  {
+    name: "Comissão",
     href: "/distribuicao",
     icon: Calculator,
   },

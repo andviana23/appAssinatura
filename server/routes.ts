@@ -944,6 +944,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoints para agendamentos
+  app.get('/api/agendamentos', requireAuth, async (req, res) => {
+    try {
+      const { date } = req.query;
+      
+      let agendamentos;
+      if (date && typeof date === 'string') {
+        agendamentos = await storage.getAgendamentosByDate(date);
+      } else {
+        agendamentos = await storage.getAllAgendamentos();
+      }
+      
+      res.json(agendamentos);
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post('/api/agendamentos', requireAuth, async (req, res) => {
+    try {
+      const agendamento = await storage.createAgendamento(req.body);
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.patch('/api/agendamentos/:id/finalizar', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const agendamento = await storage.finalizarAgendamento(Number(id));
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao finalizar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {
