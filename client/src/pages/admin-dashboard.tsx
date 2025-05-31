@@ -52,51 +52,26 @@ interface AssinaturaVencendo {
 }
 
 export default function AdminDashboard() {
-  const { data: clientesStats, isLoading: clientesStatsLoading } = useQuery({
+  const { data: clientesStats, isLoading: clientesStatsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes/unified-stats'],
-    refetchInterval: 300000, // Atualiza a cada 5 minutos
+    refetchInterval: 300000,
   });
 
   const { data: ranking, isLoading: rankingLoading } = useQuery<BarbeiroRanking[]>({
     queryKey: ["/api/dashboard/ranking"],
   });
 
-  const { data: asaasStats, isLoading: asaasStatsLoading } = useQuery({
-    queryKey: ['/api/asaas/stats'],
-    refetchInterval: 300000, // Atualiza a cada 5 minutos
-  });
-
-  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery({
+  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery<AssinaturaVencendo[]>({
     queryKey: ['/api/clientes/expiring'],
     refetchInterval: 300000,
   });
 
-  const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery({
+  const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery<any[]>({
     queryKey: ['/api/asaas/faturamento-diario'],
-    refetchInterval: 300000, // Atualiza a cada 5 minutos
+    refetchInterval: 300000,
   });
 
-  // Dados reais de assinaturas vencendo do Asaas
-  const expiringSubscriptions = [
-    {
-      clientName: "Ana Maria Santos",
-      planName: "Plano Premium",
-      expiryDate: "2025-05-31",
-      daysLeft: 2,
-    },
-    {
-      clientName: "Carlos Rodrigues", 
-      planName: "Plano Básico",
-      expiryDate: "2025-05-30",
-      daysLeft: 1,
-    },
-    {
-      clientName: "Fernanda Lima",
-      planName: "Plano Familiar",
-      expiryDate: "2025-06-02",
-      daysLeft: 4,
-    },
-  ];
+
 
   if (clientesStatsLoading) {
     return (
@@ -346,57 +321,80 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Assinaturas Vencendo</CardTitle>
               <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                {expiringSubscriptions.length} próximas
+                {assinaturasVencendo?.length || 0} próximas
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {expiringSubscriptions.map((subscription, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-4 rounded-2xl border-l-4 ${
-                    subscription.daysLeft <= 1
-                      ? "border-red-400 bg-red-50"
-                      : subscription.daysLeft <= 3
-                      ? "border-yellow-400 bg-yellow-50"
-                      : "border-orange-400 bg-orange-50"
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <AlertTriangle className={`h-5 w-5 ${
+            {vencendoLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="text-right">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-3 w-12" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : assinaturasVencendo && assinaturasVencendo.length > 0 ? (
+              <div className="space-y-4">
+                {assinaturasVencendo.map((subscription, index) => (
+                  <div
+                    key={subscription.id}
+                    className={`flex items-center justify-between p-4 rounded-2xl border-l-4 ${
                       subscription.daysLeft <= 1
-                        ? "text-red-600"
+                        ? "border-red-400 bg-red-50"
                         : subscription.daysLeft <= 3
-                        ? "text-yellow-600"
-                        : "text-orange-600"
-                    }`} />
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {subscription.clientName}
+                        ? "border-yellow-400 bg-yellow-50"
+                        : "border-orange-400 bg-orange-50"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <AlertTriangle className={`h-5 w-5 ${
+                        subscription.daysLeft <= 1
+                          ? "text-red-600"
+                          : subscription.daysLeft <= 3
+                          ? "text-yellow-600"
+                          : "text-orange-600"
+                      }`} />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {subscription.clientName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {subscription.planName} • {subscription.origem}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-medium ${
+                        subscription.daysLeft <= 1
+                          ? "text-red-600"
+                          : subscription.daysLeft <= 3
+                          ? "text-yellow-600"
+                          : "text-orange-600"
+                      }`}>
+                        {subscription.daysLeft === 1 ? "Amanhã" : `${subscription.daysLeft} dias`}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {subscription.planName}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(subscription.expiryDate).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-medium ${
-                      subscription.daysLeft <= 1
-                        ? "text-red-600"
-                        : subscription.daysLeft <= 3
-                        ? "text-yellow-600"
-                        : "text-orange-600"
-                    }`}>
-                      {subscription.daysLeft === 1 ? "Amanhã" : `${subscription.daysLeft} dias`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(subscription.expiryDate).toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma assinatura vencendo nos próximos 7 dias</p>
+              </div>
+            )}
             <Button variant="ghost" className="w-full mt-4">
               Ver todas as assinaturas
             </Button>

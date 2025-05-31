@@ -16,7 +16,8 @@ export const servicos = pgTable("servicos", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   tempoMinutos: integer("tempo_minutos").notNull(),
-  isAssinatura: boolean("is_assinatura").notNull().default(false),
+  percentualComissao: decimal("percentual_comissao", { precision: 5, scale: 2 }).notNull().default("40.00"),
+  isAssinatura: boolean("is_assinatura").notNull().default(true), // Apenas serviços de assinatura
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -118,6 +119,7 @@ export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
 export const insertServicoSchema = createInsertSchema(servicos).omit({
   id: true,
   createdAt: true,
+  isAssinatura: true, // Sempre true, não precisa no form
 });
 
 export const insertPlanoAssinaturaSchema = createInsertSchema(planosAssinatura).omit({

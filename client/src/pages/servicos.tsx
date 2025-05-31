@@ -29,7 +29,7 @@ import type { Servico } from "@shared/schema";
 interface ServicoFormData {
   nome: string;
   tempoMinutos: number;
-  isAssinatura: boolean;
+  percentualComissao: number;
 }
 
 export default function Servicos() {
@@ -38,7 +38,7 @@ export default function Servicos() {
   const [formData, setFormData] = useState<ServicoFormData>({
     nome: "",
     tempoMinutos: 30,
-    isAssinatura: false,
+    percentualComissao: 40,
   });
 
   const { toast } = useToast();
