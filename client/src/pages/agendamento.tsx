@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, subDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AgendaLateral from "@/components/agenda-lateral";
+import { useLocation } from "wouter";
 
 interface Agendamento {
   id: number;
@@ -41,6 +42,7 @@ interface Servico {
 }
 
 export default function Agendamento() {
+  const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [selectedHour, setSelectedHour] = useState("");
@@ -185,6 +187,21 @@ export default function Agendamento() {
     <div className="flex gap-6 p-6">
       {/* Agenda Principal */}
       <div className="flex-1">
+        {/* Botão Voltar */}
+        <button
+          onClick={() => setLocation("/")}
+          className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </button>
+
         {/* Header com navegação de data */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">

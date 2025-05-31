@@ -78,6 +78,21 @@ export default function Relatorios() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Botão Voltar */}
+      <button
+        onClick={() => setLocation("/")}
+        className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "16px",
+        }}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Voltar
+      </button>
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Relatórios</h1>
         <p className="text-gray-600">
