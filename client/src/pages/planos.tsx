@@ -39,15 +39,14 @@ export default function Planos() {
 
   // Planos fixos do sistema conforme especificação
   const planos = [
-    { id: "1", nome: "Clube do Trato One - Corte Barba", valor: 0, descricao: "Corte + Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "2", nome: "Clube do Trato One - Corte", valor: 0, descricao: "Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "3", nome: "Clube do Trato Gold - Corte + Barba", valor: 0, descricao: "Corte + Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "4", nome: "Clube do Trato Gold - Corte", valor: 0, descricao: "Corte premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "5", nome: "Clube do Trato Gold - Barba", valor: 0, descricao: "Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "6", nome: "Clube do Trato - Corte e Barba 2x", valor: 0, descricao: "2x Corte + 2x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "7", nome: "Clube do Trato - Corte 2x Barba 4x", valor: 0, descricao: "2x Corte + 4x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "8", nome: "Clube do Trato - Corte 2x", valor: 0, descricao: "2x Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "9", nome: "Clube do Trato - Barba 4x", valor: 0, descricao: "4x Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" }
+    { id: "1", nome: "Clube do Trato One - Corte Barba", valor: 120.00, descricao: "Corte + Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "2", nome: "Clube do Trato One - Corte", valor: 67.50, descricao: "Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "3", nome: "Clube do Trato Gold - Corte + Barba", valor: 349.90, descricao: "Corte + Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "4", nome: "Clube do Trato Gold - Corte", valor: 210.00, descricao: "Corte premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "5", nome: "Clube do Trato Gold - Barba", valor: 249.90, descricao: "Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "6", nome: "Clube do Trato - Corte e Barba 2x", valor: 199.90, descricao: "2x Corte + 2x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "7", nome: "Clube do Trato - Corte 2x Barba 4x", valor: 299.90, descricao: "2x Corte + 4x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "8", nome: "Clube do Trato - Corte 2x", valor: 214.90, descricao: "2x Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" }
   ];
   
   const isLoading = false;
