@@ -311,18 +311,18 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {expiringLoading ? (
+            {vencendoLoading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : Array.isArray(expiring) && expiring.length > 0 ? (
+            ) : Array.isArray(assinaturasVencendo) && assinaturasVencendo.length > 0 ? (
               <div className="space-y-3">
-                {expiring
-                  .sort((a, b) => a.diasRestantes - b.diasRestantes)
+                {assinaturasVencendo
+                  .sort((a: any, b: any) => a.daysLeft - b.daysLeft)
                   .slice(0, 5)
-                  .map((cliente) => (
+                  .map((cliente: any) => (
                   <div
                     key={cliente.id}
                     className="flex items-center justify-between p-3 rounded-xl border-l-4 border-orange-500 bg-orange-50"

@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   });
 
   const { data: ranking, isLoading: rankingLoading } = useQuery<any[]>({
-    queryKey: ["/api/dashboard/ranking"],
+    queryKey: ["/api/comissao/barbeiros"],
   });
 
   const { data: expiring, isLoading: expiringLoading } = useQuery<any[]>({

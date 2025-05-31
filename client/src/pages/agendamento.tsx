@@ -60,7 +60,7 @@ export default function Agendamento() {
   });
 
   const { data: clientes = [] } = useQuery({
-    queryKey: ["/api/clientes"],
+    queryKey: ["/api/clientes/unified"],
   });
 
   const { data: servicos = [] } = useQuery({
