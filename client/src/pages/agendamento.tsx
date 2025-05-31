@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, addDays, subDays, isToday } from "date-fns";
+import { format, addDays, subDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar, Plus, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +41,7 @@ interface Servico {
 
 export default function Agendamento() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   const [selectedHour, setSelectedHour] = useState("");
   const [selectedBarbeiro, setSelectedBarbeiro] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -104,10 +105,10 @@ export default function Agendamento() {
   };
 
   const timeSlots = generateTimeSlots();
-  const activeBarbeiros = barbeiros.filter((b: Barbeiro) => b.ativo);
+  const activeBarbeiros = Array.isArray(barbeiros) ? barbeiros.filter((b: Barbeiro) => b.ativo) : [];
 
   // Agrupar agendamentos por barbeiro e horário
-  const agendamentosByBarbeiro = agendamentos.reduce((acc: any, agendamento: Agendamento) => {
+  const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
     const timeKey = format(new Date(agendamento.dataHora), "HH:mm");
     
@@ -115,7 +116,33 @@ export default function Agendamento() {
     acc[barbeiroId][timeKey] = agendamento;
     
     return acc;
-  }, {});
+  }, {}) : {};
+
+  // Funções do calendário
+  const monthStart = startOfMonth(currentCalendarDate);
+  const monthEnd = endOfMonth(currentCalendarDate);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  const previousMonth = () => {
+    setCurrentCalendarDate(new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentCalendarDate(new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1));
+  };
+
+  // Verificar se uma data tem agendamentos
+  const hasAgendamentos = (date: Date) => {
+    if (!Array.isArray(agendamentos)) return false;
+    return agendamentos.some((agendamento: Agendamento) => 
+      isSameDay(new Date(agendamento.dataHora), date)
+    );
+  };
+
+  // Selecionar data no calendário
+  const selectCalendarDate = (date: Date) => {
+    setSelectedDate(date);
+  };
 
   const handleCreateAgendamento = (formData: FormData) => {
     const clienteId = formData.get("clienteId");
@@ -145,9 +172,9 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex gap-6 p-6">
       {/* Agenda Principal */}
-      <div className="flex-1 p-6">
+      <div className="flex-1">
         {/* Header com navegação de data */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -335,6 +362,115 @@ export default function Agendamento() {
           </form>
         </DialogContent>
       </Dialog>
+        </div>
+
+        {/* Calendário Lateral */}
+      <div className="w-80">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[#365e78] flex items-center">
+              <CalendarDays className="h-5 w-5 mr-2" />
+              Calendário
+            </h3>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={previousMonth}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextMonth}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-center mb-4">
+            <h4 className="text-lg font-semibold text-gray-900">
+              {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
+            </h4>
+          </div>
+
+          {/* Dias da semana */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
+              <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Dias do mês */}
+          <div className="grid grid-cols-7 gap-1">
+            {daysInMonth.map((day) => {
+              const hasEvents = hasAgendamentos(day);
+              const isSelected = isSameDay(day, selectedDate);
+              const isTodayDate = isToday(day);
+              const isFuture = isAfter(day, new Date()) || isToday(day);
+
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => isFuture && selectCalendarDate(day)}
+                  disabled={!isFuture}
+                  className={`
+                    relative h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105
+                    ${isSelected 
+                      ? 'bg-[#365e78] text-white shadow-lg' 
+                      : isTodayDate
+                      ? 'bg-blue-100 text-blue-700 font-bold'
+                      : isFuture
+                      ? 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-300 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {format(day, "d")}
+                  {hasEvents && (
+                    <div className={`
+                      absolute bottom-1 right-1 h-2 w-2 rounded-full
+                      ${isSelected ? 'bg-white' : 'bg-[#365e78]'}
+                    `} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center space-x-2 text-xs text-gray-600">
+              <div className="h-2 w-2 rounded-full bg-[#365e78]"></div>
+              <span>Dias com agendamentos</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-gray-600">
+              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <span>Hoje</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-gray-600">
+              <div className="h-2 w-2 rounded-full bg-gray-300"></div>
+              <span>Datas passadas</span>
+            </div>
+          </div>
+
+          {/* Data selecionada */}
+          <div className="mt-4 p-3 bg-gray-50 rounded-xl">
+            <p className="text-sm font-medium text-gray-700">Data selecionada:</p>
+            <p className="text-lg font-semibold text-[#365e78]">
+              {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+            <p className="text-xs text-gray-500">
+              {format(selectedDate, "EEEE", { locale: ptBR })}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

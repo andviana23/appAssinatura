@@ -227,24 +227,24 @@ export default function Planos() {
               {/* Header colorido baseado no tier */}
               <div className={`h-2 ${tierColor}`}></div>
               
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${tierColor}`}>
+                  <div className="flex items-center space-x-2">
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${tierColor}`}>
                       {tier === 'gold' ? (
-                        <Sparkles className="h-6 w-6 text-white" />
+                        <Sparkles className="h-4 w-4 text-white" />
                       ) : (
-                        <CreditCard className="h-6 w-6 text-white" />
+                        <CreditCard className="h-4 w-4 text-white" />
                       )}
                     </div>
                     <div>
-                      <CardTitle className="text-lg leading-tight">{plano.nome}</CardTitle>
+                      <CardTitle className="text-base leading-tight">{plano.nome}</CardTitle>
                     </div>
                   </div>
                   {getTierBadge(tier)}
                 </div>
                 
-                <CardDescription className="text-sm">
+                <CardDescription className="text-xs mt-2">
                   {getPlanoDescription(plano.nome)}
                 </CardDescription>
               </CardHeader>
