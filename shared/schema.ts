@@ -35,6 +35,7 @@ export const clientes = pgTable("clientes", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   email: text("email").notNull(),
+  telefone: text("telefone"),
   cpf: text("cpf"),
   asaasCustomerId: text("asaas_customer_id"),
   // Campos para controle de assinaturas

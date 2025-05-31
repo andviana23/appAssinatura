@@ -215,64 +215,7 @@ export default function Planos() {
         </p>
       </div>
 
-      {/* Card do Plano Teste */}
-      <Card className="relative overflow-hidden border-2 border-dashed border-orange-300 bg-orange-50/50 mb-6">
-        <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
-        
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-12 w-12 rounded-full flex items-center justify-center bg-gradient-to-r from-orange-500 to-red-500">
-                <TestTube className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg leading-tight">Clube do Trato Único</CardTitle>
-              </div>
-            </div>
-            <Badge className="bg-orange-500 text-orange-50">Teste</Badge>
-          </div>
-          
-          <CardDescription className="text-sm">
-            Pagamento teste de funcionalidade - R$ 5,00 (valor mínimo)
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-orange-600">
-              R$ 5,00
-            </div>
-            <div className="text-sm text-muted-foreground">pagamento único</div>
-          </div>
 
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm text-foreground">Para teste:</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                Checkout personalizado
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                Identidade visual Trato de Barbados
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                Pagamento via PIX
-              </li>
-            </ul>
-          </div>
-
-          <Button 
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 text-white border-0"
-            onClick={() => setShowCheckoutModal(true)}
-            disabled={createCheckoutMutation.isPending}
-          >
-            <TestTube className="h-4 w-4 mr-2" />
-            {createCheckoutMutation.isPending ? 'Criando...' : 'Testar Checkout'}
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Planos Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -410,20 +353,20 @@ export default function Planos() {
         </CardContent>
       </Card>
 
-      {/* Modal de Checkout Teste */}
+      {/* Modal de Checkout */}
       <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TestTube className="h-5 w-5 text-orange-500" />
-              Checkout Teste - Clube do Trato Único
+              <CreditCard className="h-5 w-5 text-blue-500" />
+              Checkout - {checkoutData.planoSelecionado}
             </DialogTitle>
           </DialogHeader>
           
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              if (checkoutData.nome && checkoutData.email && checkoutData.cpf) {
+              if (checkoutData.nome && checkoutData.email && checkoutData.telefone && checkoutData.cpf && checkoutData.planoSelecionado) {
                 createCheckoutMutation.mutate(checkoutData);
               }
             }}
@@ -455,12 +398,25 @@ export default function Planos() {
             </div>
             
             <div>
-              <Label htmlFor="cpf">CPF *</Label>
+              <Label htmlFor="telefone">Telefone *</Label>
+              <Input
+                id="telefone"
+                type="tel"
+                value={checkoutData.telefone}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, telefone: e.target.value }))}
+                placeholder="(11) 99999-9999"
+                required
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="cpf">CPF/CNPJ *</Label>
               <Input
                 id="cpf"
                 value={checkoutData.cpf}
                 onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
-                placeholder="000.000.000-00"
+                placeholder="000.000.000-00 ou 00.000.000/0001-00"
                 required
                 className="mt-1"
               />
