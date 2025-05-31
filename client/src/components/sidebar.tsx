@@ -51,8 +51,8 @@ const navigation = [
     icon: Calculator,
   },
   {
-    name: "Controle de Totais",
-    href: "/total-servicos",
+    name: "Relatórios",
+    href: "/relatorios",
     icon: Target,
   },
 ];

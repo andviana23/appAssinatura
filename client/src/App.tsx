@@ -17,8 +17,8 @@ import Planos from "@/pages/planos";
 import Distribuicao from "@/pages/distribuicao";
 import TotalServicos from "@/pages/total-servicos";
 import BarberDashboard from "@/pages/barber-dashboard";
+import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
-
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {

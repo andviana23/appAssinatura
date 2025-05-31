@@ -68,7 +68,7 @@ export default function Login() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Sistema integrado com Supabase e Asaas
+              TrotoTech
             </p>
           </div>
         </CardContent>

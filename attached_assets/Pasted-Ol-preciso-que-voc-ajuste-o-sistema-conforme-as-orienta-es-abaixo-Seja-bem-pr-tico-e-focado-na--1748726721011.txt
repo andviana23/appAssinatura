@@ -1,0 +1,99 @@
+Olá, preciso que você ajuste o sistema conforme as orientações abaixo. Seja bem prático e focado na implementação:
+
+1. Dashboard Geral (Admin):
+
+Ranking de Barbeiros: Mostrar o ranking real de comissão de cada barbeiro.
+
+No card de “Ranking de Barbeiros”, exiba os top 5 barbeiros ordenados pela comissão gerada no período atual.
+
+O botão “Ver Todos” deve abrir uma lista/página com o ranking completo, paginado ou rolável, sempre ordenado do maior para o menor valor de comissão.
+
+Assinaturas Vencendo: Exibir as próximas assinaturas que estão para vencer, em ordem crescente de data de vencimento.
+
+Mostrar somente quem está mais próximo do vencimento (até 5 assinaturas).
+
+Ordenar pelo número de dias restantes até a data da próxima cobrança.
+
+Cada item deve exibir: nome do cliente, data de vencimento e plano contratado.
+
+2. Tela de Agendamentos:
+
+Lista de Clientes: Ao abrir a tela, o campo de seleção de cliente deve listar exatamente todos os clientes cadastrados na tela “Clientes” (incluindo os que vêm do Asaas).
+
+Calendário Lateral: No lado direito da tela de agendamento, incluir um componente de calendário mensal.
+
+Permitir clicar em um dia do mês para agendar o cliente em uma data futura específica.
+
+O calendário deve destacar visualmente as datas já ocupadas (quando houver algum agendamento).
+
+3. Tela de “Totais” (agora “Relatórios”):
+
+Renomear o menu e o título interno de “Controle Totais” para “Relatórios”.
+
+Garantir que ao clicar em “Relatórios”, sejam exibidos todos os relatórios já especificados antes (financeiro, comissões, assinaturas, etc.).
+
+Ajustar a navegação/links para manter a consistência: sempre que algo puxar “Controle Totais”, redirecionar para “Relatórios”.
+
+4. Cards de Plano de Pagamento:
+
+Diminuir levemente o tamanho dos cards de plano de pagamento em todas as telas.
+
+Reduzir margem/padding para que fiquem visualmente mais compactos, mas legíveis.
+
+5. Funcionalidade de Recepcionista:
+
+Criar um novo papel/perfil “Recepcionista” no sistema, com acesso restrito:
+
+Permissões: Acesso apenas às telas de Agendamentos, Planos de Assinatura e Clientes.
+
+Ações Permitidas:
+
+Vender/registrar plano de assinatura para clientes.
+
+Agendar clientes (usar a mesma lógica da tela de Agendamentos).
+
+Visualizar lista de clientes cadastrados.
+
+Menu da Recepcionista: Exibir apenas “Dashboard Recepcionista”, “Agendamentos”, “Planos” e “Clientes”.
+
+6. Dashboard da Recepcionista:
+
+Exibir dois blocos:
+
+Assinaturas Próximas a Vencer: Lista (até 5) das assinaturas que vencerão em até X dias (ordenado por data mais próxima).
+
+Assinaturas Vencidas: Lista (até 5) das assinaturas que já passaram da data de vencimento.
+
+Cada item deve ter: nome do cliente, data de vencimento, plano.
+
+7. Tela de Login:
+
+Incluir o link “Esqueci a senha” que redirecione para a funcionalidade de recuperação (pode ser uma rota ou popup).
+
+Se o usuário digitar e-mail ou senha incorretos, exibir um alerta em vermelho: “Email ou senha incorretos.”
+
+Colocar a logomarca da barbearia (arquivo já fornecido) alinhada acima ou ao lado do formulário de login, respeitando o layout responsivo.
+
+Extras de UX/UI:
+
+Mantenha o layout limpo e consistente com o estilo atual:
+
+Espaçamentos de 24px entre seções.
+
+Cantos levemente arredondados (2xl) nos cards e botões.
+
+Sombras suaves (fetch box-shadow equilibrado) nos cards de ranking e relatórios.
+
+Botões com animação sutil (hover → escala 1.05).
+
+Use a paleta de cores já definida (cores primárias, secundárias, fundo claro), para não quebrar a identidade visual.
+
+Observações Gerais:
+
+Confira todas as telas para garantir que os links, permissões e redirecionamentos estejam funcionando corretamente.
+
+Teste os principais fluxos (login, esqueci a senha, visualizar ranking completo, agendamento futuro) para garantir que não haja erros de roteamento ou dados em branco.
+
+Se algo não estiver claro nos requisitos, pergunte antes de implementar.
+
+Obrigado! Desenvolva essas mudanças passo a passo e confirme quando cada módulo estiver pronto para revisão.

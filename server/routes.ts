@@ -1234,21 +1234,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para assinaturas ativas
-  app.get('/api/clientes/assinaturas-ativas', requireAuth, async (req, res) => {
+  // Endpoint para clientes com assinaturas vencidas
+  app.get('/api/clientes/expired', requireAuth, async (req, res) => {
     try {
       const clientes = await storage.getAllClientes();
+      const hoje = new Date();
       
-      // Filtrar apenas clientes com assinaturas ativas
-      const assinaturasAtivas = clientes.filter(cliente => 
-        cliente.statusAssinatura === 'ATIVA' && 
-        cliente.planoNome && 
-        cliente.planoValor
-      );
+      // Filtrar clientes com assinaturas vencidas
+      const clientesVencidos = clientes
+        .filter(cliente => {
+          if (!cliente.dataVencimentoAssinatura) return false;
+          const vencimento = new Date(cliente.dataVencimentoAssinatura);
+          return vencimento < hoje;
+        })
+        .map(cliente => ({
+          ...cliente,
+          diasRestantes: Math.floor((new Date(cliente.dataVencimentoAssinatura).getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+        }))
+        .sort((a, b) => new Date(a.dataVencimentoAssinatura).getTime() - new Date(b.dataVencimentoAssinatura).getTime());
       
-      res.json(assinaturasAtivas);
+      res.json(clientesVencidos);
     } catch (error) {
-      console.error('Erro ao buscar assinaturas ativas:', error);
+      console.error('Erro ao buscar assinaturas vencidas:', error);
       res.status(500).json({ message: 'Erro interno do servidor' });
     }
   });
