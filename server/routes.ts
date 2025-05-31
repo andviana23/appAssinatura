@@ -1096,6 +1096,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para analytics
+  app.get('/api/analytics', requireAuth, async (req, res) => {
+    try {
+      const { mes, barbeiro } = req.query;
+      const mesAtual = mes as string || new Date().toISOString().slice(0, 7);
+      const barbeiroId = barbeiro === 'all' ? null : parseInt(barbeiro as string);
+      
+      // Buscar atendimentos do mês
+      const atendimentos = await storage.getAllAtendimentos();
+      let atendimentosMes = atendimentos.filter(a => 
+        a.dataAtendimento.toISOString().slice(0, 7) === mesAtual
+      );
+      
+      // Filtrar por barbeiro se especificado
+      if (barbeiroId) {
+        atendimentosMes = atendimentosMes.filter(a => a.barbeiroId === barbeiroId);
+      }
+      
+      // Buscar dados complementares
+      const servicos = await storage.getAllServicos();
+      const barbeiros = await storage.getAllBarbeiros();
+      const servicosMap = new Map(servicos.map(s => [s.id, s]));
+      const barbeirosMap = new Map(barbeiros.map(b => [b.id, b]));
+      
+      // 1. Atendimentos por dia
+      const atendimentosPorDia = [];
+      const diasNoMes = new Date(mesAtual.split('-')[0] as any, mesAtual.split('-')[1] as any, 0).getDate();
+      
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        const dataStr = `${mesAtual}-${dia.toString().padStart(2, '0')}`;
+        const atendimentosDia = atendimentosMes.filter(a => 
+          a.dataAtendimento.toISOString().slice(0, 10) === dataStr
+        );
+        const quantidade = atendimentosDia.reduce((total, a) => total + a.quantidade, 0);
+        
+        atendimentosPorDia.push({
+          dia: dia.toString(),
+          quantidade
+        });
+      }
+      
+      // 2. Top 5 serviços mais feitos
+      const servicosCount = new Map();
+      atendimentosMes.forEach(a => {
+        const servico = servicosMap.get(a.servicoId);
+        if (servico) {
+          const current = servicosCount.get(servico.nome) || 0;
+          servicosCount.set(servico.nome, current + a.quantidade);
+        }
+      });
+      
+      const servicosMaisFeitos = Array.from(servicosCount.entries())
+        .map(([nome, quantidade]) => ({ nome, quantidade }))
+        .sort((a, b) => b.quantidade - a.quantidade)
+        .slice(0, 5);
+      
+      // 3. Receita por dia (baseada em assinaturas ativas)
+      const clientesStats = await storage.getClientesUnifiedStats();
+      const receitaDiaria = clientesStats.totalSubscriptionRevenue / diasNoMes;
+      
+      const receitaPorDia = [];
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        receitaPorDia.push({
+          dia: dia.toString(),
+          valor: receitaDiaria
+        });
+      }
+      
+      // 4. Horas trabalhadas por barbeiro
+      const horasPorBarbeiro = [];
+      const barbeirosAtivos = barbeiros.filter(b => b.ativo);
+      
+      barbeirosAtivos.forEach(barbeiro => {
+        if (barbeiroId && barbeiro.id !== barbeiroId) return;
+        
+        const atendimentosBarbeiro = atendimentosMes.filter(a => a.barbeiroId === barbeiro.id);
+        const minutosTotal = atendimentosBarbeiro.reduce((total, a) => {
+          const servico = servicosMap.get(a.servicoId);
+          const tempoMinutos = servico?.tempoMinutos || 30;
+          return total + (a.quantidade * tempoMinutos);
+        }, 0);
+        
+        const horas = Math.round((minutosTotal / 60) * 10) / 10;
+        const atendimentosTotal = atendimentosBarbeiro.reduce((total, a) => total + a.quantidade, 0);
+        
+        // Calcular faturamento e comissão proporcionais
+        const totalMinutosGerais = atendimentosMes.reduce((total, a) => {
+          const servico = servicosMap.get(a.servicoId);
+          return total + (a.quantidade * (servico?.tempoMinutos || 30));
+        }, 0);
+        
+        const percentualTempo = totalMinutosGerais > 0 ? (minutosTotal / totalMinutosGerais) : 0;
+        const faturamento = percentualTempo * clientesStats.totalSubscriptionRevenue;
+        const comissao = faturamento * 0.4;
+        
+        horasPorBarbeiro.push({
+          barbeiro: barbeiro.nome,
+          horas,
+          atendimentos: atendimentosTotal,
+          faturamento: Math.round(faturamento * 100) / 100,
+          comissao: Math.round(comissao * 100) / 100
+        });
+      });
+      
+      // Ordenar por horas trabalhadas
+      horasPorBarbeiro.sort((a, b) => b.horas - a.horas);
+      
+      // 5. Comissão mensal histórica (últimos 12 meses)
+      const comissaoMensal = [];
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const mesStr = date.toISOString().slice(0, 7);
+        
+        // Para simplicidade, usar 40% da receita mensal média
+        const comissaoEstimada = clientesStats.totalSubscriptionRevenue * 0.4;
+        
+        comissaoMensal.push({
+          mes: format(date, "MMM/yyyy", { locale: { ...ptBR } }),
+          valor: Math.round(comissaoEstimada * 100) / 100
+        });
+      }
+      
+      res.json({
+        atendimentosPorDia,
+        servicosMaisFeitos,
+        receitaPorDia,
+        horasPorBarbeiro,
+        comissaoMensal
+      });
+    } catch (error) {
+      console.error('Erro ao buscar analytics:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Endpoint para assinaturas ativas
+  app.get('/api/clientes/assinaturas-ativas', requireAuth, async (req, res) => {
+    try {
+      const clientes = await storage.getAllClientes();
+      
+      // Filtrar apenas clientes com assinaturas ativas
+      const assinaturasAtivas = clientes.filter(cliente => 
+        cliente.statusAssinatura === 'ATIVA' && 
+        cliente.planoNome && 
+        cliente.planoValor
+      );
+      
+      res.json(assinaturasAtivas);
+    } catch (error) {
+      console.error('Erro ao buscar assinaturas ativas:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {

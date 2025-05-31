@@ -10,6 +10,7 @@ import {
   Target,
   UserCheck,
   Calendar,
+  FileText,
   LogOut,
 } from "lucide-react";
 
@@ -43,6 +44,11 @@ const navigation = [
     name: "Agendamento",
     href: "/agendamento",
     icon: Calendar,
+  },
+  {
+    name: "Assinaturas Ativas",
+    href: "/assinaturas-ativas",
+    icon: FileText,
   },
   {
     name: "Comissão",
