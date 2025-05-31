@@ -35,7 +35,15 @@ export const clientes = pgTable("clientes", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   email: text("email").notNull(),
+  cpf: text("cpf"),
   asaasCustomerId: text("asaas_customer_id"),
+  // Campos para controle de assinaturas
+  planoNome: text("plano_nome"),
+  planoValor: decimal("plano_valor", { precision: 10, scale: 2 }),
+  formaPagamento: text("forma_pagamento"), // PIX, Débito, CREDIT_CARD
+  statusAssinatura: text("status_assinatura").default("INATIVO"), // ATIVO, INATIVO
+  dataInicioAssinatura: timestamp("data_inicio_assinatura"),
+  dataVencimentoAssinatura: timestamp("data_vencimento_assinatura"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

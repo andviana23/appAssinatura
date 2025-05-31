@@ -79,17 +79,15 @@ export default function Planos() {
 
   const createExternalClientMutation = useMutation({
     mutationFn: async (paymentMethod: string) => {
-      return apiRequest("/api/clientes/external", {
-        method: "POST",
-        body: JSON.stringify({
-          nome: checkoutData.nome,
-          email: checkoutData.email,
-          cpf: checkoutData.cpf,
-          paymentMethod: paymentMethod,
-          planoNome: "Clube do Trato Único",
-          planoValor: 5.00
-        })
+      const response = await apiRequest("/api/clientes/external", "POST", {
+        nome: checkoutData.nome,
+        email: checkoutData.email,
+        cpf: checkoutData.cpf,
+        paymentMethod: paymentMethod,
+        planoNome: "Clube do Trato Único",
+        planoValor: 5.00
       });
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -536,6 +534,84 @@ export default function Planos() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Pagamento Externo */}
+      <Dialog open={showExternalPaymentModal} onOpenChange={setShowExternalPaymentModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Banknote className="h-5 w-5 text-blue-500" />
+              Como foi feito o pagamento?
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione como o cliente realizou o pagamento externo:
+            </p>
+            
+            <RadioGroup 
+              value={externalPaymentMethod} 
+              onValueChange={setExternalPaymentMethod}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                <RadioGroupItem value="PIX" id="external_pix" />
+                <Label htmlFor="external_pix" className="cursor-pointer flex items-center space-x-2 flex-1">
+                  <QrCode className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <div className="font-medium">PIX</div>
+                    <div className="text-xs text-muted-foreground">Pagamento instantâneo</div>
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                <RadioGroupItem value="Débito" id="external_debit" />
+                <Label htmlFor="external_debit" className="cursor-pointer flex items-center space-x-2 flex-1">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  <div>
+                    <div className="font-medium">Cartão de Débito</div>
+                    <div className="text-xs text-muted-foreground">Débito em conta</div>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <strong>Cliente:</strong> {checkoutData.nome}<br/>
+                <strong>Plano:</strong> Clube do Trato Único<br/>
+                <strong>Validade:</strong> 30 dias a partir de hoje
+              </p>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowExternalPaymentModal(false)}
+                disabled={createExternalClientMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  if (externalPaymentMethod) {
+                    createExternalClientMutation.mutate(externalPaymentMethod);
+                  }
+                }}
+                disabled={createExternalClientMutation.isPending || !externalPaymentMethod}
+              >
+                {createExternalClientMutation.isPending ? 'Cadastrando...' : 'Confirmar'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -654,6 +654,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para cadastrar cliente com pagamento externo
+  app.post('/api/clientes/external', async (req, res) => {
+    try {
+      const { nome, email, cpf, paymentMethod, planoNome, planoValor } = req.body;
+
+      if (!nome || !email || !paymentMethod || !planoNome) {
+        return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
+      }
+
+      // Data de início: agora
+      const dataInicio = new Date();
+      // Data de vencimento: 30 dias corridos
+      const dataVencimento = new Date();
+      dataVencimento.setDate(dataVencimento.getDate() + 30);
+
+      const cliente = await storage.createCliente({
+        nome,
+        email,
+        cpf: cpf || null,
+        planoNome,
+        planoValor: planoValor.toString(),
+        formaPagamento: paymentMethod,
+        statusAssinatura: 'ATIVO',
+        dataInicioAssinatura: dataInicio,
+        dataVencimentoAssinatura: dataVencimento,
+      });
+
+      res.json({
+        success: true,
+        cliente,
+        message: `Cliente cadastrado com sucesso. Assinatura ativa até ${dataVencimento.toLocaleDateString('pt-BR')}`
+      });
+
+    } catch (error) {
+      console.error('Erro ao cadastrar cliente externo:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor',
+        error: error.message 
+      });
+    }
+  });
+
   // Endpoint para criar link de pagamento personalizado do Asaas
   app.post('/api/asaas/checkout', async (req, res) => {
     try {
