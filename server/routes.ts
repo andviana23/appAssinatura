@@ -676,8 +676,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 });
 
+                // Buscar pagamentos em atraso para determinar inadimplência
+                const overduePayments = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=OVERDUE`, {
+                  headers: {
+                    'access_token': asaasApiKey,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
                 // Determinar status real baseado em pagamentos confirmados no mês atual
-                let realStatus = 'INACTIVE';
+                let realStatus = 'ACTIVE'; // Padrão é ativo
+                
+                // Só marca como INACTIVE se há pagamentos em atraso no mês atual
+                if (overduePayments.ok) {
+                  const overdueData = await overduePayments.json();
+                  if (overdueData.data && overdueData.data.length > 0) {
+                    // Verificar se algum pagamento em atraso é do mês atual
+                    const hasCurrentMonthOverdue = overdueData.data.some((payment: any) => {
+                      const paymentMonth = payment.dueDate.slice(0, 7);
+                      return paymentMonth === currentMonth;
+                    });
+                    if (hasCurrentMonthOverdue) {
+                      realStatus = 'INACTIVE';
+                    }
+                  }
+                }
+
+                // Se tem pagamento confirmado no mês atual, sempre ativo
                 if (currentMonthPayments.ok) {
                   const currentPayments = await currentMonthPayments.json();
                   if (currentPayments.data && currentPayments.data.length > 0) {
@@ -753,13 +778,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   customerEmail: customerData.email,
                   customerPhone: customerData.phone,
                   customerCpfCnpj: customerData.cpfCnpj,
-                  status: realStatus, // Status baseado em pagamentos confirmados do mês atual
+                  status: realStatus, // Status baseado em inadimplência real no mês atual
                   value: parseFloat(subscription.value),
                   cycle: subscription.cycle,
                   billingType: subscription.billingType,
                   nextDueDate: calculatedNextDueDate,
                   daysRemaining: daysRemaining,
-                  planName: subscription.description || 'Plano Mensal',
+                  planName: paymentLinkName, // Nome do link de pagamento como nome do plano
                   paymentLinkName: paymentLinkName,
                   createdAt: subscription.dateCreated
                 });

@@ -232,18 +232,17 @@ export default function Clientes() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome do Cliente</TableHead>
-                  <TableHead>Nome do Plano</TableHead>
+                  <TableHead>Nome do Link de Pagamento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Valor Mensal</TableHead>
                   <TableHead className="text-center">Dias Restantes</TableHead>
                   <TableHead className="text-center">Próximo Vencimento</TableHead>
-                  <TableHead className="hidden lg:table-cell">Nome do Link de Pagamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Nenhuma assinatura encontrada
                     </TableCell>
                   </TableRow>
@@ -253,7 +252,7 @@ export default function Clientes() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${
-                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'
+                            subscription.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
                           }`}></div>
                           <span className="text-blue-600 hover:underline cursor-pointer">
                             {subscription.customerName}
@@ -274,9 +273,6 @@ export default function Clientes() {
                       </TableCell>
                       <TableCell className="text-center">
                         {new Date(subscription.nextDueDate).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {subscription.paymentLinkName}
                       </TableCell>
                     </TableRow>
                   ))
