@@ -984,6 +984,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoints para comissão dos barbeiros
+  app.get('/api/comissao/barbeiros', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query;
+      const mesAtual = mes as string || new Date().toISOString().slice(0, 7);
+      
+      // Buscar todos os barbeiros ativos
+      const barbeiros = await storage.getAllBarbeiros();
+      const barbeirosAtivos = barbeiros.filter(b => b.ativo);
+      
+      // Buscar atendimentos finalizados do mês
+      const atendimentos = await storage.getAllAtendimentos();
+      const atendimentosMes = atendimentos.filter(a => 
+        a.dataAtendimento.toISOString().slice(0, 7) === mesAtual
+      );
+      
+      // Buscar receita total de assinatura do mês
+      const clientesStats = await storage.getClientesUnifiedStats();
+      const faturamentoTotal = clientesStats.totalSubscriptionRevenue;
+      
+      // Calcular total de minutos trabalhados por todos os barbeiros
+      const totalMinutosGerais = atendimentosMes.reduce((total, atendimento) => {
+        return total + (atendimento.quantidade * (atendimento.tempoMinutos || 30));
+      }, 0);
+      
+      // Calcular dados por barbeiro
+      const barbeirosComissao = barbeirosAtivos.map(barbeiro => {
+        const atendimentosBarbeiro = atendimentosMes.filter(a => a.barbeiroId === barbeiro.id);
+        
+        const minutosTrabalhadosMes = atendimentosBarbeiro.reduce((total, atendimento) => {
+          return total + (atendimento.quantidade * (atendimento.tempoMinutos || 30));
+        }, 0);
+        
+        const numeroServicos = atendimentosBarbeiro.reduce((total, atendimento) => {
+          return total + atendimento.quantidade;
+        }, 0);
+        
+        const percentualTempo = totalMinutosGerais > 0 
+          ? (minutosTrabalhadosMes / totalMinutosGerais) * 100 
+          : 0;
+        
+        const faturamentoAssinatura = (percentualTempo / 100) * faturamentoTotal;
+        const comissaoAssinatura = faturamentoAssinatura * 0.4; // 40% de comissão
+        
+        const horas = Math.floor(minutosTrabalhadosMes / 60);
+        const minutosRestantes = minutosTrabalhadosMes % 60;
+        let horasTrabalhadasMes = '';
+        if (horas === 0) horasTrabalhadasMes = `${minutosRestantes}min`;
+        else if (minutosRestantes === 0) horasTrabalhadasMes = `${horas}h`;
+        else horasTrabalhadasMes = `${horas}h ${minutosRestantes}min`;
+        
+        return {
+          barbeiro,
+          faturamentoAssinatura: Math.round(faturamentoAssinatura * 100) / 100,
+          comissaoAssinatura: Math.round(comissaoAssinatura * 100) / 100,
+          minutosTrabalhadosMes,
+          horasTrabalhadasMes,
+          numeroServicos,
+          percentualTempo: Math.round(percentualTempo * 100) / 100
+        };
+      });
+      
+      // Ordenar por faturamento de assinatura (maior para menor)
+      barbeirosComissao.sort((a, b) => b.faturamentoAssinatura - a.faturamentoAssinatura);
+      
+      res.json(barbeirosComissao);
+    } catch (error) {
+      console.error('Erro ao buscar dados de comissão:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.get('/api/comissao/stats', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query;
+      const mesAtual = mes as string || new Date().toISOString().slice(0, 7);
+      
+      // Buscar receita total de assinatura
+      const clientesStats = await storage.getClientesUnifiedStats();
+      const faturamentoTotalAssinatura = clientesStats.totalSubscriptionRevenue;
+      
+      // Buscar atendimentos finalizados do mês
+      const atendimentos = await storage.getAllAtendimentos();
+      const atendimentosMes = atendimentos.filter(a => 
+        a.dataAtendimento.toISOString().slice(0, 7) === mesAtual
+      );
+      
+      // Calcular total de minutos trabalhados
+      const totalMinutosGerais = atendimentosMes.reduce((total, atendimento) => {
+        return total + (atendimento.quantidade * (atendimento.tempoMinutos || 30));
+      }, 0);
+      
+      // Calcular total de comissão (40% da receita total)
+      const totalComissao = faturamentoTotalAssinatura * 0.4;
+      
+      res.json({
+        faturamentoTotalAssinatura: Math.round(faturamentoTotalAssinatura * 100) / 100,
+        totalMinutosGerais,
+        totalComissao: Math.round(totalComissao * 100) / 100
+      });
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas de comissão:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {

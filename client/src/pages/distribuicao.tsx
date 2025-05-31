@@ -1,514 +1,290 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Clock, DollarSign, Users, ChevronRight, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
-import { formatCurrency, getInitials, getCurrentMonth } from "@/lib/utils";
-import { Calculator, Download, Save, Clock, Plus } from "lucide-react";
-import { AtendimentoModal } from "@/components/atendimento-modal";
-import type { Barbeiro, Servico } from "@shared/schema";
 
-interface DistribuicaoData {
-  [barbeiroId: string]: {
-    [servicoId: string]: number;
+interface BarbeiroComissao {
+  barbeiro: {
+    id: number;
+    nome: string;
+    ativo: boolean;
   };
+  faturamentoAssinatura: number;
+  comissaoAssinatura: number;
+  minutosTrabalhadosMes: number;
+  horasTrabalhadasMes: string;
+  numeroServicos: number;
+  percentualTempo: number;
 }
 
-interface ResultadoDistribuicao {
-  barbeiro: Barbeiro;
-  minutesWorked: number;
-  participationRate: number;
-  revenueShare: number;
-  commission: number;
-}
-
-interface CalculationResult {
-  resultados: ResultadoDistribuicao[];
-  totalMinutesPool: number;
-  poolValue: number;
+interface ComissaoStats {
+  faturamentoTotalAssinatura: number;
+  totalMinutosGerais: number;
+  totalComissao: number;
 }
 
 export default function Distribuicao() {
-  const [periodoInicio, setPeriodoInicio] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString().split('T')[0]
-  );
-  const [periodoFim, setPeriodoFim] = useState(
-    new Date().toISOString().split('T')[0]
-  );
-  const [faturamentoTotal, setFaturamentoTotal] = useState("28450.00");
-  const [percentualComissao, setPercentualComissao] = useState(40);
-  const [distribuicaoData, setDistribuicaoData] = useState<DistribuicaoData>({});
-  const [resultados, setResultados] = useState<ResultadoDistribuicao[]>([]);
-  const [calculationInfo, setCalculationInfo] = useState<{
-    totalMinutesPool: number;
-    poolValue: number;
-  } | null>(null);
-  const [selectedBarbeiro, setSelectedBarbeiro] = useState<Barbeiro | null>(null);
-  const [showAtendimentoModal, setShowAtendimentoModal] = useState(false);
-  const [barbeirosAtivos, setBarbeirosAtivos] = useState<Set<string>>(new Set());
-  const [showAllBarbeiros, setShowAllBarbeiros] = useState(false);
-  const currentMonth = getCurrentMonth();
+  const [selectedBarbeiro, setSelectedBarbeiro] = useState<BarbeiroComissao | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
-  const { data: barbeiros, isLoading: barbeirosLoading } = useQuery<Barbeiro[]>({
-    queryKey: ["/api/barbeiros"],
+  // Query para buscar dados de comissão dos barbeiros
+  const { data: comissaoData, isLoading } = useQuery({
+    queryKey: ["/api/comissao/barbeiros", currentMonth],
+    queryFn: () => apiRequest(`/api/comissao/barbeiros?mes=${currentMonth}`),
   });
 
-  const { data: servicosAssinatura, isLoading: servicosLoading } = useQuery<Servico[]>({
-    queryKey: ["/api/servicos/assinatura"],
+  // Query para estatísticas gerais de comissão
+  const { data: statsData } = useQuery({
+    queryKey: ["/api/comissao/stats", currentMonth],
+    queryFn: () => apiRequest(`/api/comissao/stats?mes=${currentMonth}`),
   });
 
-  const calculateMutation = useMutation({
-    mutationFn: (data: {
-      faturamentoTotal: number;
-      percentualComissao: number;
-      distribuicaoData: DistribuicaoData;
-    }) => apiRequest("/api/distribuicao/calcular", "POST", data),
-    onSuccess: async (response) => {
-      const result: CalculationResult = await response.json();
-      setResultados(result.resultados);
-      setCalculationInfo({
-        totalMinutesPool: result.totalMinutesPool,
-        poolValue: result.poolValue,
-      });
-      toast({
-        title: "Cálculo realizado",
-        description: "Distribuição de comissões calculada com sucesso",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erro no cálculo",
-        description: "Erro ao calcular distribuição de comissões",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: (data: {
-      periodoInicio: string;
-      periodoFim: string;
-      faturamentoTotal: number;
-      percentualComissao: number;
-      resultados: ResultadoDistribuicao[];
-    }) => apiRequest("POST", "/api/distribuicao/salvar", data),
-    onSuccess: () => {
-      toast({
-        title: "Distribuição salva",
-        description: "Distribuição de comissões salva com sucesso",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erro ao salvar",
-        description: "Erro ao salvar distribuição",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleQuantidadeChange = (barbeiroId: number, servicoId: number, quantidade: number) => {
-    setDistribuicaoData(prev => ({
-      ...prev,
-      [barbeiroId]: {
-        ...prev[barbeiroId],
-        [servicoId]: quantidade || 0,
-      },
-    }));
+  const barbeirosComissao: BarbeiroComissao[] = comissaoData || [];
+  const stats: ComissaoStats = statsData || {
+    faturamentoTotalAssinatura: 0,
+    totalMinutosGerais: 0,
+    totalComissao: 0,
   };
 
-  const handleCalculate = () => {
-    if (!barbeiros || !servicosAssinatura) return;
-
-    const faturamento = parseFloat(faturamentoTotal);
-    if (isNaN(faturamento) || faturamento <= 0) {
-      toast({
-        title: "Valor inválido",
-        description: "Insira um valor válido para o faturamento total",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    calculateMutation.mutate({
-      faturamentoTotal: faturamento,
-      percentualComissao,
-      distribuicaoData,
-    });
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
   };
 
-  const handleSave = () => {
-    if (resultados.length === 0) {
-      toast({
-        title: "Nenhum resultado",
-        description: "Calcule a distribuição antes de salvar",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    saveMutation.mutate({
-      periodoInicio,
-      periodoFim,
-      faturamentoTotal: parseFloat(faturamentoTotal),
-      percentualComissao,
-      resultados,
-    });
-  };
-
-  const handleExportCSV = () => {
-    if (resultados.length === 0) {
-      toast({
-        title: "Nenhum resultado",
-        description: "Calcule a distribuição antes de exportar",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const csvHeader = "Barbeiro,Minutos Trabalhados,% Participação,Faturamento Proporcional,Comissão\n";
-    const csvRows = resultados
-      .map(r => 
-        `${r.barbeiro.nome},${r.minutesWorked},${r.participationRate.toFixed(1)}%,${r.revenueShare.toFixed(2)},${r.commission.toFixed(2)}`
-      )
-      .join("\n");
+  const formatMinutesToHours = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
     
-    const csv = csvHeader + csvRows;
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `distribuicao-comissoes-${periodoInicio}-${periodoFim}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "CSV exportado",
-      description: "Relatório exportado com sucesso",
-    });
+    if (hours === 0) return `${remainingMinutes}min`;
+    if (remainingMinutes === 0) return `${hours}h`;
+    return `${hours}h ${remainingMinutes}min`;
   };
 
-  const getTotalMinutos = (barbeiroId: number) => {
-    if (!servicosAssinatura) return 0;
-    
-    let total = 0;
-    servicosAssinatura.forEach(servico => {
-      const quantidade = distribuicaoData[barbeiroId]?.[servico.id] || 0;
-      total += quantidade * servico.tempoMinutos;
-    });
-    return total;
+  const handleBarbeiroClick = (barbeiro: BarbeiroComissao) => {
+    setSelectedBarbeiro(barbeiro);
+    setIsSheetOpen(true);
   };
 
-  if (barbeirosLoading || servicosLoading) {
+  if (isLoading) {
     return (
-      <div className="space-y-24">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-64" />
-          <div className="flex space-x-4">
-            <Skeleton className="h-10 w-32" />
-            <Skeleton className="h-10 w-32" />
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
           </div>
         </div>
-        <Card>
-          <CardContent className="p-6">
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-24">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Distribuição de Comissões</h2>
-          <p className="text-muted-foreground">Calcule e distribua comissões baseadas no tempo trabalhado</p>
-        </div>
-        
-        <div className="flex space-x-4">
-          <Button
-            variant="outline"
-            onClick={handleExportCSV}
-            disabled={resultados.length === 0}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={resultados.length === 0 || saveMutation.isPending}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Salvar Distribuição
-          </Button>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Comissão dos Barbeiros</h1>
+        <p className="text-gray-600">
+          Distribuição automática baseada nos atendimentos finalizados em {currentMonth}
+        </p>
       </div>
 
-      {/* Configuration Panel */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Configurações do Período</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div>
-              <Label htmlFor="periodoInicio">Data Início</Label>
-              <Input
-                id="periodoInicio"
-                type="date"
-                value={periodoInicio}
-                onChange={(e) => setPeriodoInicio(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="periodoFim">Data Fim</Label>
-              <Input
-                id="periodoFim"
-                type="date"
-                value={periodoFim}
-                onChange={(e) => setPeriodoFim(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="faturamentoTotal">Faturamento Total (R$)</Label>
-              <Input
-                id="faturamentoTotal"
-                type="number"
-                step="0.01"
-                value={faturamentoTotal}
-                onChange={(e) => setFaturamentoTotal(e.target.value)}
-                placeholder="28450.00"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="percentualComissao">% Comissão</Label>
-              <Input
-                id="percentualComissao"
-                type="number"
-                min="0"
-                max="100"
-                value={percentualComissao}
-                onChange={(e) => setPercentualComissao(parseInt(e.target.value) || 0)}
-                className="mt-2"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Points Distribution Grid */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Grade de Distribuição de Pontos</CardTitle>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline"
-                onClick={() => setShowAllBarbeiros(!showAllBarbeiros)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {showAllBarbeiros ? "Mostrar Apenas Ativos" : "Adicionar Barbeiro"}
-              </Button>
-              <Button 
-                onClick={handleCalculate}
-                disabled={calculateMutation.isPending}
-              >
-                <Calculator className="h-4 w-4 mr-2" />
-                {calculateMutation.isPending ? "Calculando..." : "Calcular"}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-48">Barbeiro</TableHead>
-                  {servicosAssinatura?.map((servico) => (
-                    <TableHead key={servico.id} className="text-center min-w-32">
-                      <div className="space-y-1">
-                        <div className="font-medium">{servico.nome}</div>
-                        <div className="text-xs text-muted-foreground flex items-center justify-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {servico.tempoMinutos}min
-                        </div>
-                      </div>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center">Total Minutos</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {/* Barbeiros com serviços executados */}
-                {barbeiros?.filter(b => b.ativo && (
-                  showAllBarbeiros || 
-                  barbeirosAtivos.has(b.id.toString()) ||
-                  Object.keys(distribuicaoData[b.id] || {}).length > 0
-                )).map((barbeiro) => (
-                  <TableRow key={barbeiro.id}>
-                    <TableCell>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              {getInitials(barbeiro.nome)}
-                            </span>
-                          </div>
-                          <span className="font-medium">{barbeiro.nome}</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedBarbeiro(barbeiro);
-                            setShowAtendimentoModal(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Atendimentos
-                        </Button>
-                      </div>
-                    </TableCell>
-                    {servicosAssinatura?.map((servico) => (
-                      <TableCell key={servico.id} className="text-center">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={distribuicaoData[barbeiro.id]?.[servico.id] || 0}
-                          onChange={(e) => 
-                            handleQuantidadeChange(
-                              barbeiro.id, 
-                              servico.id, 
-                              parseInt(e.target.value) || 0
-                            )
-                          }
-                          className="w-20 text-center"
-                        />
-                      </TableCell>
-                    ))}
-                    <TableCell className="text-center font-medium">
-                      {getTotalMinutos(barbeiro.id)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Table */}
-      {resultados.length > 0 && (
+      {/* Cards de estatísticas gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Resultados da Distribuição</CardTitle>
-            {calculationInfo && (
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                <span>Total de minutos: {calculationInfo.totalMinutesPool}</span>
-                <span>Pool de comissão: {formatCurrency(calculationInfo.poolValue)}</span>
-              </div>
-            )}
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total de Assinatura</CardTitle>
+            <DollarSign className="h-4 w-4 text-[#8B4513]" />
           </CardHeader>
-          
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Barbeiro</TableHead>
-                    <TableHead className="text-center">Minutos Trabalhados</TableHead>
-                    <TableHead className="text-center">% Participação</TableHead>
-                    <TableHead className="text-center">Faturamento Proporcional</TableHead>
-                    <TableHead className="text-center">Comissão ({percentualComissao}%)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {resultados.map((resultado) => (
-                    <TableRow key={resultado.barbeiro.id} className="hover:bg-accent">
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium">
-                              {getInitials(resultado.barbeiro.nome)}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-medium">{resultado.barbeiro.nome}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-medium">{resultado.minutesWorked}</div>
-                        <div className="text-xs text-muted-foreground">minutos</div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-medium">{resultado.participationRate.toFixed(1)}%</div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-medium">{formatCurrency(resultado.revenueShare)}</div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-bold text-green-600">
-                          {formatCurrency(resultado.commission)}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableRow className="bg-accent font-medium">
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-center">
-                    {resultados.reduce((sum, r) => sum + r.minutesWorked, 0)} min
-                  </TableCell>
-                  <TableCell className="text-center">100%</TableCell>
-                  <TableCell className="text-center">
-                    {formatCurrency(parseFloat(faturamentoTotal))}
-                  </TableCell>
-                  <TableCell className="text-center font-bold text-green-600">
-                    {formatCurrency(resultados.reduce((sum, r) => sum + r.commission, 0))}
-                  </TableCell>
-                </TableRow>
-              </Table>
+            <div className="text-2xl font-bold text-[#8B4513]">
+              {formatCurrency(stats.faturamentoTotalAssinatura)}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Modal de Atendimentos */}
-      {selectedBarbeiro && (
-        <AtendimentoModal
-          isOpen={showAtendimentoModal}
-          onClose={() => {
-            setShowAtendimentoModal(false);
-            setSelectedBarbeiro(null);
-          }}
-          barbeiro={selectedBarbeiro}
-          mes={currentMonth}
-        />
-      )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Horas Trabalhadas</CardTitle>
+            <Clock className="h-4 w-4 text-[#8B4513]" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-[#8B4513]">
+              {formatMinutesToHours(stats.totalMinutosGerais)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Comissão</CardTitle>
+            <Users className="h-4 w-4 text-[#8B4513]" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-[#8B4513]">
+              {formatCurrency(stats.totalComissao)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de barbeiros ordenada por faturamento */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-[#8B4513] mb-4">
+          Ranking de Barbeiros (por Faturamento de Assinatura)
+        </h2>
+        
+        {barbeirosComissao.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-500">Nenhum barbeiro com atendimentos finalizados este mês</p>
+            </CardContent>
+          </Card>
+        ) : (
+          barbeirosComissao.map((item, index) => (
+            <Card key={item.barbeiro.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div
+                  className="flex items-center justify-between"
+                  onClick={() => handleBarbeiroClick(item)}
+                >
+                  <div className="flex items-center space-x-4">
+                    {/* Posição no ranking */}
+                    <div className="flex items-center justify-center w-8 h-8 bg-[#8B4513] text-white rounded-full font-bold">
+                      {index + 1}
+                    </div>
+                    
+                    {/* Info do barbeiro */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#8B4513]">
+                        {item.barbeiro.nome}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <span className="flex items-center">
+                          <DollarSign className="h-4 w-4 mr-1" />
+                          {formatCurrency(item.faturamentoAssinatura)}
+                        </span>
+                        <span className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {formatMinutesToHours(item.minutosTrabalhadosMes)}
+                        </span>
+                        <span className="flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          {item.numeroServicos} serviços
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Badge variant="secondary" className="bg-[#8B4513]/10 text-[#8B4513]">
+                      {item.percentualTempo.toFixed(1)}% do tempo total
+                    </Badge>
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Sheet lateral com detalhes do barbeiro */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:max-w-md">
+          {selectedBarbeiro && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="text-[#8B4513]">
+                  Detalhes de Comissão
+                </SheetTitle>
+              </SheetHeader>
+              
+              <div className="mt-6 space-y-6">
+                {/* Nome do barbeiro */}
+                <div>
+                  <h3 className="text-2xl font-bold text-[#8B4513] mb-2">
+                    {selectedBarbeiro.barbeiro.nome}
+                  </h3>
+                  <p className="text-gray-600">Período: {currentMonth}</p>
+                </div>
+
+                {/* Métricas principais */}
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">Faturamento de Assinatura</span>
+                      <DollarSign className="h-4 w-4 text-[#8B4513]" />
+                    </div>
+                    <div className="text-2xl font-bold text-[#8B4513]">
+                      {formatCurrency(selectedBarbeiro.faturamentoAssinatura)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {selectedBarbeiro.percentualTempo.toFixed(2)}% do faturamento total
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">Comissão de Assinatura</span>
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(selectedBarbeiro.comissaoAssinatura)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      40% do faturamento individual
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">Tempo Total Trabalhado</span>
+                      <Clock className="h-4 w-4 text-[#8B4513]" />
+                    </div>
+                    <div className="text-2xl font-bold text-[#8B4513]">
+                      {selectedBarbeiro.horasTrabalhadasMes}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {selectedBarbeiro.minutosTrabalhadosMes} minutos no total
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">Serviços Finalizados</span>
+                      <Users className="h-4 w-4 text-[#8B4513]" />
+                    </div>
+                    <div className="text-2xl font-bold text-[#8B4513]">
+                      {selectedBarbeiro.numeroServicos}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      atendimentos concluídos no mês
+                    </div>
+                  </div>
+                </div>
+
+                {/* Explicação do cálculo */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2">Como é calculado:</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>• Faturamento = (Tempo trabalhado ÷ Tempo total) × Receita total</p>
+                    <p>• Comissão = Faturamento × 40%</p>
+                    <p>• Baseado apenas em atendimentos finalizados</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

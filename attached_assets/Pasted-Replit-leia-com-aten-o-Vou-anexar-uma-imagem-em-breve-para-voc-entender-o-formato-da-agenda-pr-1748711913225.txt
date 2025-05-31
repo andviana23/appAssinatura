@@ -1,0 +1,351 @@
+Replit, leia com atenção. Vou anexar uma imagem em breve para você entender o formato da agenda – preste atenção nesse exemplo. Quero que o sistema fique redondinho, pegando tudo automaticamente dos agendamentos e assinaturas. Use o mínimo de agentes possível e coloque a lógica toda no backend. Segue passo a passo:
+
+1. Distribuição de Comissão (Tela “Comissão”, antiga Distribuição)
+Origem dos Dados:
+
+Toda a comissão deve ser calculada automaticamente a partir dos agendamentos que foram finalizados.
+
+O faturamento total de assinatura e a % de comissão também devem vir automaticamente do Dashboard, sem precisar digitar manualmente: puxe direto dos mesmos valores já existentes.
+
+Exibição na Tela de Comissão:
+
+Mostre todos os barbeiros cadastrados, um abaixo do outro, em ordem de ranking real de desempenho.
+
+Para cada barbeiro, exiba (no resumo da lista):
+
+Faturamento de Assinatura (R$): calculado conforme lógica explicada abaixo.
+
+Tempo Total Trabalhado em Minutos: soma de todos os minutos dos serviços de assinatura finalizados por ele no mês.
+
+Número de Serviços Feitos no Mês: quantos atendimentos de assinatura ele finalizou.
+
+Não exiba aqui a comissão em R$, apenas no painel lateral individual (conforme próximo item).
+
+Painel Lateral ao Clicar no Barbeiro:
+
+Ao clicar no nome de um barbeiro, abra um side panel (painel lateral) com detalhes:
+
+Nome completo do barbeiro.
+
+Faturamento de Assinatura (R$): valor resultante do cálculo.
+
+Comissão de Assinatura (R$): (Faturamento de Assinatura × % Comissão configurável).
+
+Número de Serviços Feitos no Mês.
+
+Tempo Total Trabalhado em Horas (converte minutos para “Xh Ym”).
+
+Cálculo do Faturamento de Assinatura por Barbeiro:
+
+Definições:
+
+Faturamento Total de Assinatura do Salão = soma de todas as assinaturas ativas no mês (ex: R$ 1.000).
+
+Somatório de Minutos Gerais = soma de TODOS os minutos de todos os atendimentos de assinatura finalizados por todos os barbeiros no mês (ex: 190 minutos).
+
+Para cada barbeiro B:
+
+Minutos Trabalhados pelo B = soma dos minutos de cada atendimento finalizado por B (ex: 80 minutos).
+
+Percentual de Tempo do B = (Minutos Trabalhados pelo B / Somatório de Minutos Gerais) × 100 (ex: 80/190 = 42,10%).
+
+Faturamento de Assinatura do B = (Percentual de Tempo do B / 100) × Faturamento Total de Assinatura (ex: 0,4210 × R$1.000 = R$421,00).
+
+Cálculo da Comissão de Assinatura para B:
+
+% Comissão Configurável = default 40% (valor que vem do cadastro de serviço).
+
+Valor Comissão de B = (Faturamento de Assinatura do B) × (% Comissão / 100) (ex: R$421,00 × 0,40 = R$168,40).
+
+Atualização Automática:
+
+Assim que um agendamento for finalizado, o sistema deve:
+
+Somar o tempo (minutos) daquele atendimento ao total mensal do barbeiro.
+
+Recalcular Somatório de Minutos Gerais para o mês.
+
+Recalcular o Percentual de Tempo de cada barbeiro e atualizar os valores de Faturamento de Assinatura e Comissão.
+
+Se o % Comissão no cadastro de serviços mudar, vale pra todo o mês atual (aplique retroativamente) e para meses futuros.
+
+2. Tela de Agendamento (Agenda)
+Formato da Agenda (baseado na imagem de exemplo):
+
+Agenda vertical mostrando as horas do dia de 08:00 até 20:00, em linhas de 10 em 10 minutos (08:00, 08:10, 08:20, …, 19:50, 20:00).
+
+Colunas separadas para cada barbeiro ativo (o mesmo nome e foto/avatar que aparece no Dashboard).
+
+Ao abrir a agenda, mostre a data atual (“hoje”) e permita navegar para dias futuros ou passados.
+
+Ao Agendar Cliente:
+
+Ao clicar em um horário disponível, abra uma modal para selecionar:
+
+Cliente: deve puxar a lista de clientes cadastrados (incluindo os que vêm do Asaas).
+
+Serviço de Assinatura: lista de serviços de assinatura cadastrados (com tempo em minutos e % comissão).
+
+Após selecionar cliente e serviço, o sistema autocalcula o horário final (ex: serviço de 30min em 08:20 → 08:50) e cria o bloco na agenda.
+
+Mostre no bloco: “08:20 – 08:50, Nome do Cliente – Nome do Serviço (30min)”.
+
+Finalizar Atendimento:
+
+No horário de término do atendimento (ou quando o barbeiro clicar no bloco), apareça um botão “Finalizar Atendimento”.
+
+Ao clicar, o sistema deve:
+
+Marcar o atendimento como “executado”.
+
+Registrar o tempo (minutos) do serviço para aquele barbeiro no mês (para cálculo de comissão).
+
+Incrementar 1 em “Número de Serviços Feitos” para aquele barbeiro.
+
+Atualizar automaticamente os cálculos de Faturamento e Comissão (vide seção de Distribuição).
+
+Sem Outras Opções de Status:
+
+Não inclua “Remarcar”, “Cancelar”, “Pendente” ou “Não Compareceu”.
+
+Apenas “Agendar” e “Finalizar Atendimento”. Se o cliente não vier, basta dizer “não clicar em Finalizar” e o sistema não contabiliza nada.
+
+Navegação na Agenda:
+
+Botões de “<” (dia anterior), “Hoje” e “>” (próximo dia).
+
+Atalhos para “Dia”, “Semana”, “Mês” (mas inicialmente foque em “Dia”).
+
+Permita scroll vertical e horizontal conforme a quantidade de barbeiros e horários.
+
+Aviso de Imagem de Exemplo:
+
+“Replit, estou anexando uma imagem para você ver um exemplo de como a agenda deve ficar (layout, cores e espaçamento). Use essa imagem como referência para criar a tela de agendamento.”
+
+3. Dashboard (Atualizado)
+Receita de Assinatura:
+
+Puxe automaticamente o valor atual de “Receita Mensal” da aba Clientes (clientes que pagaram assinatura).
+
+Não crie outro cálculo aqui; exiba exatamente o valor dessa aba.
+
+Total de Comissão de Barbeiros:
+
+Exiba o total de 40% (ou % configurável) aplicado na Receita de Assinatura.
+
+Cálculo: “Receita de Assinatura × % Comissão / 100”.
+
+Não mostrar detalhes – só R$X,XX; sem link para lista de comissões aqui.
+
+Horas Trabalhadas:
+
+Mostre a soma de todos os minutos de serviços de assinatura finalizados no mês, convertidos para horas (Xh Ym).
+
+Puxe direto dos agendamentos finalizados; some todos os minutos para exibir.
+
+Ranking de Barbeiros:
+
+Listagem dos barbeiros em ordem de “Faturamento de Assinatura” (do maior para o menor).
+
+Ao clicar em “Ver Todos”, exiba lista completa dos barbeiros em uma nova página/tela, mantendo a mesma ordem.
+
+Assinaturas Vencendo:
+
+Puxe as 3 assinaturas mais próximas do vencimento (considerando data de vencimento cadastrada em Clientes).
+
+Exiba em ordem crescente de data de vencimento.
+
+Clique em cada assinatura leva para a ficha do cliente ou para a aba Clientes filtrada.
+
+4. Tela de Serviços (Aba “Serviços”)
+Somente Serviços de Assinatura:
+
+Remove qualquer opção de “serviço avulso” ou “serviço único”.
+
+No formulário de cadastro, os campos obrigatórios são:
+
+Nome do Serviço (ex: Corte, Barba, Camuflagem, etc.)
+
+Tempo em Minutos (inteiro; ex: 30, 20, 45; sem fração de hora).
+
+% Comissão (padrão 40%; campo editável para configurar outra porcentagem).
+
+Não precisa de campo de valor/ preço: o preço vem da assinatura vendida no cliente, não aqui.
+
+Salvar e Feedback:
+
+Ao salvar, mensagem verde: “Serviço salvo com sucesso.”
+
+Se faltar algum campo, mensagem vermelha: “Preencha todos os campos obrigatórios.”
+
+Uso do % Comissão:
+
+Este valor aparece em TODOS os cálculos de comissão (Distribuição/Comissão).
+
+Se eu alterar essa porcentagem no serviço, aplique retroativamente para o mês atual e meses seguintes.
+
+5. Tela de Controle de Totais (Analytics Gerais)
+Seções e Gráficos:
+
+Atendimentos por Dia (gráfico de barras): mostra número de atendimentos finalizados por dia no período selecionado.
+
+Serviços Mais Feitos (gráfico de pizza ou barras): ranking top 5 serviços de assinatura mais realizados no período.
+
+Receita de Assinatura por Dia (gráfico de linha ou barras): mostra como a receita de assinaturas se distribuiu ao longo dos dias do mês.
+
+Horas Trabalhadas por Barbeiro (tabela ou gráfico de barras): para cada barbeiro, horas totais trabalhadas no mês (converte minutos para horas).
+
+Comissão Total Pago (gráfico de barras): valor total de comissões pagas por mês (histórico de meses).
+
+Filtros Dinâmicos:
+
+Permite selecionar período (mês/ano) e/ou barbeiro específico.
+
+Ao alterar filtro, todos os gráficos e tabelas se atualizam em real time.
+
+Exportar CSV:
+
+Cada relatório (lista ou gráfico) deve ter botão “Exportar CSV” que baixa os dados filtrados num arquivo CSV.
+
+Layout e Performance:
+
+Use cards/seções com títulos claros (24px+).
+
+Gráficos simples, sem cores específicas (cores padrão da biblioteca).
+
+Paginação ou lazy-loading em tabelas para evitar travamento.
+
+6. Tela de Assinaturas Ativas
+Lista de Assinaturas Ativas:
+
+Crie uma nova tela onde eu possa ver todas as assinaturas ativas.
+
+Exiba, em formato de tabela, colunas:
+
+Nome do Cliente
+
+Plano de Assinatura (nome)
+
+Valor Mensal (R$)
+
+Data de Início
+
+Data de Vencimento
+
+No rodapé ou cabeçalho da tabela, inclua botões de paginação: “< Anterior” e “Próxima >”, para navegar entre páginas se tiver muitas assinaturas.
+
+Busca/Rolagem:
+
+Permita ordenação por coluna (ex: ordena por data de vencimento ou nome do cliente).
+
+Permita busca rápida por “nome do cliente” ou “plano”.
+
+Ação ao Clicar em Uma Assinatura:
+
+Leva para a ficha do cliente (mesma tela da aba Clientes), mostrando detalhes da assinatura.
+
+7. Ajustes Gerais e Observações de Backend
+Clientes do Asaas:
+
+Na agenda, ao selecionar cliente, puxe a lista completa de clientes cadastrados na aba Clientes, inclusive aqueles que vêm do Asaas (assinaturas ativas ou que já pagaram).
+
+Não crie duplicações; use o mesmo modelo de dados.
+
+Uso Mínimo de Agentes:
+
+Concentre toda lógica de cálculo no backend/servidor.
+
+Evite múltiplas chamadas a APIs desnecessárias; recupere dados em lote quando possível.
+
+Performance e Índices:
+
+Garanta que as consultas de agendamento sejam indexadas por data e barbeiro para não travar.
+
+Se o volume de clientes/barbeiros/assinaturas for grande, use paginação e queries paginadas.
+
+Mensagens de Erro e Sucesso:
+
+Em qualquer tela de cadastro/edição, exiba alertas contextuais:
+
+“Salvo com sucesso” (verde).
+
+“Erro ao salvar: [mensagem técnica resumida]” (vermelho).
+
+“Preencha todos os campos obrigatórios” (vermelho).
+
+Consistência de Dados de Agendamentos:
+
+Se um cliente tiver dois atendimentos no mesmo dia, cada atendimento deve gerar um registro separado de tempo e receita.
+
+Se o cliente não comparecer, basta não clicar em “Finalizar Atendimento” e o sistema não contabiliza nada.
+
+RESUMINDO O QUE PRECISA MUDAR E IMPLEMENTAR:
+Distribuição/Comissão:
+
+Puxe dados de agendamento finalizado; calcule faturamento e comissão automaticamente.
+
+Exiba lista de barbeiros com faturamento mensal, tempo total e serviços feitos.
+
+Painel lateral individual mostra detalhes e valor em R$.
+
+Agenda:
+
+Tela vertical de 08:00–20:00 em intervalos de 10 minutos.
+
+Colunas por barbeiro, blocos de atendimento com nome do cliente e serviço.
+
+Só “Agendar Cliente” e “Finalizar Atendimento”.
+
+Puxa clientes da base (incluindo Asaas).
+
+Ao final do mês, agrupa dados para comissão e horas trabalhadas.
+
+Dashboard:
+
+Mostrar Receita de Assinatura (idêntica à aba Clientes).
+
+Total de Comissão (40% da receita).
+
+Horas Trabalhadas totais (converte minutos).
+
+Ranking de Barbeiros (ordem real + “Ver Todos” funcionando).
+
+3 Assinaturas Vencendo.
+
+Serviços:
+
+Só serviços de assinatura.
+
+Campos: Nome, Tempo em Minutos, % Comissão.
+
+Feedback de salvamento.
+
+Analytics (Controle de Totais):
+
+Gráficos e tabelas: Atendimentos por Dia, Serviços Mais Feitos, Receita por Dia, Horas por Barbeiro, Comissão Pago.
+
+Filtros dinâmicos (mês/ano, barbeiro).
+
+Exportar CSV.
+
+Assinaturas Ativas:
+
+Tela com tabela paginada de assinaturas ativas (Cliente, Plano, Valor, Início, Vencimento).
+
+Busca e ordenação.
+
+“Próxima” e “Anterior” para navegar.
+
+Backend e Performance:
+
+Lógica de cálculo no backend, índices em campos utilizados em filtro, paginação nas listas grandes.
+
+Mensagens de sucesso/erro padronizadas.
+
+Replit, entendeu toda a lógica de cálculo de comissão, faturamento e horas?
+
+Se tiver dúvida, responda “Replit: não entendi X” e finalize esse prompt apontando a parte que não ficou clara.
+
+Quando terminar, quero testar manualmente cada tela: Agenda, Comissão, Dashboard, Analytics e Assinaturas Ativas.
+
+Use o anexo de imagem que vou enviar como GUI de referência para a Agenda (cores, espaçamento e layout geral).
