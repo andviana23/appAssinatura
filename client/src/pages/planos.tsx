@@ -30,15 +30,28 @@ export default function Planos() {
   const [checkoutData, setCheckoutData] = useState({
     nome: '',
     email: '',
+    telefone: '',
     cpf: '',
+    planoSelecionado: '',
     billingType: 'CREDIT_CARD'
   });
   const [externalPaymentMethod, setExternalPaymentMethod] = useState('');
 
-  const { data: planos, isLoading, refetch, isRefetching } = useQuery<PlanoAsaas[]>({
-    queryKey: ["/api/asaas/planos"],
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
-  });
+  // Planos fixos do sistema conforme especificação
+  const planos = [
+    { id: "1", nome: "Clube do Trato One - Corte Barba", valor: 0, descricao: "Corte + Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "2", nome: "Clube do Trato One - Corte", valor: 0, descricao: "Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "3", nome: "Clube do Trato Gold - Corte + Barba", valor: 0, descricao: "Corte + Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "4", nome: "Clube do Trato Gold - Corte", valor: 0, descricao: "Corte premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "5", nome: "Clube do Trato Gold - Barba", valor: 0, descricao: "Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "6", nome: "Clube do Trato - Corte e Barba 2x", valor: 0, descricao: "2x Corte + 2x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "7", nome: "Clube do Trato - Corte 2x Barba 4x", valor: 0, descricao: "2x Corte + 4x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "8", nome: "Clube do Trato - Corte 2x", valor: 0, descricao: "2x Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
+    { id: "9", nome: "Clube do Trato - Barba 4x", valor: 0, descricao: "4x Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" }
+  ];
+  
+  const isLoading = false;
+  const isRefetching = false;
 
   const createCheckoutMutation = useMutation({
     mutationFn: async (data: typeof checkoutData) => {
@@ -61,7 +74,7 @@ export default function Planos() {
       if (data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');
         setShowCheckoutModal(false);
-        setCheckoutData({ nome: '', email: '', cpf: '', billingType: 'CREDIT_CARD' });
+        setCheckoutData({ nome: '', email: '', telefone: '', cpf: '', planoSelecionado: '', billingType: 'CREDIT_CARD' });
         toast({
           title: "Checkout criado com sucesso!",
           description: "Você será redirecionado para o pagamento.",
@@ -82,10 +95,11 @@ export default function Planos() {
       const response = await apiRequest("/api/clientes/external", "POST", {
         nome: checkoutData.nome,
         email: checkoutData.email,
+        telefone: checkoutData.telefone,
         cpf: checkoutData.cpf,
         paymentMethod: paymentMethod,
-        planoNome: "Clube do Trato Único",
-        planoValor: 5.00
+        planoNome: checkoutData.planoSelecionado,
+        planoValor: 0 // Valor será definido posteriormente
       });
       return response.json();
     },
@@ -101,7 +115,9 @@ export default function Planos() {
       setCheckoutData({
         nome: '',
         email: '',
+        telefone: '',
         cpf: '',
+        planoSelecionado: '',
         billingType: 'CREDIT_CARD'
       });
     },
@@ -115,19 +131,13 @@ export default function Planos() {
   });
 
   const handleAssinar = (plano: PlanoAsaas) => {
-    if (plano.urlCheckout) {
-      window.open(plano.urlCheckout, '_blank');
-      toast({
-        title: "Redirecionando...",
-        description: `Você será direcionado para o checkout do ${plano.nome}`,
-      });
-    } else {
-      toast({
-        title: "Erro",
-        description: "Link de pagamento não disponível",
-        variant: "destructive",
-      });
-    }
+    // Abrir modal de checkout com plano selecionado
+    setCheckoutData(prev => ({ ...prev, planoSelecionado: plano.nome }));
+    setShowCheckoutModal(true);
+    toast({
+      title: "Checkout iniciado",
+      description: `Iniciando checkout para ${plano.nome}`,
+    });
   };
 
   const getPlanoDescription = (nome: string) => {
@@ -198,22 +208,11 @@ export default function Planos() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground">Planos de Assinatura</h2>
-          <p className="text-muted-foreground mt-2">
-            Escolha o plano ideal para suas necessidades. Todos os planos incluem agendamento prioritário.
-          </p>
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={() => refetch()}
-          disabled={isRefetching}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold text-foreground">Planos de Assinatura</h2>
+        <p className="text-muted-foreground mt-2">
+          Escolha o plano ideal para suas necessidades. Todos os planos incluem agendamento prioritário.
+        </p>
       </div>
 
       {/* Card do Plano Teste */}

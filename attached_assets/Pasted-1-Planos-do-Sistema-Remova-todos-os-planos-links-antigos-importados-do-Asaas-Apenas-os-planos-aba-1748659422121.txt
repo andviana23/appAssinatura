@@ -1,0 +1,93 @@
+1. Planos do Sistema
+Remova todos os planos/links antigos importados do Asaas.
+
+Apenas os planos abaixo devem aparecer e ser contratáveis no sistema:
+
+Clube do Trato One - Corte Barba
+
+Clube do Trato One - Corte
+
+Clube do Trato Gold - Corte + Barba
+
+Clube do Trato Gold - Corte
+
+Clube do Trato Gold - Barba
+
+Clube do Trato - Corte e Barba 2x
+
+Clube do Trato - Corte 2x Barba 4x
+
+Clube do Trato - Corte 2x
+
+Clube do Trato - Barba 4x
+
+Cada plano deve ter seu próprio checkout, com nome e valor exatos conforme definição.
+
+2. Fluxo do Checkout
+Tela principal de checkout:
+
+Opção padrão: Cartão de Crédito (pagamento automático via Asaas Checkout)
+
+Opção: Pago Externamente
+
+Ao selecionar, abrir nova tela/modal perguntando:
+
+“Como foi feito o pagamento?”
+
+Pix
+
+Débito
+
+Após selecionar Pix ou Débito, cadastrar o cliente automaticamente como ativo no plano escolhido, com validade de 30 dias corridos a partir do cadastro.
+
+3. Campos obrigatórios no checkout
+Nome completo do cliente
+
+E-mail
+
+Telefone (obrigatório, com DDD)
+
+CPF ou CNPJ (obrigatório)
+
+Plano selecionado
+
+Valor do plano
+
+Forma de pagamento: Cartão de Crédito (via Asaas) ou Pix/Débito (externo)
+
+Data de início
+
+Data de validade (30 dias corridos para “pago externamente”)
+
+Status: Ativo
+
+4. Regras Gerais
+Pagamento externo (Pix/Débito) não gera cobrança no Asaas, é apenas controle interno.
+
+Após 30 dias, o cliente perde automaticamente o status de ativo, a menos que um novo pagamento seja registrado.
+
+Checkout deve seguir a identidade visual da Trato de Barbados.
+
+No dashboard, todos os clientes ativos aparecem independente da forma de pagamento.
+
+Apenas os planos da lista devem ser exibidos.
+
+5. Validação
+Todos os campos obrigatórios devem ser preenchidos e validados antes de finalizar o cadastro/checkout.
+
+Telefone deve ser número válido, com DDD.
+
+Não permitir duplicidade de assinaturas para o mesmo cliente/plano dentro do período vigente.
+
+Resumo visual:
+
+Checkout mostra todos os planos válidos.
+
+Pagamento: Cartão de Crédito (via Asaas) OU Pago Externamente (Pix/Débito)
+
+Dados obrigatórios: nome, e-mail, telefone, CPF/CNPJ, plano
+
+Para pagamento externo, ativa cliente por 30 dias
+
+Remove todos os planos/links antigos – apenas os 9 planos citados permanecem!
+
