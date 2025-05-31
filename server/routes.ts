@@ -630,54 +630,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://api.asaas.com/v3' 
         : 'https://sandbox.asaas.com/api/v3';
 
-      // Buscar assinaturas ativas
-      const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!subscriptionsResponse.ok) {
-        throw new Error(`Erro na API do Asaas: ${subscriptionsResponse.status}`);
-      }
-
-      const subscriptionsData = await subscriptionsResponse.json();
+      // Buscar todas as assinaturas (ativas, vencidas, inadimplentes)
+      const allStatuses = ['ACTIVE', 'OVERDUE', 'EXPIRED'];
       const clientes = [];
 
-      for (const subscription of subscriptionsData.data || []) {
-        try {
-          // Buscar dados do cliente
-          const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
-            headers: {
-              'access_token': asaasApiKey,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (customerResponse.ok) {
-            const customerData = await customerResponse.json();
-            
-            // Calcular dias restantes para o próximo vencimento
-            const nextDueDate = new Date(subscription.nextDueDate);
-            const today = new Date();
-            const daysRemaining = Math.ceil((nextDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-            clientes.push({
-              id: customerData.id,
-              name: customerData.name,
-              email: customerData.email,
-              phone: customerData.phone,
-              cpfCnpj: customerData.cpfCnpj,
-              subscriptionStatus: subscription.status,
-              monthlyValue: parseFloat(subscription.value),
-              daysRemaining: daysRemaining,
-              nextDueDate: subscription.nextDueDate,
-              createdAt: customerData.dateCreated
-            });
+      for (const status of allStatuses) {
+        const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=${status}&limit=100`, {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
           }
-        } catch (error) {
-          console.error(`Erro ao buscar cliente ${subscription.customer}:`, error);
+        });
+
+        if (subscriptionsResponse.ok) {
+          const subscriptionsData = await subscriptionsResponse.json();
+
+          for (const subscription of subscriptionsData.data || []) {
+            try {
+              // Buscar dados do cliente
+              const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+                headers: {
+                  'access_token': asaasApiKey,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (customerResponse.ok) {
+                const customerData = await customerResponse.json();
+                
+                // Calcular dias restantes baseado no status da assinatura
+                let daysRemaining = 0;
+                let nextDueDate = subscription.nextDueDate;
+                
+                if (status === 'ACTIVE') {
+                  const nextDue = new Date(subscription.nextDueDate);
+                  const today = new Date();
+                  daysRemaining = Math.ceil((nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                } else if (status === 'OVERDUE') {
+                  // Para inadimplentes, mostrar dias em atraso como negativo
+                  const dueDate = new Date(subscription.nextDueDate);
+                  const today = new Date();
+                  daysRemaining = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                } else {
+                  // Para expiradas, definir como 0
+                  daysRemaining = 0;
+                }
+
+                clientes.push({
+                  id: customerData.id,
+                  name: customerData.name,
+                  email: customerData.email,
+                  phone: customerData.phone,
+                  cpfCnpj: customerData.cpfCnpj,
+                  subscriptionStatus: status,
+                  monthlyValue: parseFloat(subscription.value),
+                  daysRemaining: daysRemaining,
+                  nextDueDate: nextDueDate,
+                  createdAt: customerData.dateCreated
+                });
+              }
+            } catch (error) {
+              console.error(`Erro ao buscar cliente ${subscription.customer}:`, error);
+            }
+          }
         }
       }
 
@@ -724,16 +739,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activeData = await activeSubscriptionsResponse.json();
       const overdueData = await overdueSubscriptionsResponse.json();
 
-      // Calcular estatísticas
+      // Calcular estatísticas corretas
       let totalMonthlyRevenue = 0;
       let newClientsThisMonth = 0;
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
+      // Somar apenas receita de assinaturas ativas
       for (const subscription of activeData.data || []) {
         totalMonthlyRevenue += parseFloat(subscription.value);
         
-        // Verificar se é novo este mês
-        const createdMonth = subscription.dateCreated.slice(0, 7);
+        // Verificar se é novo este mês baseado na data de criação da assinatura
+        const createdMonth = subscription.dateCreated?.slice(0, 7);
         if (createdMonth === currentMonth) {
           newClientsThisMonth++;
         }
@@ -743,12 +759,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalActiveClients: activeData.totalCount || 0,
         totalMonthlyRevenue: totalMonthlyRevenue,
         newClientsThisMonth: newClientsThisMonth,
-        overdueClients: overdueData.totalCount || 0
+        overdueClients: overdueData.totalCount || 0 // Apenas OVERDUE são inadimplentes
       };
 
       res.json(stats);
     } catch (error: any) {
       console.error("Erro ao buscar estatísticas do Asaas:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Dados de faturamento diário para gráfico
+  app.get("/api/asaas/faturamento-diario", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
+      }
+
+      const baseUrl = asaasEnv === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Buscar pagamentos confirmados dos últimos 30 dias
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+      const dateTo = new Date().toISOString().split('T')[0];
+
+      const paymentsResponse = await fetch(
+        `${baseUrl}/payments?status=CONFIRMED&dateCreated[ge]=${dateFrom}&dateCreated[le]=${dateTo}&limit=1000`, 
+        {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!paymentsResponse.ok) {
+        throw new Error(`Erro na API do Asaas: ${paymentsResponse.status}`);
+      }
+
+      const paymentsData = await paymentsResponse.json();
+      
+      // Agrupar pagamentos por dia
+      const dailyRevenue = {};
+      
+      for (const payment of paymentsData.data || []) {
+        // Filtrar apenas pagamentos de assinaturas
+        if (payment.subscription) {
+          const paymentDate = payment.paymentDate?.split('T')[0] || payment.dateCreated?.split('T')[0];
+          if (paymentDate) {
+            if (!dailyRevenue[paymentDate]) {
+              dailyRevenue[paymentDate] = {
+                date: paymentDate,
+                value: 0,
+                count: 0
+              };
+            }
+            dailyRevenue[paymentDate].value += parseFloat(payment.value);
+            dailyRevenue[paymentDate].count += 1;
+          }
+        }
+      }
+
+      // Converter para array e ordenar por data
+      const dailyData = Object.values(dailyRevenue).sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      res.json(dailyData);
+    } catch (error: any) {
+      console.error("Erro ao buscar faturamento diário:", error);
       res.status(500).json({ message: error.message });
     }
   });

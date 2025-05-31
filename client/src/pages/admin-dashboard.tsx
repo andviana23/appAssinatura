@@ -12,6 +12,15 @@ import {
   Users,
   AlertTriangle,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 interface DashboardMetrics {
   faturamentoMensal: number;

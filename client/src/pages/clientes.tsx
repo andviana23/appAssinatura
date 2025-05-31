@@ -76,10 +76,22 @@ export default function Clientes() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getDaysRemainingColor = (days: number) => {
+  const getDaysRemainingColor = (days: number, status: string) => {
+    if (status === 'OVERDUE') return "text-destructive font-semibold";
+    if (status === 'EXPIRED') return "text-muted-foreground";
     if (days <= 3) return "text-destructive font-semibold";
     if (days <= 7) return "text-orange-500 font-medium";
     return "text-muted-foreground";
+  };
+
+  const formatDaysRemaining = (days: number, status: string) => {
+    if (status === 'OVERDUE') {
+      const daysOverdue = Math.abs(days);
+      return `${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'} em atraso`;
+    }
+    if (status === 'EXPIRED') return 'Expirado';
+    if (days <= 0) return 'Vence hoje';
+    return `${days} ${days === 1 ? 'dia' : 'dias'}`;
   };
 
   if (statsLoading || clientesLoading) {
@@ -220,8 +232,8 @@ export default function Clientes() {
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(cliente.monthlyValue)}
                       </TableCell>
-                      <TableCell className={`text-center hidden lg:table-cell ${getDaysRemainingColor(cliente.daysRemaining)}`}>
-                        {cliente.daysRemaining > 0 ? `${cliente.daysRemaining} dias` : 'Vencido'}
+                      <TableCell className={`text-center hidden lg:table-cell ${getDaysRemainingColor(cliente.daysRemaining, cliente.subscriptionStatus)}`}>
+                        {formatDaysRemaining(cliente.daysRemaining, cliente.subscriptionStatus)}
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         {new Date(cliente.nextDueDate).toLocaleDateString('pt-BR')}
