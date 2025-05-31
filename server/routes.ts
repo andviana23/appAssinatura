@@ -855,11 +855,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Calcular inadimplentes reais usando a nova lógica  
+      let realOverdueClients = 0;
+      
+      // Verificar cada assinatura para determinar inadimplência real
+      for (const subscription of [...(activeData.data || []), ...(overdueData.data || [])]) {
+        // Buscar pagamentos em atraso específicos do mês atual
+        const overduePaymentsResponse = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=OVERDUE`, {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (overduePaymentsResponse.ok) {
+          const overduePaymentsData = await overduePaymentsResponse.json();
+          if (overduePaymentsData.data && overduePaymentsData.data.length > 0) {
+            // Verificar se algum pagamento em atraso é do mês atual
+            const hasCurrentMonthOverdue = overduePaymentsData.data.some((payment: any) => {
+              const paymentMonth = payment.dueDate.slice(0, 7);
+              return paymentMonth === currentMonth;
+            });
+            
+            if (hasCurrentMonthOverdue) {
+              // Verificar se não tem pagamento confirmado no mês atual
+              const currentMonthPaymentsResponse = await fetch(`${baseUrl}/payments?subscription=${subscription.id}&status=CONFIRMED&dateCreated[ge]=${currentMonth}-01&dateCreated[le]=${currentMonth}-31`, {
+                headers: {
+                  'access_token': asaasApiKey,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (currentMonthPaymentsResponse.ok) {
+                const currentPayments = await currentMonthPaymentsResponse.json();
+                if (!currentPayments.data || currentPayments.data.length === 0) {
+                  realOverdueClients++;
+                }
+              }
+            }
+          }
+        }
+      }
+
       const stats = {
         totalActiveClients: activeData.totalCount || 0,
         totalMonthlyRevenue: totalMonthlyRevenue,
         newClientsThisMonth: newClientsThisMonth,
-        overdueClients: overdueData.totalCount || 0 // Apenas OVERDUE são inadimplentes
+        overdueClients: realOverdueClients // Inadimplentes reais do mês atual
       };
 
       res.json(stats);
