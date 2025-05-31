@@ -1,0 +1,349 @@
+1. Visão Geral
+Objetivo
+Criar a funcionalidade “Lista da Vez” que organize a ordem de atendimento dos barbeiros de forma justa, considerando o total de atendimentos acumulados ao longo de cada mês.
+
+A lista não zera diariamente, mas somente no início de cada novo mês.
+
+A recepcionista deve registrar diariamente quantos atendimentos cada barbeiro fez (e marcar “passou a vez” quando necessário), mas o sistema sempre soma esses valores para calcular a ordem mensal.
+
+O barbeiro, ao acessar a tela, vê apenas sua posição atual na fila e quantos atendimentos acumulou no mês até agora.
+
+2. Usuários e Permissões
+Recepcionista
+
+Pode:
+
+Selecionar qualquer data dentro do mês corrente para registrar “atendimento” ou “passou a vez” de um barbeiro.
+
+Ver, em forma de tabela, quantos atendimentos cada barbeiro já fez no mês e quantas vezes “passou a vez” (que também conta como atendimento para fins de ranking).
+
+Ajustar esses valores manualmente durante o mês, e clicar em “Salvar Lista da Vez” para persistir.
+
+A lista só é zerada automaticamente no primeiro dia do mês seguinte.
+
+Não pode:
+
+Excluir registros que não sejam dessa funcionalidade.
+
+Ver detalhes de outros módulos do sistema.
+
+Acesso: Tela “Lista da Vez” (edição).
+
+Barbeiro
+
+Pode:
+
+Visualizar sua posição atual na fila (quem é o próximo a atender no mês) e quantos atendimentos acumulou no mês até o momento.
+
+Não vê nomes ou totais individuais dos colegas, apenas:
+
+“É a sua vez de atender!” (se estiver como 1º na lista).
+
+“Você está em Xª posição.” (se estiver em outra posição).
+
+“Você já atendeu Y vezes este mês.”
+
+Não pode:
+
+Editar nenhum valor desta lista.
+
+Ver quantos atendimentos exatos os outros fizeram.
+
+Acesso: Tela “Lista da Vez” (visualização restrita).
+
+Administrador
+
+Acesso total ao sistema, mas não altera as regras específicas dessa funcionalidade, apenas pode ver relatórios globais se houver.
+
+3. Modelo de Dados (Visão de Alto Nível)
+Para permitir que a recepcionista registre diariamente e o sistema some mensalmente, usaremos duas tabelas/coleções principais:
+
+AtendimentoDiario
+
+Objetivo: Armazenar, para cada barbeiro e cada dia específico, quantos atendimentos ele fez e se “passou a vez” (que conta como 1 atendimento para ranking).
+
+Campos:
+
+id (auto-incremento ou UUID)
+
+barbeiroId (integer) — referência ao barbeiro
+
+data (string “YYYY-MM-DD”) — data exata do registro (pertence a um dia específico)
+
+atendimentosDiarios (integer ≥ 0) — quantos atendimentos ele fez naquele dia
+
+passouAVez (boolean) — se marcou “passou a vez” naquele dia (conta como +1 atendimento para ranking)
+
+createdAt (timestamp automático)
+
+updatedAt (timestamp automático)
+
+FilaMensal
+
+Objetivo: Gerar a soma mensal dos atendimentos de cada barbeiro, calculada a partir dos registros de AtendimentoDiario, para determinar a ordem de atendimento do mês todo.
+
+Campos (opcional/derivado):
+
+barbeiroId (integer)
+
+mesAno (string “YYYY-MM”, ex: “2025-06”) — identifica o mês corrente
+
+totalAtendimentos (integer) — soma de todos atendimentosDiarios + contagem de “passou a vez” no mês
+
+Obs: Pode ser uma tabela materializada ou um view calculado dinamicamente no front-end a cada acesso da recepcionista/barbeiro.
+
+4. Regras de Negócio
+4.1. Acúmulo Mensal
+Registro Diário:
+
+A recepcionista, ao escolher uma data (ex.: 2025-06-10), informa quantos atendimentos esse barbeiro fez neste dia (atendimentosDiarios) e marca se “passou a vez” (checkbox).
+
+Se passouAVez = true para aquele dia, ainda que o barbeiro não tenha atendido, deve ser contabilizado como +1 atendimento para fins de ranking mensal.
+
+Esse registro diário é salvo em AtendimentoDiario e não se altera até o final do mês, a menos que a recepcionista edite novamente.
+
+Cálculo de Total Mensal:
+
+Para cada barbeiro, calcular:
+
+ini
+Copiar
+Editar
+totalAtendimentosMes = soma de (atendimentosDiarios) para o mês + soma de (1 para cada dia em que passouAVez = true)
+Essa soma é atualizada automaticamente sempre que a recepcionista salvar alterações ou editar algum registro diário.
+
+Em outras palavras, a fila “não zera a cada dia”, mas sim se baseia no total acumulado do mês inteiro.
+
+Ordenação da Fila (Mensal):
+
+Ordenar todos os barbeiros ativos do mês corrente pelo menor totalAtendimentosMes ao maior.
+
+Quem tiver o menor total é o 1º da fila (próximo a atender).
+
+Para desempatar (caso dois ou mais tenham o mesmo total), utilizar como critério de desempate:
+
+Quem tiver menor soma de dias em que “passou a vez” (quem passou a vez menos vezes fica à frente).
+
+Se ainda empatar, ordem alfabética do nome do barbeiro.
+
+A “posição” final de cada barbeiro no mês é atribuída a partir dessa ordenação.
+
+Reset Mensal:
+
+No primeiro dia de cada mês (ÀS 00:00:00), zere automaticamente todos os registros de AtendimentoDiario e/ou FilaMensal do mês anterior.
+
+A recepcionista não precisa fazer nada manual: no próximo acesso de tela, o sistema já exibe todos os barbeiros com totalAtendimentosMes = 0 e sem “passou a vez” sinalizado.
+
+A partir desse reset, o mês começa do “zero” para todos.
+
+5. Componentes e Interface
+5.1. Tela “Lista da Vez” (Recepcionista)
+Cabeçalho
+
+Título: “Lista da Vez”
+
+Botão “← Voltar” (canto superior esquerdo) para retornar ao menu principal.
+
+Seletor de Data (<input type="date"> ou calendário), permitindo escolher qualquer dia dentro do mês corrente (por padrão, hoje).
+
+Tabela de Edição de Registros Diários
+
+Colunas:
+
+Barbeiro (nome completo)
+
+Atendimentos Diários (campo <input type="number" min="0">)
+
+Passou a Vez? (<input type="checkbox">)
+
+Total no Mês (campo não editável, exibe soma acumulada do mês, recalculada em tempo real)
+
+Posição Mensal (campo não editável, exibe “1”, “2”, etc., conforme ordenação mensal)
+
+Inicialmente, para cada barbeiro ativo:
+
+Se já existe um registro em AtendimentoDiario para a data selecionada, carregar atendimentosDiarios e passouAVez.
+
+Se não existe, exibir atendimentosDiarios = 0 e passouAVez = false.
+
+Calcular “Total no Mês” somando todos os registros diários daquele mês até a data atual.
+
+Calcular “Posição Mensal” ordenando todos os barbeiros do mês inteiro conforme Regras de Negócio (ponto 4.3).
+
+Comportamento Dinâmico
+
+Toda vez que a recepcionista alterar um campo (número em “Atendimentos Diários” ou marcar/desmarcar “Passou a Vez?”), o sistema deve:
+
+Atualizar somente em memória o objeto correspondente ao barbeiro e à data selecionada.
+
+Recalcular “Total no Mês” para todos os barbeiros deste mês, somando todos os dias já registrados.
+
+Reordenar toda a lista para atualizar “Posição Mensal” conforme a nova soma.
+
+Exibir imediatamente esse recálculo na tabela, sem gravar no banco ainda.
+
+Botão “Salvar Lista da Vez”
+
+Localização: abaixo da tabela ou no final da página, em destaque.
+
+Ao clicar:
+
+Para cada barbeiro na lista:
+
+Se existe um registro diário para a combinação (barbeiroId, dataSelecionada) em AtendimentoDiario, atualize apenas atendimentosDiarios e passouAVez.
+
+Se não existe registro para (barbeiroId, dataSelecionada), insira um novo objeto em AtendimentoDiario com esses valores.
+
+Após todas as operações, exiba a confirmação:
+
+“Lista da Vez salva com sucesso para [DATA SELECIONADA].”
+
+Se qualquer operação falhar, exiba:
+
+“Não foi possível salvar a Lista da Vez. Tente novamente.”
+
+Não apague nem modifique registros de outros dias ou meses, apenas atualize o dia selecionado.
+
+Validação de Arrays
+
+Antes de usar .map() ou .filter() em qualquer coleção/array (como lista de barbeiros, lista de registros diários, etc.), sempre verifique:
+
+js
+Copiar
+Editar
+const listaSegura = Array.isArray(listaOriginal) ? listaOriginal : [];
+Isso evita erros de “.map is not a function” ou “filter is not a function”.
+
+5.2. Tela “Lista da Vez” (Barbeiro)
+Cabeçalho
+
+Título: “Lista da Vez”
+
+Botão “← Voltar” (canto superior esquerdo) para voltar ao menu principal.
+
+Conteúdo Principal
+
+Na montagem, defina mesAtual = yyyy-mm (string “YYYY-MM”) e obtenha:
+
+Total de atendimentos acumulados deste barbeiro no mês (soma de todos atendimentosDiarios + dias em que marcou “passou a vez”).
+
+Posição Mensal calculada ordenando todos os barbeiros do mês inteiro conforme Regras de Negócio (ponto 4.3).
+
+Renderização
+
+Se a Posição Mensal = 1, exibir em destaque:
+
+“É a sua vez de atender!”
+(cor primária do site, fonte maior)
+
+Se a Posição Mensal > 1, exibir:
+
+“Você está em [posicao]ª posição.”
+(ex.: “Você está em 3ª posição deste mês.”)
+
+Abaixo (menor destaque), exibir:
+
+“Atendimentos este mês: [totalAtendimentosMes]”
+
+Regras de Exibição
+
+Nunca exibir nomes, totais ou posições específicas de outros barbeiros.
+
+Apenas a posição e o total do próprio barbeiro.
+
+Garantir que, se Lista da Vez não tiver sido salva pela recepcionista naquele dia, o barbeiro ainda veja o estado atual do mês (com somatório de todos os dias já registrados).
+
+6. Resumo das Regras de Fluxo
+Ao entrar na tela “Lista da Vez” (Recepcionista)
+
+Selecionar data → Carregar todos os barbeiros ativos.
+
+Para cada barbeiro, buscar ou criar em memória o registro diário do dia → Calcular total mensal e ordenar.
+
+Exibir tabela com campos editáveis e colunas “Total no Mês” e “Posição Mensal”.
+
+Alterações em tempo real (Recepcionista)
+
+Alterar “Atendimentos Diários” ou “Passou a Vez?” → Atualizar em memória → Recalcular total mensal de cada barbeiro → Reordenar lista → Atualizar colunas “Total no Mês” e “Posição Mensal”.
+
+Salvar alterações (Recepcionista)
+
+Clicar em “Salvar Lista da Vez” → Para cada barbeiro:
+
+Se já existe registro diário para (barbeiroId, dataSelecionada), atualizar esse registro.
+
+Caso contrário, inserir novo registro diário.
+
+Exibir alerta de sucesso ou falha.
+
+Ao entrar na tela “Lista da Vez” (Barbeiro)
+
+Definir mês corrente (YYYY-MM).
+
+Somar todos os atendimentosDiarios e dias de “Passou a Vez” daquele barbeiro no mês → Calcular “Total no Mês”.
+
+Calcular “Posição Mensal” ordenando todos os barbeiros ativos do mês.
+
+Exibir a posição conforme descrito (1 → “É a sua vez”; >1 → “Você está em Xª posição”).
+
+Exibir “Atendimentos este mês: Y”.
+
+Reset Mensal Automático
+
+No primeiro dia de cada mês (00:00:00), zerar todos os registros de AtendimentoDiario e quaisquer dados derivados de “Total no Mês” (se existir alguma tabela materializada).
+
+Na próxima abertura de tela, a recepcionista verá todos os barbeiros com atendimentosDiarios = 0 e passouAVez = false para o novo mês.
+
+7. Cenários de Teste
+Início de mês (sem registros)
+
+Recepcionista abre “Lista da Vez” em 1º dia do mês → Todos os barbeiros aparecem com “Atendimentos Diários = 0”, “Passou a Vez = false”, “Total no Mês = 0” e posições de 1 a N, respeitando ordem alfabética.
+
+Barbeiros, ao acessarem, veem sempre “Você está em [posição]” e “Atendimentos este mês: 0”.
+
+Registro Diário no meio do mês
+
+Ex.: 10 de junho.
+
+Recepcionista registra para “Barbeiro A”: atendimentosDiarios = 3, “Passou a Vez = false”; para “Barbeiro B”: atendimentosDiarios = 1, “Passou a Vez = true” (que contabiliza como 1+1 = 2 para ranking).
+
+O componente deve:
+
+Somar total mensal (tudo que existe de registros anteriores no mês + novos valores).
+
+Ordenar pelo menor total.
+
+Atualizar “Posição Mensal” em tempo real.
+
+Ao clicar “Salvar Lista da Vez”, os registros de 10 de junho devem ser inseridos ou atualizados em AtendimentoDiario.
+
+Edição de registro diário existente
+
+No mesmo dia, a recepcionista altera “Barbeiro B” para atendimentosDiarios = 2, “Passou a Vez = false”.
+
+O sistema:
+
+Atualiza em memória → Soma total mensal → Reordena → Atualiza posições.
+
+Ao salvar, modifica o registro em AtendimentoDiario em vez de criar duplicata.
+
+Barbeiro visualiza posição
+
+“Barbeiro B” acessa a tela → o sistema soma todos os dias (por exemplo, dia 1 ao 10) → calcula “Total no Mês” (soma de todos atendimentosDiarios + dias que marcou “Passou a Vez”) → identifica a posição entre todos os barbeiros.
+
+Se sua posição for 1, exibe “É a sua vez de atender!”; caso contrário, “Você está em Xª posição.” e “Atendimentos este mês: Y”.
+
+“Passou a Vez” alterando ranking
+
+Se “Barbeiro C” tiver atendimentosDiarios = 2 sem “Passou a Vez” (total_aux = 2) e “Barbeiro D” tiver atendimentosDiarios = 1 com “Passou a Vez = true” (total_aux = 1+1 = 2), ambos empatam em 2.
+
+Critério de desempate: quem passou a vez menos vezes no mês fica à frente.
+
+Se ainda empatar, ordem alfabética.
+
+Reset no mês seguinte
+
+No primeiro dia do próximo mês, todos os registros de AtendimentoDiario do mês anterior devem ser apagados.
+
+Ao abrir “Lista da Vez”, tabela recomeça zerada para o novo mês.
+

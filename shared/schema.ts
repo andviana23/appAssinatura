@@ -123,6 +123,20 @@ export const agendamentos = pgTable("agendamentos", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Lista da Vez - Atendimentos Diários
+export const atendimentosDiarios = pgTable("atendimentos_diarios", {
+  id: serial("id").primaryKey(),
+  barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull(),
+  data: text("data").notNull(), // formato "YYYY-MM-DD"
+  atendimentosDiarios: integer("atendimentos_diarios").notNull().default(0),
+  passouAVez: boolean("passou_a_vez").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Garantir que não haverá duplicatas para o mesmo barbeiro no mesmo dia
+  uniqueBarbeiroData: unique("unique_barbeiro_data").on(table.barbeiroId, table.data),
+}));
+
 // Insert schemas
 export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
   id: true,
@@ -186,6 +200,12 @@ export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   )
 });
 
+export const insertAtendimentoDiarioSchema = createInsertSchema(atendimentosDiarios).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type Barbeiro = typeof barbeiros.$inferSelect;
 export type InsertBarbeiro = z.infer<typeof insertBarbeiroSchema>;
@@ -219,3 +239,6 @@ export type InsertTotalServico = z.infer<typeof insertTotalServicoSchema>;
 
 export type Agendamento = typeof agendamentos.$inferSelect;
 export type InsertAgendamento = z.infer<typeof insertAgendamentoSchema>;
+
+export type AtendimentoDiario = typeof atendimentosDiarios.$inferSelect;
+export type InsertAtendimentoDiario = z.infer<typeof insertAtendimentoDiarioSchema>;

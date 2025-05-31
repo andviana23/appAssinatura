@@ -148,6 +148,21 @@ export interface IStorage {
   createAgendamento(agendamento: any): Promise<any>;
   finalizarAgendamento(id: number): Promise<any>;
 
+  // Lista da Vez - Atendimentos Diários
+  getAtendimentosDiarios(data: string): Promise<AtendimentoDiario[]>;
+  getAtendimentosDiariosByMes(mesAno: string): Promise<AtendimentoDiario[]>;
+  createOrUpdateAtendimentoDiario(atendimento: InsertAtendimentoDiario): Promise<AtendimentoDiario>;
+  getFilaMensal(mesAno: string): Promise<Array<{
+    barbeiro: Barbeiro;
+    totalAtendimentosMes: number;
+    posicaoMensal: number;
+    diasPassouAVez: number;
+  }>>;
+  getBarbeiroFilaMensal(barbeiroId: number, mesAno: string): Promise<{
+    posicaoMensal: number;
+    totalAtendimentosMes: number;
+  }>;
+
   // Métricas
   getDashboardMetrics(): Promise<{
     faturamentoMensal: number;
@@ -812,6 +827,123 @@ export class DatabaseStorage implements IStorage {
     }
 
     return agendamento;
+  }
+
+  // Lista da Vez - Atendimentos Diários
+  async getAtendimentosDiarios(data: string): Promise<AtendimentoDiario[]> {
+    return await db
+      .select()
+      .from(atendimentosDiarios)
+      .where(eq(atendimentosDiarios.data, data))
+      .orderBy(atendimentosDiarios.barbeiroId);
+  }
+
+  async getAtendimentosDiariosByMes(mesAno: string): Promise<AtendimentoDiario[]> {
+    // mesAno formato "YYYY-MM"
+    const mesPattern = `${mesAno}-%`;
+    return await db
+      .select()
+      .from(atendimentosDiarios)
+      .where(like(atendimentosDiarios.data, mesPattern))
+      .orderBy(atendimentosDiarios.data, atendimentosDiarios.barbeiroId);
+  }
+
+  async createOrUpdateAtendimentoDiario(atendimento: InsertAtendimentoDiario): Promise<AtendimentoDiario> {
+    // Verifica se já existe registro para o barbeiro na data
+    const existing = await db
+      .select()
+      .from(atendimentosDiarios)
+      .where(
+        and(
+          eq(atendimentosDiarios.barbeiroId, atendimento.barbeiroId),
+          eq(atendimentosDiarios.data, atendimento.data)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Atualiza o registro existente
+      const [updated] = await db
+        .update(atendimentosDiarios)
+        .set({
+          atendimentosDiarios: atendimento.atendimentosDiarios,
+          passouAVez: atendimento.passouAVez,
+          updatedAt: new Date()
+        })
+        .where(eq(atendimentosDiarios.id, existing[0].id))
+        .returning();
+      return updated;
+    } else {
+      // Cria novo registro
+      const [created] = await db
+        .insert(atendimentosDiarios)
+        .values(atendimento)
+        .returning();
+      return created;
+    }
+  }
+
+  async getFilaMensal(mesAno: string): Promise<Array<{
+    barbeiro: Barbeiro;
+    totalAtendimentosMes: number;
+    posicaoMensal: number;
+    diasPassouAVez: number;
+  }>> {
+    // Buscar todos os barbeiros ativos
+    const barbeirosList = await this.getAllBarbeiros();
+    const atendimentosMes = await this.getAtendimentosDiariosByMes(mesAno);
+
+    // Calcular totais para cada barbeiro
+    const barbeirosComTotais = barbeirosList.map(barbeiro => {
+      const atendimentosBarbeiro = atendimentosMes.filter(a => a.barbeiroId === barbeiro.id);
+      
+      const totalAtendimentos = atendimentosBarbeiro.reduce((sum, a) => sum + a.atendimentosDiarios, 0);
+      const diasPassouAVez = atendimentosBarbeiro.filter(a => a.passouAVez).length;
+      const totalAtendimentosMes = totalAtendimentos + diasPassouAVez;
+
+      return {
+        barbeiro,
+        totalAtendimentosMes,
+        diasPassouAVez
+      };
+    });
+
+    // Ordenar conforme regras: menor total primeiro, depois menor "passou a vez", depois ordem alfabética
+    barbeirosComTotais.sort((a, b) => {
+      if (a.totalAtendimentosMes !== b.totalAtendimentosMes) {
+        return a.totalAtendimentosMes - b.totalAtendimentosMes;
+      }
+      if (a.diasPassouAVez !== b.diasPassouAVez) {
+        return a.diasPassouAVez - b.diasPassouAVez;
+      }
+      return a.barbeiro.nome.localeCompare(b.barbeiro.nome);
+    });
+
+    // Adicionar posição mensal
+    return barbeirosComTotais.map((item, index) => ({
+      ...item,
+      posicaoMensal: index + 1
+    }));
+  }
+
+  async getBarbeiroFilaMensal(barbeiroId: number, mesAno: string): Promise<{
+    posicaoMensal: number;
+    totalAtendimentosMes: number;
+  }> {
+    const filaMensal = await this.getFilaMensal(mesAno);
+    const barbeiroNaFila = filaMensal.find(item => item.barbeiro.id === barbeiroId);
+    
+    if (!barbeiroNaFila) {
+      return {
+        posicaoMensal: filaMensal.length + 1,
+        totalAtendimentosMes: 0
+      };
+    }
+
+    return {
+      posicaoMensal: barbeiroNaFila.posicaoMensal,
+      totalAtendimentosMes: barbeiroNaFila.totalAtendimentosMes
+    };
   }
 }
 
