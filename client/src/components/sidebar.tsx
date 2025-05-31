@@ -21,8 +21,8 @@ const navigation = [
     icon: BarChart3,
   },
   {
-    name: "Barbeiros",
-    href: "/barbeiros",
+    name: "Profissionais",
+    href: "/profissionais",
     icon: Users,
   },
   {

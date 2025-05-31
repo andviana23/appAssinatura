@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Login from "@/pages/login-aprimorado";
 import AdminDashboard from "@/pages/admin-dashboard-clean";
 import Barbeiros from "@/pages/barbeiros";
+import Profissionais from "@/pages/profissionais";
 import Clientes from "@/pages/clientes";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
@@ -31,6 +32,7 @@ function AuthenticatedRoutes() {
           <Route path="/" component={AdminDashboard} />
           <Route path="/dashboard" component={AdminDashboard} />
           <Route path="/barbeiros" component={Barbeiros} />
+          <Route path="/profissionais" component={Profissionais} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
