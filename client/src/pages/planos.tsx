@@ -37,8 +37,10 @@ export default function Planos() {
   });
 
   const createCheckoutMutation = useMutation({
-    mutationFn: (data: { nome: string; email: string; cpf?: string }) => 
-      apiRequest("POST", "/api/asaas/checkout", data),
+    mutationFn: async (data: { nome: string; email: string; cpf?: string }) => {
+      const response = await apiRequest("/api/asaas/checkout", "POST", data);
+      return response.json();
+    },
     onSuccess: (data: any) => {
       if (data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');

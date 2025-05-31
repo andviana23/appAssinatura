@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Se não encontrou, criar novo cliente
       if (!customerId) {
-        const customerPayload = {
+        const customerPayload: any = {
           name: nome,
           email: email
         };
