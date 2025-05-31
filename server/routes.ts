@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Buscar clientes do Asaas se a API key estiver configurada
+      // Buscar cobranças confirmadas do Asaas no mês atual
       const asaasApiKey = process.env.ASAAS_API_KEY;
       if (asaasApiKey) {
         try {
@@ -696,46 +696,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'https://api.asaas.com/v3' 
             : 'https://sandbox.asaas.com/api/v3';
 
-          const asaasResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+          // Buscar cobranças confirmadas do mês atual
+          const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`, {
             headers: {
               'access_token': asaasApiKey,
               'Content-Type': 'application/json'
             }
           });
 
-          if (asaasResponse.ok) {
-            const asaasData = await asaasResponse.json();
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
             
-            for (const subscription of asaasData.data || []) {
-              // Buscar dados do cliente
-              const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
-                headers: {
-                  'access_token': asaasApiKey,
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              if (customerResponse.ok) {
-                const customer = await customerResponse.json();
-                
-                clientesUnificados.push({
-                  id: `asaas_${subscription.id}`,
-                  nome: customer.name,
-                  email: customer.email,
-                  telefone: customer.phone,
-                  cpf: customer.cpfCnpj,
-                  planoNome: subscription.description || 'Assinatura Asaas',
-                  planoValor: subscription.value,
-                  formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
-                                 subscription.billingType === 'PIX' ? 'PIX' : 'Boleto',
-                  dataInicio: subscription.dateCreated,
-                  dataValidade: subscription.nextDueDate,
-                  status: subscription.status === 'ACTIVE' ? 'ATIVO' : 'INATIVO',
-                  origem: 'ASAAS',
-                  billingType: subscription.billingType
+            // Agrupar por cliente (evitar duplicatas se o mesmo cliente teve múltiplos pagamentos)
+            const clientesUnicos = new Map();
+            
+            for (const payment of paymentsData.data || []) {
+              if (!clientesUnicos.has(payment.customer)) {
+                // Buscar dados do cliente
+                const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+                  headers: {
+                    'access_token': asaasApiKey,
+                    'Content-Type': 'application/json'
+                  }
                 });
+
+                if (customerResponse.ok) {
+                  const customer = await customerResponse.json();
+                  
+                  clientesUnicos.set(payment.customer, {
+                    id: `asaas_${payment.customer}`,
+                    nome: customer.name,
+                    email: customer.email,
+                    telefone: customer.phone,
+                    cpf: customer.cpfCnpj,
+                    planoNome: payment.description || 'Cobrança Asaas',
+                    planoValor: payment.value,
+                    formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                   payment.billingType === 'PIX' ? 'PIX' : 
+                                   payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                    dataInicio: payment.paymentDate || payment.confirmedDate,
+                    dataValidade: payment.dueDate,
+                    status: 'ATIVO',
+                    origem: 'ASAAS',
+                    billingType: payment.billingType
+                  });
+                }
               }
             }
+            
+            // Adicionar clientes únicos à lista
+            clientesUnificados.push(...Array.from(clientesUnicos.values()));
           }
         } catch (asaasError) {
           console.error("Erro ao buscar dados do Asaas:", asaasError);
@@ -779,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Buscar estatísticas do Asaas se a API key estiver configurada
+      // Buscar estatísticas das cobranças confirmadas do Asaas no mês atual
       const asaasApiKey = process.env.ASAAS_API_KEY;
       if (asaasApiKey) {
         try {
@@ -787,26 +800,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'https://api.asaas.com/v3' 
             : 'https://sandbox.asaas.com/api/v3';
 
-          const asaasResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+          // Buscar cobranças confirmadas do mês atual
+          const inicioMesStr = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+          const fimMesStr = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMesStr}&receivedInCashDate[le]=${fimMesStr}&limit=100`, {
             headers: {
               'access_token': asaasApiKey,
               'Content-Type': 'application/json'
             }
           });
 
-          if (asaasResponse.ok) {
-            const asaasData = await asaasResponse.json();
-            totalAsaasClients = asaasData.totalCount || 0;
-            totalActiveClients += totalAsaasClients;
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
             
-            for (const subscription of asaasData.data || []) {
-              totalMonthlyRevenue += subscription.value || 0;
+            // Contar clientes únicos que pagaram no mês
+            const clientesUnicosAsaas = new Set();
+            
+            for (const payment of paymentsData.data || []) {
+              clientesUnicosAsaas.add(payment.customer);
+              totalMonthlyRevenue += payment.value || 0;
               
-              const dataInicio = new Date(subscription.dateCreated);
-              if (dataInicio >= inicioMes) {
+              const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
+              if (dataPagamento >= inicioMes) {
                 newClientsThisMonth++;
               }
             }
+            
+            totalAsaasClients = clientesUnicosAsaas.size;
+            totalActiveClients += totalAsaasClients;
           }
         } catch (asaasError) {
           console.error("Erro ao buscar stats do Asaas:", asaasError);

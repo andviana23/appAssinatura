@@ -152,7 +152,7 @@ export default function Clientes() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Clientes Ativos</h2>
-          <p className="text-muted-foreground">Todos os clientes com assinaturas ativas (Asaas + Pagamentos Externos)</p>
+          <p className="text-muted-foreground">Clientes com cobranças confirmadas no Asaas (mês atual) + Pagamentos externos válidos</p>
         </div>
         
         <Button onClick={handleRefresh} className="rounded-xl">
@@ -234,7 +234,7 @@ export default function Clientes() {
         <CardHeader>
           <CardTitle className="text-lg">Todos os Clientes Ativos</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Clientes com assinaturas ativas do Asaas e pagamentos externos (atualização automática a cada 5 minutos)
+            Cobranças confirmadas no Asaas (mês atual) + Pagamentos externos válidos (atualização automática a cada 5 minutos)
           </p>
         </CardHeader>
         <CardContent>
@@ -247,7 +247,7 @@ export default function Clientes() {
                   <TableHead>Plano</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Forma de Pagamento</TableHead>
-                  <TableHead>Data Início</TableHead>
+                  <TableHead>Data do Pagamento</TableHead>
                   <TableHead>Válido até</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Dias Restantes</TableHead>
