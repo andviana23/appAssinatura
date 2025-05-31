@@ -63,7 +63,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-2">
+        <nav className="space-y-3">
           {navigation.map((item) => {
             const isActive = location === item.href || 
               (item.href === "/dashboard" && location === "/");
@@ -73,13 +73,16 @@ export function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-2xl font-medium transition-colors",
+                  "flex items-center space-x-4 px-5 py-4 rounded-2xl font-semibold transition-all duration-200 group",
                   isActive
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:scale-[1.02]"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={cn(
+                  "h-5 w-5 transition-all duration-200",
+                  isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
+                )} />
                 <span>{item.name}</span>
               </Link>
             );
@@ -88,28 +91,28 @@ export function Sidebar() {
       </div>
 
       {/* User section */}
-      <div className="mt-auto p-24">
-        <div className="bg-accent rounded-2xl p-4">
-          <div className="flex items-center space-x-3">
-            <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">
+      <div className="mt-auto p-6">
+        <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-2xl p-5 border border-border/50">
+          <div className="flex items-center space-x-4">
+            <div className="h-12 w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-lg">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
+              <p className="text-sm font-semibold text-foreground truncate">
                 {user?.email}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                 {user?.role === "admin" ? "Administrador" : "Barbeiro"}
               </p>
             </div>
             <button
               onClick={() => logout()}
-              className="text-muted-foreground hover:text-foreground p-1"
-              title="Sair"
+              className="text-muted-foreground hover:text-destructive p-2 rounded-xl hover:bg-destructive/5 transition-all duration-200"
+              title="Sair do Sistema"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
         </div>
