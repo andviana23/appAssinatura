@@ -75,10 +75,7 @@ export default function Agendamento() {
   // Mutations
   const createAgendamento = useMutation({
     mutationFn: (data: any) => 
-      apiRequest("/api/agendamentos", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("/api/agendamentos", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       setIsModalOpen(false);

@@ -85,7 +85,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("barbeiro"), // 'admin' or 'barbeiro'
+  role: text("role").notNull().default("barbeiro"), // 'admin', 'barbeiro', or 'recepcionista'
+  nome: text("nome"),
+  fotoPerfil: text("foto_perfil"),
   barbeiroId: integer("barbeiro_id").references(() => barbeiros.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -124,6 +124,27 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
               </Link>
             );
           })}
+          
+          {/* Configurações - sempre visível */}
+          <Link
+            href="/configuracoes"
+            className={cn(
+              "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
+              collapsed 
+                ? "justify-center p-3 mx-2" 
+                : "space-x-4 px-5 py-4",
+              location === "/configuracoes"
+                ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:scale-[1.02]"
+            )}
+            title={collapsed ? "Configurações" : undefined}
+          >
+            <Settings className={cn(
+              "h-5 w-5 transition-all duration-200",
+              location === "/configuracoes" ? "text-white" : "text-muted-foreground group-hover:text-accent"
+            )} />
+            {!collapsed && <span>Configurações</span>}
+          </Link>
         </nav>
       </div>
 
