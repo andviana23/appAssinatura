@@ -47,7 +47,7 @@ export default function Profissionais() {
   const [showPassword, setShowPassword] = useState(false);
 
   const { data: barbeiros = [], isLoading } = useQuery({
-    queryKey: ["/api/barbeiros"],
+    queryKey: ["/api/profissionais"],
     enabled: !isNovo && !isEdicao, // Só carregar lista se não estiver em formulário
   });
 
@@ -57,9 +57,22 @@ export default function Profissionais() {
     enabled: isEdicao && !!profissionalId,
   });
 
-  // Preencher formulário quando carregar dados para edição
+  // Limpar formulário ao navegar ou carregar dados para edição
   useEffect(() => {
-    if (profissionalData && isEdicao) {
+    if (isNovo) {
+      // Resetar formulário para novo cadastro
+      setFormData({
+        nome: '',
+        email: '',
+        senha: '',
+        telefone: '',
+        endereco: '',
+        comissao: 50,
+        ativo: true,
+        role: tipoProfissional === 'recepcionista' ? 'recepcionista' : 'barbeiro'
+      });
+    } else if (profissionalData && isEdicao) {
+      // Preencher formulário para edição
       setFormData({
         nome: profissionalData.nome || '',
         email: profissionalData.email || '',
@@ -71,7 +84,7 @@ export default function Profissionais() {
         role: profissionalData.role || 'barbeiro'
       });
     }
-  }, [profissionalData, isEdicao]);
+  }, [profissionalData, isEdicao, isNovo, tipoProfissional]);
 
   const criarProfissional = useMutation({
     mutationFn: (data: any) => {

@@ -236,6 +236,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profissionais routes (barbeiros + recepcionistas)
+  app.get("/api/profissionais", requireAuth, async (req, res) => {
+    try {
+      const profissionais = await storage.getAllProfissionais();
+      res.json(profissionais);
+    } catch (error) {
+      console.error("Erro ao buscar profissionais:", error);
+      res.status(500).json({ message: "Erro ao buscar profissionais" });
+    }
+  });
+
   // Serviços routes
   app.get("/api/servicos", requireAuth, async (req, res) => {
     try {

@@ -133,6 +133,8 @@ export const insertServicoSchema = createInsertSchema(servicos).omit({
   id: true,
   createdAt: true,
   isAssinatura: true, // Sempre true, não precisa no form
+}).extend({
+  percentualComissao: z.union([z.string(), z.number()]).transform(val => String(val))
 });
 
 export const insertPlanoAssinaturaSchema = createInsertSchema(planosAssinatura).omit({

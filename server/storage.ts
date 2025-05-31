@@ -59,6 +59,18 @@ export interface IStorage {
   createBarbeiro(barbeiro: InsertBarbeiro): Promise<Barbeiro>;
   updateBarbeiro(id: number, barbeiro: Partial<InsertBarbeiro>): Promise<Barbeiro>;
   deleteBarbeiro(id: number): Promise<void>;
+  
+  // Profissionais (Barbeiros + Recepcionistas)
+  getAllProfissionais(): Promise<Array<{
+    id: number;
+    nome: string;
+    email: string;
+    ativo: boolean;
+    tipo: string;
+    telefone?: string;
+    endereco?: string;
+    comissao?: number;
+  }>>;
 
   // Serviços
   getAllServicos(): Promise<Servico[]>;
@@ -217,6 +229,53 @@ export class DatabaseStorage implements IStorage {
     
     // Por fim, excluir o barbeiro
     await db.delete(barbeiros).where(eq(barbeiros.id, id));
+  }
+
+  async getAllProfissionais(): Promise<Array<{
+    id: number;
+    nome: string;
+    email: string;
+    ativo: boolean;
+    tipo: string;
+    telefone?: string;
+    endereco?: string;
+    comissao?: number;
+  }>> {
+    // Buscar todos os barbeiros
+    const barbeirosList = await db.select().from(barbeiros).orderBy(barbeiros.nome);
+    
+    // Buscar todos os usuários recepcionistas
+    const recepcionistasList = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'recepcionista'))
+      .orderBy(users.email);
+    
+    // Combinar e padronizar os dados
+    const profissionais = [
+      ...barbeirosList.map(barbeiro => ({
+        id: barbeiro.id,
+        nome: barbeiro.nome,
+        email: barbeiro.email,
+        ativo: barbeiro.ativo,
+        tipo: 'barbeiro',
+        telefone: barbeiro.telefone,
+        endereco: barbeiro.endereco,
+        comissao: barbeiro.comissao
+      })),
+      ...recepcionistasList.map(recepcionista => ({
+        id: recepcionista.id,
+        nome: recepcionista.nome || recepcionista.email,
+        email: recepcionista.email,
+        ativo: true, // Assumir que usuários cadastrados estão ativos
+        tipo: 'recepcionista',
+        telefone: undefined,
+        endereco: undefined,
+        comissao: undefined
+      }))
+    ];
+    
+    return profissionais.sort((a, b) => a.nome.localeCompare(b.nome));
   }
 
   async getAllServicos(): Promise<Servico[]> {
