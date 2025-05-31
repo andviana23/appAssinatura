@@ -74,24 +74,45 @@ export default function Agendamento() {
 
   // Mutations
   const createAgendamento = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/agendamentos", "POST", data),
+    mutationFn: (data: any) => 
+      fetch("/api/agendamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(res => {
+        if (!res.ok) throw new Error("Erro ao criar agendamento");
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       setIsModalOpen(false);
       toast({ title: "Agendamento criado com sucesso!" });
+      // Resetar os campos
+      setSelectedCliente("");
+      setSelectedBarbeiro("");
+      setSelectedServico("");
+      setSelectedHour("");
     },
-    onError: () => {
-      toast({ title: "Erro ao criar agendamento", variant: "destructive" });
+    onError: (error) => {
+      console.error("Erro ao criar agendamento:", error);
+      toast({ title: "Erro nos dados selecionados, tente novamente", variant: "destructive" });
     },
   });
 
   const finalizarAtendimento = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/agendamentos/${id}/finalizar`, "PATCH"),
+    mutationFn: (id: number) => 
+      fetch(`/api/agendamentos/${id}/finalizar`, {
+        method: "PATCH",
+      }).then(res => {
+        if (!res.ok) throw new Error("Erro ao finalizar atendimento");
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       toast({ title: "Atendimento finalizado com sucesso!" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Erro ao finalizar atendimento:", error);
       toast({ title: "Erro ao finalizar atendimento", variant: "destructive" });
     },
   });
