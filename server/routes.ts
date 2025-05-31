@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { storage } from "./storage";
-import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema } from "@shared/schema";
+import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
 
@@ -1925,6 +1925,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(dailyData);
     } catch (error: any) {
       console.error("Erro ao buscar faturamento diário:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // === LISTA DA VEZ ===
+
+  // GET /api/lista-da-vez/fila-mensal/:mes - Obter fila mensal completa (Recepcionista)
+  app.get('/api/lista-da-vez/fila-mensal/:mes', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.params; // formato "YYYY-MM"
+      
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const filaMensal = await storage.getFilaMensal(mes);
+      res.json(filaMensal);
+    } catch (error: any) {
+      console.error('Erro ao buscar fila mensal:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/lista-da-vez/atendimentos/:data - Obter atendimentos de uma data específica
+  app.get('/api/lista-da-vez/atendimentos/:data', requireAuth, async (req, res) => {
+    try {
+      const { data } = req.params; // formato "YYYY-MM-DD"
+      
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const atendimentos = await storage.getAtendimentosDiarios(data);
+      res.json(atendimentos);
+    } catch (error: any) {
+      console.error('Erro ao buscar atendimentos diários:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/lista-da-vez/salvar - Salvar/atualizar atendimentos diários (Recepcionista)
+  app.post('/api/lista-da-vez/salvar', requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const { data, atendimentos } = req.body;
+      
+      if (!data || !Array.isArray(atendimentos)) {
+        return res.status(400).json({ message: 'Dados inválidos' });
+      }
+
+      const resultados = [];
+      
+      for (const atendimento of atendimentos) {
+        try {
+          const validated = insertAtendimentoDiarioSchema.parse({
+            barbeiroId: atendimento.barbeiroId,
+            data: data,
+            atendimentosDiarios: atendimento.atendimentosDiarios || 0,
+            passouAVez: atendimento.passouAVez || false
+          });
+
+          const resultado = await storage.createOrUpdateAtendimentoDiario(validated);
+          resultados.push(resultado);
+        } catch (validationError: any) {
+          console.error(`Erro de validação para barbeiro ${atendimento.barbeiroId}:`, validationError);
+          continue; // Pular este registro e continuar com os outros
+        }
+      }
+
+      res.json({ 
+        message: `Lista da Vez salva com sucesso para ${data}`,
+        total: resultados.length 
+      });
+    } catch (error: any) {
+      console.error('Erro ao salvar lista da vez:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/lista-da-vez/barbeiro/:barbeiroId/:mes - Obter posição do barbeiro (Barbeiro)
+  app.get('/api/lista-da-vez/barbeiro/:barbeiroId/:mes', requireAuth, async (req, res) => {
+    try {
+      const { barbeiroId, mes } = req.params;
+      
+      // Barbeiro só pode ver sua própria posição
+      if (req.session.userRole === 'barbeiro' && req.session.barbeiroId !== parseInt(barbeiroId)) {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const posicaoBarbeiro = await storage.getBarbeiroFilaMensal(parseInt(barbeiroId), mes);
+      res.json(posicaoBarbeiro);
+    } catch (error: any) {
+      console.error('Erro ao buscar posição do barbeiro:', error);
       res.status(500).json({ message: error.message });
     }
   });
