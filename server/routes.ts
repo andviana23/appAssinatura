@@ -733,11 +733,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         externalReference: `teste-${Date.now()}`
       };
 
-      // Para PIX, usar chave fixa configurada
+      // Configurações específicas por tipo de pagamento
       if (billingType === 'PIX') {
-        // Remover pixKey da configuração - usar PIX simples sem chave específica
-        // O Asaas gerará o QR Code automaticamente
+        // PIX requer chave cadastrada no painel do Asaas
         chargePayload.pixDescription = 'Clube do Trato Único - Teste de Funcionalidade';
+      } else if (billingType === 'BOLETO') {
+        // Boleto com vencimento para o dia seguinte
+        chargePayload.discount = {
+          value: 0,
+          dueDateLimitDays: 0
+        };
+        chargePayload.fine = {
+          value: 1.0
+        };
+        chargePayload.interest = {
+          value: 1.0
+        };
       }
 
       const chargeResponse = await fetch(`${baseUrl}/payments`, {

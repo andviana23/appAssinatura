@@ -428,8 +428,16 @@ export default function Planos() {
                   <Label htmlFor="credit_card" className="cursor-pointer">Cartão de Crédito</Label>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="DEBIT_CARD" id="debit_card" />
+                  <Label htmlFor="debit_card" className="cursor-pointer">Cartão de Débito</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="BOLETO" id="boleto" />
+                  <Label htmlFor="boleto" className="cursor-pointer">Boleto Bancário</Label>
+                </div>
+                <div className="flex items-center space-x-2">
                   <RadioGroupItem value="PIX" id="pix" />
-                  <Label htmlFor="pix" className="cursor-pointer">PIX (requer chave PIX cadastrada)</Label>
+                  <Label htmlFor="pix" className="cursor-pointer">PIX (indisponível)</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -438,7 +446,12 @@ export default function Planos() {
               <h4 className="font-medium text-orange-800 mb-2">Detalhes do teste:</h4>
               <ul className="text-sm text-orange-700 space-y-1">
                 <li>• Valor: R$ 5,00 (mínimo para cartão)</li>
-                <li>• Pagamento: {checkoutData.billingType === 'PIX' ? 'PIX' : 'Cartão de Crédito'}</li>
+                <li>• Pagamento: {
+                  checkoutData.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                  checkoutData.billingType === 'DEBIT_CARD' ? 'Cartão de Débito' :
+                  checkoutData.billingType === 'BOLETO' ? 'Boleto Bancário' :
+                  checkoutData.billingType === 'PIX' ? 'PIX (indisponível)' : 'Não selecionado'
+                }</li>
                 <li>• Checkout personalizado com identidade visual</li>
                 <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>
               </ul>
