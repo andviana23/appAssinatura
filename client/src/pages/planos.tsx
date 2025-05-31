@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube } from "lucide-react";
+import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube, Banknote, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,12 +26,14 @@ interface PlanoAsaas {
 export default function Planos() {
   const { toast } = useToast();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showExternalPaymentModal, setShowExternalPaymentModal] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
     nome: '',
     email: '',
     cpf: '',
     billingType: 'CREDIT_CARD'
   });
+  const [externalPaymentMethod, setExternalPaymentMethod] = useState('');
 
   const { data: planos, isLoading, refetch, isRefetching } = useQuery<PlanoAsaas[]>({
     queryKey: ["/api/asaas/planos"],
@@ -39,11 +41,23 @@ export default function Planos() {
   });
 
   const createCheckoutMutation = useMutation({
-    mutationFn: async (data: { nome: string; email: string; cpf?: string }) => {
+    mutationFn: async (data: typeof checkoutData) => {
+      if (data.billingType === 'EXTERNAL') {
+        // Para pagamento externo, não criar checkout Asaas
+        return { external: true };
+      }
+      
       const response = await apiRequest("/api/asaas/checkout", "POST", data);
       return response.json();
     },
     onSuccess: (data: any) => {
+      if (data.external) {
+        // Mostrar modal de pagamento externo
+        setShowCheckoutModal(false);
+        setShowExternalPaymentModal(true);
+        return;
+      }
+      
       if (data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');
         setShowCheckoutModal(false);
@@ -57,6 +71,45 @@ export default function Planos() {
     onError: (error: any) => {
       toast({
         title: "Erro ao criar checkout",
+        description: error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createExternalClientMutation = useMutation({
+    mutationFn: async (paymentMethod: string) => {
+      return apiRequest("/api/clientes/external", {
+        method: "POST",
+        body: JSON.stringify({
+          nome: checkoutData.nome,
+          email: checkoutData.email,
+          cpf: checkoutData.cpf,
+          paymentMethod: paymentMethod,
+          planoNome: "Clube do Trato Único",
+          planoValor: 5.00
+        })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Cliente cadastrado com sucesso!",
+        description: `Assinatura ativa por 30 dias com pagamento via ${externalPaymentMethod}`,
+      });
+      
+      setShowExternalPaymentModal(false);
+      setExternalPaymentMethod('');
+      // Reset form
+      setCheckoutData({
+        nome: '',
+        email: '',
+        cpf: '',
+        billingType: 'CREDIT_CARD'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cadastrar cliente",
         description: error.message || "Tente novamente mais tarde.",
         variant: "destructive",
       });
@@ -425,19 +478,23 @@ export default function Planos() {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="CREDIT_CARD" id="credit_card" />
-                  <Label htmlFor="credit_card" className="cursor-pointer">Cartão de Crédito</Label>
+                  <Label htmlFor="credit_card" className="cursor-pointer flex items-center space-x-2">
+                    <CreditCard className="h-4 w-4" />
+                    <span>Cartão de Crédito</span>
+                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                      Automático via Asaas
+                    </span>
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="DEBIT_CARD" id="debit_card" />
-                  <Label htmlFor="debit_card" className="cursor-pointer">Cartão de Débito</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="BOLETO" id="boleto" />
-                  <Label htmlFor="boleto" className="cursor-pointer">Boleto Bancário</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="PIX" id="pix" />
-                  <Label htmlFor="pix" className="cursor-pointer">PIX (indisponível)</Label>
+                  <RadioGroupItem value="EXTERNAL" id="external" />
+                  <Label htmlFor="external" className="cursor-pointer flex items-center space-x-2">
+                    <Banknote className="h-4 w-4" />
+                    <span>Pago Externamente</span>
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      PIX ou Débito
+                    </span>
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
@@ -447,10 +504,8 @@ export default function Planos() {
               <ul className="text-sm text-orange-700 space-y-1">
                 <li>• Valor: R$ 5,00 (mínimo para cartão)</li>
                 <li>• Pagamento: {
-                  checkoutData.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
-                  checkoutData.billingType === 'DEBIT_CARD' ? 'Cartão de Débito' :
-                  checkoutData.billingType === 'BOLETO' ? 'Boleto Bancário' :
-                  checkoutData.billingType === 'PIX' ? 'PIX (indisponível)' : 'Não selecionado'
+                  checkoutData.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito (Automático)' :
+                  checkoutData.billingType === 'EXTERNAL' ? 'Pago Externamente (PIX ou Débito)' : 'Não selecionado'
                 }</li>
                 <li>• Checkout personalizado com identidade visual</li>
                 <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>
