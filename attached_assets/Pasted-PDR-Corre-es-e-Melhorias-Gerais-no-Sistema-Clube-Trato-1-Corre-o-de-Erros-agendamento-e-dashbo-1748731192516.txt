@@ -1,0 +1,68 @@
+PDR — Correções e Melhorias Gerais no Sistema Clube Trato
+1. Correção de Erros (agendamento e dashboard)
+Corrija o erro de "Cannot read properties of undefined (reading 'map')" nas telas onde ocorrem listas dinâmicas.
+Sempre utilize Array.isArray() antes de qualquer .map ou .filter, por exemplo:
+
+tsx
+Copiar
+Editar
+{Array.isArray(analytics?.servicosMaisFeitos)
+  ? analytics.servicosMaisFeitos.map((entry, index) => (
+      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+    ))
+  : null}
+Corrija o erro ao criar agendamento:
+
+Garanta que todos os dados obrigatórios estejam sendo enviados corretamente.
+
+Adicione validação nos campos e feedback visual de erro caso algum campo esteja vazio ou inválido.
+
+Teste o fluxo de agendamento e garanta que não ocorre mais erro de runtime, nem tela branca ou crash.
+
+2. Dashboard — Tempo Total Trabalhado
+Faça o tempo total trabalhado aparecer corretamente no Dashboard (para cada barbeiro/profissional).
+
+Puxe as informações reais do banco de dados.
+
+Exiba de forma clara (exemplo: "Total trabalhado: 35h 20min").
+
+Caso não exista informação, mostre "Sem registros" ou "0h".
+
+3. Botão de Voltar
+Adicione SEMPRE um botão “Voltar” no topo de todas as páginas (exceto o Dashboard).
+
+O botão deve levar o usuário para a página anterior ou para o menu principal, facilitando a navegação.
+
+Use um ícone de seta para a esquerda para facilitar a identificação visual.
+
+4. Menu "Barbeiros" → "Profissionais"
+Renomeie o menu “Barbeiros” para “Profissionais”.
+
+No menu “Profissionais”, permita:
+
+Cadastro de Barbeiros, Recepcionistas e outros profissionais que venham a existir.
+
+Separe visualmente os diferentes tipos de profissionais na tela.
+
+Ao cadastrar um novo profissional, obrigue a escolher o tipo: Barbeiro ou Recepcionista.
+
+Liste todos os profissionais cadastrados, com filtros para cada tipo.
+
+5. Manter o que já está funcionando
+Não altere nenhum código, layout ou lógica de telas que já estão funcionando corretamente.
+Somente faça ajustes pontuais onde há erro ou foi solicitado nesta demanda.
+
+6. Padrão de Correção para Listas
+Garanta que todas as renderizações de listas utilizem o padrão:
+
+tsx
+Copiar
+Editar
+Array.isArray(dado) ? dado.map(...) : null
+para evitar erros de .map em dados indefinidos ou que ainda não carregaram.
+
+Resumo do Pedido
+Corrigir todos os erros de lista dinâmica e agendamento, garantir exibição correta do tempo total trabalhado no dashboard, adicionar botão de voltar em todas as páginas, e ajustar o menu “Barbeiros” para “Profissionais” com opção de cadastrar diferentes tipos.
+Não modifique o que já está funcionando!
+
+Aplique as correções e melhorias só onde houver erro, necessidade ou solicitação expressa neste PDR.

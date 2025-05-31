@@ -149,7 +149,17 @@ export default function Agendamento() {
 
   const handleCreateAgendamento = () => {
     if (!selectedCliente || !selectedServico || !selectedHour || !selectedBarbeiro) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+
+    // Validação adicional para garantir que os IDs são válidos
+    const clienteId = parseInt(selectedCliente);
+    const barbeiroId = parseInt(selectedBarbeiro);
+    const servicoId = parseInt(selectedServico);
+
+    if (isNaN(clienteId) || isNaN(barbeiroId) || isNaN(servicoId)) {
+      toast({ title: "Erro nos dados selecionados. Tente novamente.", variant: "destructive" });
       return;
     }
 
@@ -158,9 +168,9 @@ export default function Agendamento() {
     dataHora.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
     createAgendamento.mutate({
-      clienteId: parseInt(selectedCliente),
-      barbeiroId: parseInt(selectedBarbeiro),
-      servicoId: parseInt(selectedServico),
+      clienteId: clienteId,
+      barbeiroId: barbeiroId,
+      servicoId: servicoId,
       dataHora: dataHora.toISOString(),
     });
   };

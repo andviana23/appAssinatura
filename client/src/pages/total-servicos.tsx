@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { Download, Filter, Calendar, TrendingUp, Users, Clock, DollarSign } from "lucide-react";
+import { Download, Filter, Calendar, TrendingUp, Users, Clock, DollarSign, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 const COLORS = ['#8B4513', '#A0522D', '#CD853F', '#DEB887', '#F4A460'];
 
@@ -148,7 +149,7 @@ export default function Relatorios() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={analytics.atendimentosPorDia}>
+              <BarChart data={Array.isArray(analytics?.atendimentosPorDia) ? analytics.atendimentosPorDia : []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="dia" />
                 <YAxis />
@@ -178,7 +179,7 @@ export default function Relatorios() {
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
-                  data={analytics.servicosMaisFeitos}
+                  data={Array.isArray(analytics?.servicosMaisFeitos) ? analytics.servicosMaisFeitos : []}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -187,9 +188,11 @@ export default function Relatorios() {
                   fill="#8884d8"
                   dataKey="quantidade"
                 >
-                  {analytics.servicosMaisFeitos.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                  {Array.isArray(analytics?.servicosMaisFeitos)
+                    ? analytics.servicosMaisFeitos.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))
+                    : null}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -214,7 +217,7 @@ export default function Relatorios() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={analytics.receitaPorDia}>
+              <LineChart data={Array.isArray(analytics?.receitaPorDia) ? analytics.receitaPorDia : []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="dia" />
                 <YAxis />
