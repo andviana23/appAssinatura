@@ -46,11 +46,6 @@ const navigation = [
     icon: Calendar,
   },
   {
-    name: "Assinaturas Ativas",
-    href: "/assinaturas-ativas",
-    icon: FileText,
-  },
-  {
     name: "Comissão",
     href: "/distribuicao",
     icon: Calculator,

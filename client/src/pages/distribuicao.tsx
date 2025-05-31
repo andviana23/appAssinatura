@@ -35,17 +35,15 @@ export default function Distribuicao() {
   // Query para buscar dados de comissão dos barbeiros
   const { data: comissaoData, isLoading } = useQuery({
     queryKey: ["/api/comissao/barbeiros", currentMonth],
-    queryFn: () => apiRequest(`/api/comissao/barbeiros?mes=${currentMonth}`),
   });
 
   // Query para estatísticas gerais de comissão
   const { data: statsData } = useQuery({
     queryKey: ["/api/comissao/stats", currentMonth],
-    queryFn: () => apiRequest(`/api/comissao/stats?mes=${currentMonth}`),
   });
 
-  const barbeirosComissao: BarbeiroComissao[] = comissaoData || [];
-  const stats: ComissaoStats = statsData || {
+  const barbeirosComissao: BarbeiroComissao[] = Array.isArray(comissaoData) ? comissaoData : [];
+  const stats: ComissaoStats = (statsData && typeof statsData === 'object' && !Array.isArray(statsData)) ? statsData : {
     faturamentoTotalAssinatura: 0,
     totalMinutosGerais: 0,
     totalComissao: 0,

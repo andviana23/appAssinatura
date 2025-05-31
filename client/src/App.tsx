@@ -18,7 +18,7 @@ import Distribuicao from "@/pages/distribuicao";
 import TotalServicos from "@/pages/total-servicos";
 import BarberDashboard from "@/pages/barber-dashboard";
 import Agendamento from "@/pages/agendamento";
-import AssinaturasAtivas from "@/pages/assinaturas-ativas";
+
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -35,7 +35,6 @@ function AuthenticatedRoutes() {
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/agendamento" component={Agendamento} />
-          <Route path="/assinaturas-ativas" component={AssinaturasAtivas} />
           <Route path="/distribuicao" component={Distribuicao} />
           <Route path="/total-servicos" component={TotalServicos} />
           <Route component={NotFound} />

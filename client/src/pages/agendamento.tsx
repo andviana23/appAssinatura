@@ -52,22 +52,18 @@ export default function Agendamento() {
   // Queries
   const { data: agendamentos = [] } = useQuery({
     queryKey: ["/api/agendamentos", dateString],
-    queryFn: () => apiRequest(`/api/agendamentos?date=${dateString}`),
   });
 
   const { data: barbeiros = [] } = useQuery({
     queryKey: ["/api/barbeiros"],
-    queryFn: () => apiRequest("/api/barbeiros"),
   });
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["/api/clientes"],
-    queryFn: () => apiRequest("/api/clientes"),
   });
 
   const { data: servicos = [] } = useQuery({
     queryKey: ["/api/servicos/assinatura"],
-    queryFn: () => apiRequest("/api/servicos/assinatura"),
   });
 
   // Mutations
