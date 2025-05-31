@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { storage } from "./storage";
 import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
