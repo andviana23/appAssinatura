@@ -34,6 +34,8 @@ function AuthenticatedRoutes() {
           <Route path="/dashboard" component={AdminDashboard} />
           <Route path="/barbeiros" component={Barbeiros} />
           <Route path="/profissionais" component={Profissionais} />
+          <Route path="/profissionais/novo" component={Profissionais} />
+          <Route path="/profissionais/editar/:id" component={Profissionais} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
