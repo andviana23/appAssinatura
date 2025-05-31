@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
@@ -28,7 +29,8 @@ export default function Planos() {
   const [checkoutData, setCheckoutData] = useState({
     nome: '',
     email: '',
-    cpf: ''
+    cpf: '',
+    billingType: 'CREDIT_CARD'
   });
 
   const { data: planos, isLoading, refetch, isRefetching } = useQuery<PlanoAsaas[]>({
@@ -45,7 +47,7 @@ export default function Planos() {
       if (data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank');
         setShowCheckoutModal(false);
-        setCheckoutData({ nome: '', email: '', cpf: '' });
+        setCheckoutData({ nome: '', email: '', cpf: '', billingType: 'CREDIT_CARD' });
         toast({
           title: "Checkout criado com sucesso!",
           description: "Você será redirecionado para o pagamento.",
@@ -371,7 +373,7 @@ export default function Planos() {
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              if (checkoutData.nome && checkoutData.email) {
+              if (checkoutData.nome && checkoutData.email && checkoutData.cpf) {
                 createCheckoutMutation.mutate(checkoutData);
               }
             }}
@@ -403,24 +405,48 @@ export default function Planos() {
             </div>
             
             <div>
-              <Label htmlFor="cpf">CPF (opcional)</Label>
+              <Label htmlFor="cpf">CPF *</Label>
               <Input
                 id="cpf"
                 value={checkoutData.cpf}
                 onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
                 placeholder="000.000.000-00"
+                required
                 className="mt-1"
               />
+            </div>
+
+            <div>
+              <Label>Forma de pagamento *</Label>
+              <RadioGroup 
+                value={checkoutData.billingType} 
+                onValueChange={(value) => setCheckoutData(prev => ({ ...prev, billingType: value }))}
+                className="mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="CREDIT_CARD" id="credit_card" />
+                  <Label htmlFor="credit_card" className="cursor-pointer">Cartão de Crédito</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="PIX" id="pix" />
+                  <Label htmlFor="pix" className="cursor-pointer">PIX (requer chave PIX cadastrada)</Label>
+                </div>
+              </RadioGroup>
             </div>
 
             <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
               <h4 className="font-medium text-orange-800 mb-2">Detalhes do teste:</h4>
               <ul className="text-sm text-orange-700 space-y-1">
                 <li>• Valor: R$ 2,00</li>
-                <li>• Pagamento: PIX</li>
+                <li>• Pagamento: {checkoutData.billingType === 'PIX' ? 'PIX' : 'Cartão de Crédito'}</li>
                 <li>• Checkout personalizado com identidade visual</li>
                 <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>
               </ul>
+              {checkoutData.billingType === 'PIX' && (
+                <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs text-yellow-800">
+                  ⚠️ Para pagamento via PIX, é necessário ter uma chave PIX cadastrada na conta Asaas
+                </div>
+              )}
             </div>
             
             <div className="flex gap-3 pt-2">
@@ -436,7 +462,7 @@ export default function Planos() {
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90"
-                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email}
+                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email || !checkoutData.cpf}
               >
                 {createCheckoutMutation.isPending ? 'Criando...' : 'Criar Checkout'}
               </Button>

@@ -630,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://api.asaas.com/v3' 
         : 'https://sandbox.asaas.com/api/v3';
 
-      const { nome, email, cpf } = req.body;
+      const { nome, email, cpf, billingType } = req.body;
 
       // 1. Criar ou buscar cliente
       let customerId;
@@ -658,10 +658,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: email
         };
 
-        // Adicionar CPF apenas se fornecido
-        if (cpf && cpf.trim()) {
-          customerPayload.cpfCnpj = cpf.replace(/\D/g, ''); // Remove formatação
+        // CPF é obrigatório
+        if (!cpf || !cpf.trim()) {
+          throw new Error('CPF é obrigatório para criar cobrança');
         }
+        customerPayload.cpfCnpj = cpf.replace(/\D/g, ''); // Remove formatação
 
         const customerResponse = await fetch(`${baseUrl}/customers`, {
           method: 'POST',
@@ -687,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const chargePayload = {
         customer: customerId,
-        billingType: 'PIX',
+        billingType: billingType || 'CREDIT_CARD',
         value: 2.00,
         dueDate: tomorrow.toISOString().split('T')[0],
         description: 'Clube do Trato Único - Teste de Funcionalidade',
