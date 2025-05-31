@@ -79,6 +79,11 @@ export interface IStorage {
   getClienteById(id: number): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: Partial<InsertCliente>): Promise<Cliente>;
+  getClientesUnifiedStats(): Promise<{
+    totalActiveClients: number;
+    totalSubscriptionRevenue: number;
+    totalExpiringSubscriptions: number;
+  }>;
 
   // Distribuições
   getAllDistribuicoes(): Promise<Distribuicao[]>;
@@ -270,6 +275,47 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clientes.id, id))
       .returning();
     return updated;
+  }
+
+  async getClientesUnifiedStats(): Promise<{
+    totalActiveClients: number;
+    totalSubscriptionRevenue: number;
+    totalExpiringSubscriptions: number;
+  }> {
+    const allClientes = await this.getAllClientes();
+    
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7);
+    
+    // Clientes ativos (que pagaram no mês atual)
+    const activeClientes = allClientes.filter(cliente => {
+      if (!cliente.dataInicioAssinatura) return false;
+      const dataPagamento = new Date(cliente.dataInicioAssinatura);
+      const paymentMonth = dataPagamento.toISOString().slice(0, 7);
+      return paymentMonth === currentMonth && cliente.statusAssinatura === 'ATIVA';
+    });
+    
+    // Receita total de assinatura
+    const totalSubscriptionRevenue = activeClientes.reduce((total, cliente) => {
+      if (!cliente.planoValor) return total;
+      return total + parseFloat(cliente.planoValor.toString());
+    }, 0);
+    
+    // Assinaturas expirando nos próximos 7 dias
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    const expiringClientes = allClientes.filter(cliente => {
+      if (!cliente.dataVencimentoAssinatura) return false;
+      const validadeDate = new Date(cliente.dataVencimentoAssinatura);
+      return validadeDate >= now && validadeDate <= nextWeek;
+    });
+    
+    return {
+      totalActiveClients: activeClientes.length,
+      totalSubscriptionRevenue,
+      totalExpiringSubscriptions: expiringClientes.length,
+    };
   }
 
   async getAllDistribuicoes(): Promise<Distribuicao[]> {

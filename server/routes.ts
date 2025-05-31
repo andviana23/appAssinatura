@@ -994,11 +994,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const barbeiros = await storage.getAllBarbeiros();
       const barbeirosAtivos = barbeiros.filter(b => b.ativo);
       
-      // Buscar atendimentos finalizados do mês
+      // Buscar atendimentos finalizados do mês com dados dos serviços
       const atendimentos = await storage.getAllAtendimentos();
       const atendimentosMes = atendimentos.filter(a => 
         a.dataAtendimento.toISOString().slice(0, 7) === mesAtual
       );
+      
+      // Buscar todos os serviços para obter tempos
+      const servicos = await storage.getAllServicos();
+      const servicosMap = new Map(servicos.map(s => [s.id, s]));
       
       // Buscar receita total de assinatura do mês
       const clientesStats = await storage.getClientesUnifiedStats();
@@ -1006,7 +1010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calcular total de minutos trabalhados por todos os barbeiros
       const totalMinutosGerais = atendimentosMes.reduce((total, atendimento) => {
-        return total + (atendimento.quantidade * (atendimento.tempoMinutos || 30));
+        const servico = servicosMap.get(atendimento.servicoId);
+        const tempoMinutos = servico?.tempoMinutos || 30;
+        return total + (atendimento.quantidade * tempoMinutos);
       }, 0);
       
       // Calcular dados por barbeiro
