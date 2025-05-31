@@ -1,0 +1,82 @@
+Ajustes e Funcionalidades para Recepcionista e Barbeiro + Correção de Erros
+1. Correção de Erros de Listas Dinâmicas (.map/.filter)
+Analise e corrija todos os erros de runtime nas telas do sistema (principalmente dashboard, barbeiros, recepcionistas), onde dados podem estar undefined, objeto, ou não ser array.
+
+Antes de aplicar .map ou .filter em qualquer lista, use sempre:
+
+tsx
+Copiar
+Editar
+Array.isArray(dado) ? dado.map(...) : null
+ou, se precisar usar .filter:
+
+tsx
+Copiar
+Editar
+Array.isArray(dado) ? dado.filter(...) : []
+Exemplos para corrigir:
+
+No dashboard:
+Troque
+
+tsx
+Copiar
+Editar
+analytics.servicosMaisFeitos.map(...)
+por
+
+tsx
+Copiar
+Editar
+Array.isArray(analytics?.servicosMaisFeitos)
+  ? analytics.servicosMaisFeitos.map(...)
+  : null
+Aplique essa lógica em todas as listas dinâmicas do sistema para evitar qualquer erro de "Cannot read properties of undefined (reading 'map')" ou "filter is not a function".
+
+2. Tela Inicial da Recepcionista
+Crie uma tela de início exclusiva para a Recepcionista mostrando apenas as funcionalidades disponíveis:
+
+Planos
+
+Agenda
+
+Clientes
+
+A recepcionista deve poder criar novos agendamentos facilmente.
+
+Ela pode ver apenas o faturamento do dia (valor total das vendas/serviços do dia).
+Não mostrar comissão de barbeiro, nem relatórios financeiros avançados.
+
+O acesso e navegação devem ser simplificados, mostrando só o que interessa pro perfil dela.
+
+3. UI/UX das Telas de Barbeiro e Recepcionista
+Desenvolva uma interface clara e amigável para:
+
+Barbeiros: mostrar só agendamentos próprios, tempo trabalhado, quantidade de atendimentos e comissão gerada.
+
+Recepcionistas: mostrar agenda, clientes, planos e faturamento do dia.
+
+Garanta que as informações apresentadas são as reais do sistema, puxando dos dados corretos.
+
+Use a identidade visual padrão já definida (paleta, espaçamentos, responsividade).
+
+4. Controle de Acesso
+Recepcionistas: acesso limitado só ao que for permitido (Planos, Agenda, Clientes, Faturamento do dia).
+
+Barbeiros: só vêem os próprios dados (nunca de outros barbeiros).
+
+Admin: mantém acesso total ao sistema.
+
+5. Testes e Validação
+Teste todos os fluxos das telas de Recepcionista e Barbeiro.
+
+Garanta que nenhuma lista dinânica dê erro ao carregar dados indefinidos, nulos, objetos ou arrays vazios.
+
+Sempre converta objeto em array se necessário (exemplo: Object.values(obj)).
+
+Resumo do Pedido
+Implemente as telas e funcionalidades exclusivas para Recepcionista e Barbeiro, com acesso controlado e informações reais do sistema. Corrija todos os erros de .map e .filter aplicando Array.isArray() antes em toda lista dinâmica, principalmente no dashboard.
+
+Siga rigorosamente a identidade visual, UX e regras de acesso para cada perfil.
+
+Se houver qualquer dúvida ou comportamento indefinido, pergunte antes de implementar.

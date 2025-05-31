@@ -16,7 +16,7 @@ import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
 import Distribuicao from "@/pages/distribuicao";
 import TotalServicos from "@/pages/total-servicos";
-import BarberDashboard from "@/pages/barber-dashboard";
+import BarbeiroDashboard from "@/pages/barbeiro-dashboard";
 import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
 import NotFound from "@/pages/not-found";
@@ -44,15 +44,45 @@ function AuthenticatedRoutes() {
     );
   }
 
-  // Barbeiro routes
+  // Verificar se é barbeiro
+  if (user?.role === "barbeiro") {
+    return (
+      <Layout>
+        <Switch>
+          <Route path="/" component={BarbeiroDashboard} />
+          <Route path="/barbeiro" component={BarbeiroDashboard} />
+          <Route>
+            <Redirect to="/" />
+          </Route>
+        </Switch>
+      </Layout>
+    );
+  }
+
+  // Verificar se é recepcionista
+  if (user?.role === "recepcionista") {
+    return (
+      <Layout>
+        <Switch>
+          <Route path="/" component={RecepcionistaDashboard} />
+          <Route path="/recepcionista" component={RecepcionistaDashboard} />
+          <Route path="/agendamento" component={Agendamento} />
+          <Route path="/clientes" component={Clientes} />
+          <Route path="/planos" component={Planos} />
+          <Route>
+            <Redirect to="/" />
+          </Route>
+        </Switch>
+      </Layout>
+    );
+  }
+
+  // Fallback para outros usuários
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={BarberDashboard} />
-        <Route path="/barber" component={BarberDashboard} />
-        <Route>
-          <Redirect to="/barber" />
-        </Route>
+        <Route path="/" component={AdminDashboard} />
+        <Route component={NotFound} />
       </Switch>
     </Layout>
   );

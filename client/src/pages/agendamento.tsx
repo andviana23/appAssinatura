@@ -367,9 +367,9 @@ export default function Agendamento() {
       {/* Agenda Lateral */}
       <div className="w-80">
         <AgendaLateral
-          agendamentos={agendamentos.map((agendamento: Agendamento) => ({
+          agendamentos={Array.isArray(agendamentos) ? agendamentos.map((agendamento: Agendamento) => ({
             data: format(new Date(agendamento.dataHora), "yyyy-MM-dd")
-          }))}
+          })) : []}
           onDataSelecionada={(data) => {
             setSelectedDate(data);
           }}
