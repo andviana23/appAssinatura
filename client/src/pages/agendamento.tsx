@@ -299,8 +299,8 @@ export default function Agendamento() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Calendário Lateral */}
-      <div className="w-80 bg-white shadow-xl">
+      {/* Calendário Lateral - Igual à imagem */}
+      <div className="w-72 bg-white shadow-xl">
         <div className="p-4 border-b">
           <h2 className="text-lg font-bold text-[#1e3a8a]">Calendário</h2>
         </div>
@@ -311,7 +311,7 @@ export default function Agendamento() {
             <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <h3 className="font-semibold">
+            <h3 className="font-semibold text-sm">
               {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
             </h3>
             <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded">
@@ -321,7 +321,7 @@ export default function Agendamento() {
           
           <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
             {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
-              <div key={day} className="p-2 font-medium text-gray-500">{day}</div>
+              <div key={day} className="p-1 font-medium text-gray-500">{day}</div>
             ))}
           </div>
           
@@ -331,9 +331,9 @@ export default function Agendamento() {
                 key={date.toISOString()}
                 onClick={() => selectCalendarDate(date)}
                 className={`
-                  p-2 text-sm rounded hover:bg-blue-100 transition-colors
+                  p-2 text-xs rounded hover:bg-blue-100 transition-colors
                   ${isSameDay(date, selectedDate) ? 'bg-[#1e3a8a] text-white' : ''}
-                  ${isToday(date) ? 'font-bold border border-blue-500' : ''}
+                  ${isToday(date) ? 'font-bold bg-blue-100' : ''}
                   ${hasAgendamentos(date) ? 'bg-green-100' : ''}
                 `}
               >
@@ -345,36 +345,76 @@ export default function Agendamento() {
         
         {/* Navegação de Data */}
         <div className="p-4 border-t">
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             <button
               onClick={() => selectCalendarDate(subDays(selectedDate, 1))}
-              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-xs"
             >
               ← Anterior
             </button>
             <button
               onClick={() => selectCalendarDate(new Date())}
-              className="flex-1 p-2 bg-[#1e3a8a] text-white hover:bg-[#1e40af] rounded text-sm"
+              className="flex-1 p-2 bg-[#1e3a8a] text-white hover:bg-[#1e40af] rounded text-xs"
             >
               Hoje
             </button>
             <button
               onClick={() => selectCalendarDate(addDays(selectedDate, 1))}
-              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-xs"
             >
               Próximo →
             </button>
           </div>
+          
+          {/* Agenda por Categorias - Como na imagem */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-bold text-gray-700 mb-2">Agenda por Categorias</h3>
+            <div className="text-xs text-center text-gray-500 mb-3">
+              {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
+            </div>
+            
+            {/* Mini calendário adicional */}
+            <div className="grid grid-cols-7 gap-1 text-xs mb-3">
+              {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map(day => (
+                <div key={day} className="p-1 text-center font-medium text-gray-400">{day}</div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 mb-4">
+              {daysInMonth.map(date => (
+                <button
+                  key={date.toISOString()}
+                  onClick={() => selectCalendarDate(date)}
+                  className={`
+                    p-1 text-xs rounded text-center
+                    ${isSameDay(date, selectedDate) ? 'bg-[#1e3a8a] text-white' : 'hover:bg-gray-100'}
+                    ${isToday(date) ? 'font-bold' : ''}
+                  `}
+                >
+                  {format(date, "d")}
+                </button>
+              ))}
+            </div>
+            
+            <div className="space-y-2">
+              <button className="w-full p-2 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                Horários disponíveis
+              </button>
+              <button className="w-full p-2 bg-orange-100 text-orange-800 rounded text-xs font-medium">
+                Lista de Espera
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Área Principal da Agenda */}
+      {/* Área Principal da Agenda - Sem cabeçalho duplo */}
       <div className="flex-1">
         {/* Cabeçalho Moderno */}
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl m-6 p-6 shadow-xl">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation("/recepcionista-dashboard")}
               className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20"
             >
               <ArrowLeft className="h-5 w-5" />

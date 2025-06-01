@@ -96,10 +96,10 @@ export default function RecepcionistaDashboard() {
             onClick={async () => {
               try {
                 await fetch('/api/auth/logout', { method: 'POST' });
-                setLocation('/');
+                window.location.href = '/';
               } catch (error) {
                 console.error('Erro no logout:', error);
-                setLocation('/');
+                window.location.href = '/';
               }
             }}
             className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
