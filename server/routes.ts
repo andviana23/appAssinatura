@@ -2163,6 +2163,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/lista-da-vez/fila-mensal - Obter fila mensal (sem parâmetro de mês)
+  app.get('/api/lista-da-vez/fila-mensal', requireAuth, async (req, res) => {
+    try {
+      const { mesAno } = req.query;
+      const mesConsulta = mesAno ? mesAno.toString() : new Date().toISOString().substring(0, 7);
+      
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const filaMensal = await storage.getFilaMensal(mesConsulta);
+      res.json(filaMensal);
+    } catch (error: any) {
+      console.error('Erro ao buscar fila mensal:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/lista-da-vez/atendimentos - Obter atendimentos (sem parâmetro de data)
+  app.get('/api/lista-da-vez/atendimentos', requireAuth, async (req, res) => {
+    try {
+      const { data } = req.query;
+      const dataConsulta = data ? data.toString() : new Date().toISOString().split('T')[0];
+      
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const atendimentos = await storage.getAtendimentosDiarios(dataConsulta);
+      res.json(atendimentos);
+    } catch (error: any) {
+      console.error('Erro ao buscar atendimentos diários:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/lista-da-vez/adicionar-atendimento - Adicionar atendimento manual
+  app.post('/api/lista-da-vez/adicionar-atendimento', requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const { barbeiroId, data, mesAno } = req.body;
+      
+      if (!barbeiroId || !data || !mesAno) {
+        return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
+      }
+
+      await storage.createOrUpdateAtendimentoDiario({
+        barbeiroId: parseInt(barbeiroId),
+        data: new Date(data),
+        mesAno: mesAno,
+        tipoAtendimento: 'MANUAL'
+      });
+
+      res.json({ message: 'Atendimento adicionado com sucesso' });
+    } catch (error: any) {
+      console.error('Erro ao adicionar atendimento:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/lista-da-vez/passar-vez - Registrar que barbeiro passou a vez
+  app.post('/api/lista-da-vez/passar-vez', requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const { barbeiroId, data, mesAno } = req.body;
+      
+      if (!barbeiroId || !data || !mesAno) {
+        return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
+      }
+
+      await storage.createOrUpdateAtendimentoDiario({
+        barbeiroId: parseInt(barbeiroId),
+        data: new Date(data),
+        mesAno: mesAno,
+        tipoAtendimento: 'PASSOU_VEZ'
+      });
+
+      res.json({ message: 'Vez passada registrada com sucesso' });
+    } catch (error: any) {
+      console.error('Erro ao registrar vez passada:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
