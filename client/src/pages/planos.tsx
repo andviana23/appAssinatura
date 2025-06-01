@@ -29,6 +29,7 @@ export default function Planos() {
   const [, setLocation] = useLocation();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showExternalPaymentModal, setShowExternalPaymentModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('todos');
   const [checkoutData, setCheckoutData] = useState({
     nome: '',
     email: '',
@@ -39,17 +40,111 @@ export default function Planos() {
   });
   const [externalPaymentMethod, setExternalPaymentMethod] = useState('');
 
-  // Planos fixos do sistema conforme especificação
-  const planos = [
-    { id: "1", nome: "Clube do Trato One - Corte Barba", valor: 120.00, descricao: "Corte + Barba mensal", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "2", nome: "Clube do Trato One - Corte", valor: 67.50, descricao: "Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "3", nome: "Clube do Trato Gold - Corte + Barba", valor: 349.90, descricao: "Corte + Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "4", nome: "Clube do Trato Gold - Corte", valor: 210.00, descricao: "Corte premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "5", nome: "Clube do Trato Gold - Barba", valor: 249.90, descricao: "Barba premium", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "6", nome: "Clube do Trato - Corte e Barba 2x", valor: 199.90, descricao: "2x Corte + 2x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "7", nome: "Clube do Trato - Corte 2x Barba 4x", valor: 299.90, descricao: "2x Corte + 4x Barba", urlCheckout: "", ativo: true, criadoEm: "" },
-    { id: "8", nome: "Clube do Trato - Corte 2x", valor: 214.90, descricao: "2x Corte mensal", urlCheckout: "", ativo: true, criadoEm: "" }
-  ];
+  // Planos organizados por categoria com nova estrutura
+  const planosData = {
+    one: [
+      { 
+        id: "1", 
+        nome: "Clube do Trato One", 
+        categoria: "Corte + Barba",
+        valor: 120.00, 
+        descricao: "Corte + Barba mensal", 
+        detalhes: ["1x Corte por mês", "1x Barba por mês", "Atendimento personalizado"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      },
+      { 
+        id: "2", 
+        nome: "Clube do Trato One", 
+        categoria: "Corte",
+        valor: 67.50, 
+        descricao: "Corte mensal", 
+        detalhes: ["1x Corte por mês", "Produtos premium", "Ambiente exclusivo"],
+        popular: true,
+        urlCheckout: "", 
+        ativo: true 
+      }
+    ],
+    gold: [
+      { 
+        id: "3", 
+        nome: "Clube do Trato Gold", 
+        categoria: "Corte + Barba",
+        valor: 349.90, 
+        descricao: "Experiência premium completa", 
+        detalhes: ["Corte + Barba premium", "Produtos importados", "Atendimento VIP", "Horário exclusivo"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      },
+      { 
+        id: "4", 
+        nome: "Clube do Trato Gold", 
+        categoria: "Corte",
+        valor: 210.00, 
+        descricao: "Corte premium exclusivo", 
+        detalhes: ["Corte premium", "Produtos importados", "Atendimento VIP"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      },
+      { 
+        id: "5", 
+        nome: "Clube do Trato Gold", 
+        categoria: "Barba",
+        valor: 249.90, 
+        descricao: "Barba premium especializada", 
+        detalhes: ["Barba premium", "Produtos importados", "Técnicas exclusivas"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      }
+    ],
+    multi: [
+      { 
+        id: "6", 
+        nome: "Clube do Trato Multi", 
+        categoria: "Corte e Barba 2x",
+        valor: 199.90, 
+        descricao: "Flexibilidade máxima", 
+        detalhes: ["2x Corte por mês", "2x Barba por mês", "Agendamento flexível"],
+        popular: true,
+        urlCheckout: "", 
+        ativo: true 
+      },
+      { 
+        id: "7", 
+        nome: "Clube do Trato Multi", 
+        categoria: "Corte 2x + Barba 4x",
+        valor: 299.90, 
+        descricao: "Para quem cuida da barba", 
+        detalhes: ["2x Corte por mês", "4x Barba por mês", "Cuidado especializado"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      },
+      { 
+        id: "8", 
+        nome: "Clube do Trato Multi", 
+        categoria: "Corte 2x",
+        valor: 214.90, 
+        descricao: "Sempre com corte em dia", 
+        detalhes: ["2x Corte por mês", "Agendamento prioritário", "Flexibilidade total"],
+        popular: false,
+        urlCheckout: "", 
+        ativo: true 
+      }
+    ]
+  };
+
+  // Flatten all plans for filtering
+  const allPlanos = Object.values(planosData).flat();
+  
+  const getFilteredPlanos = () => {
+    if (selectedCategory === 'todos') return allPlanos;
+    return planosData[selectedCategory as keyof typeof planosData] || [];
+  };
   
   const isLoading = false;
   const isRefetching = false;
@@ -207,106 +302,120 @@ export default function Planos() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={() => setLocation("/")}
-            className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="font-semibold">Voltar</span>
-          </button>
-        </div>
-        <h2 className="text-3xl font-bold text-foreground">Planos de Assinatura</h2>
-        <p className="text-muted-foreground mt-2">
-          Escolha o plano ideal para suas necessidades. Todos os planos incluem agendamento prioritário.
-        </p>
-      </div>
-
-
-
-      {/* Planos Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {planos?.map((plano) => {
-          const tier = getPlanoTier(plano.nome);
-          const tierColor = getTierColor(tier);
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header com design moderno */}
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-xl px-4 py-2 hover:bg-primary/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-semibold">Voltar</span>
+            </button>
+          </div>
           
-          return (
-            <Card key={plano.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Header colorido baseado no tier */}
-              <div className={`h-2 ${tierColor}`}></div>
-              
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${tierColor}`}>
-                      {tier === 'gold' ? (
-                        <Sparkles className="h-4 w-4 text-white" />
-                      ) : (
-                        <CreditCard className="h-4 w-4 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base leading-tight">{plano.nome}</CardTitle>
-                    </div>
-                  </div>
-                  {getTierBadge(tier)}
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-info bg-clip-text text-transparent">
+              Clube do Trato de Barbados
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Escolha seu plano de assinatura e tenha acesso completo aos nossos serviços premium
+            </p>
+          </div>
+
+          {/* Filtros de categoria */}
+          <div className="flex justify-center">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-border/50">
+              <div className="flex gap-2">
+                {[
+                  { key: 'todos', label: 'Todos os Planos', icon: '🎯' },
+                  { key: 'one', label: 'One', icon: '⭐' },
+                  { key: 'gold', label: 'Gold', icon: '👑' },
+                  { key: 'multi', label: 'Multi', icon: '🚀' }
+                ].map((category) => (
+                  <button
+                    key={category.key}
+                    onClick={() => setSelectedCategory(category.key)}
+                    className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                      selectedCategory === category.key
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <span className="mr-2">{category.icon}</span>
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid de planos redesenhado */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {getFilteredPlanos().map((plano) => (
+            <Card 
+              key={plano.id} 
+              className={`relative overflow-hidden bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                plano.popular ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+            >
+              {/* Badge popular */}
+              {plano.popular && (
+                <div className="absolute top-4 right-4 z-10">
+                  <Badge className="bg-primary text-primary-foreground border-0 shadow-lg">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Popular
+                  </Badge>
                 </div>
-                
-                <CardDescription className="text-xs mt-2">
-                  {getPlanoDescription(plano.nome)}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="space-y-6">
-                {/* Preço */}
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-primary">
-                    {formatCurrency(plano.valor)}
+              )}
+
+              {/* Header gradiente */}
+              <div className="bg-gradient-to-r from-primary via-primary/90 to-info p-6 text-white relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+                <div className="relative">
+                  <h3 className="text-xl font-bold">{plano.nome}</h3>
+                  <p className="text-sm opacity-90 mt-1">{plano.categoria}</p>
+                  <div className="mt-4">
+                    <span className="text-3xl font-bold">{formatCurrency(plano.valor)}</span>
+                    <span className="text-sm opacity-80 ml-1">/mês</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">por mês</div>
+                </div>
+              </div>
+
+              <CardContent className="p-6 space-y-6">
+                {/* Descrição */}
+                <p className="text-muted-foreground text-sm">{plano.descricao}</p>
+
+                {/* Lista de benefícios */}
+                <div className="space-y-3">
+                  {plano.detalhes.map((detalhe, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-primary"></div>
+                      </div>
+                      <span className="text-sm text-foreground">{detalhe}</span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Características do plano */}
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-foreground">O que está incluso:</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    {plano.nome.includes('Corte') && (
-                      <li className="flex items-center">
-                        <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                        Corte profissional
-                      </li>
-                    )}
-                    {plano.nome.includes('Barba') && (
-                      <li className="flex items-center">
-                        <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                        Barba modelada
-                      </li>
-                    )}
-                    {tier === 'gold' && (
-                      <li className="flex items-center">
-                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                        Atendimento VIP
-                      </li>
-                    )}
-                    {tier === 'premium' && (
-                      <li className="flex items-center">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                        Tratamentos premium
-                      </li>
-                    )}
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      Agendamento prioritário
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      Sem taxas extras
-                    </li>
-                  </ul>
-                </div>
+                {/* Botão de ação */}
+                <Button 
+                  onClick={() => handleAssinar(plano)}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-semibold py-3 transition-all duration-200 shadow-md hover:shadow-lg"
+                  size="lg"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Assinar Agora
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
 
                 {/* Botão de assinatura */}
                 <Button 

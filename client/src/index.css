@@ -4,35 +4,58 @@
 @tailwind utilities;
 
 :root {
-  /* Trato de Barbados - Paleta Oficial do Manual */
-  --background: 0 0% 100%; /* Branco predominante - ambiente claro */
-  --foreground: 210 15% 27%; /* #424e56 - Complementar */
-  --card: 0 0% 100%; /* Cards sempre brancos */
-  --card-foreground: 210 15% 27%;
+  /* Nova identidade visual - AZUL PETRÓLEO como base */
+  --background: 210 11% 98%; /* #F5F7FA - Fundo claro e limpo */
+  --foreground: 200 20% 15%; /* #1E2B35 - Texto principal */
+  --card: 0 0% 100%; /* #FFFFFF - Cards sempre brancos */
+  --card-foreground: 200 20% 15%;
   --popover: 0 0% 100%;
-  --popover-foreground: 210 15% 27%;
-  --muted: 210 40% 96%; /* Fundo neutro claro */
-  --muted-foreground: 215 16% 47%;
-  --border: 214.3 31.8% 91.4%; /* Bordas sutis */
-  --input: 214.3 31.8% 91.4%;
-  --ring: 205 37% 28%; /* Azul primário para focus */
+  --popover-foreground: 200 20% 15%;
+  --muted: 200 15% 95%; /* #F0F3F4 - Fundo neutro */
+  --muted-foreground: 200 15% 45%; /* #667B84 - Texto secundário */
+  --border: 200 25% 88%; /* #D6E6E9 - Bordas suaves */
+  --input: 200 25% 88%;
+  --ring: 200 85% 25%; /* Azul petróleo para focus */
   
-  /* Cores oficiais da marca Trato de Barbados */
-  --primary: 205 37% 28%; /* #365b78 - Azul primário oficial */
+  /* AZUL PETRÓLEO - Cor primária principal */
+  --primary: 200 85% 25%; /* #0B5D6B - Azul Petróleo */
   --primary-foreground: 0 0% 100%;
-  --secondary: 41 35% 72%; /* #d9be94 - Dourado secundário oficial */
-  --secondary-foreground: 205 37% 28%;
-  --accent: 41 35% 72%; /* Dourado para acentos */
-  --accent-foreground: 205 37% 28%;
-  --destructive: 0 84% 60%;
+  --primary-hover: 200 85% 20%; /* #084A55 - Hover mais escuro */
+  --primary-light: 200 65% 85%; /* #B8E1E8 - Versão clara */
+  --primary-muted: 200 25% 90%; /* #E6F2F4 - Background suave */
+  
+  /* Cores secundárias harmonizadas com azul petróleo */
+  --secondary: 200 25% 92%; /* #E8F0F2 - Cinza azulado claro */
+  --secondary-foreground: 200 85% 25%;
+  --secondary-hover: 200 35% 88%; /* #D6E6E9 */
+  
+  /* Acentos e destaques */
+  --accent: 200 45% 88%; /* #D1E4E8 - Azul suave */
+  --accent-foreground: 200 85% 25%;
+  
+  /* Estados de cor */
+  --success: 150 60% 35%; /* #2D7D5C - Verde harmonizado */
+  --success-foreground: 0 0% 100%;
+  --warning: 35 85% 50%; /* #E6A524 - Amarelo harmonizado */
+  --warning-foreground: 0 0% 100%;
+  --destructive: 0 75% 55%; /* #DC4444 - Vermelho suavizado */
   --destructive-foreground: 0 0% 100%;
+  --info: 200 85% 45%; /* #1A8FA0 - Azul informativo */
+  --info-foreground: 0 0% 100%;
   
-  --radius: 0.75rem; /* Bordas arredondadas modernas */
+  --radius: 0.75rem;
   
-  /* Cores específicas da marca conforme manual */
-  --trato-primary: 205 37% 28%; /* #365b78 */
-  --trato-secondary: 41 35% 72%; /* #d9be94 */
-  --trato-complementar: 210 15% 27%; /* #424e56 */
+  /* Variáveis específicas para azul petróleo */
+  --petrol-50: 200 65% 95%; /* #EDF6F8 */
+  --petrol-100: 200 65% 85%; /* #B8E1E8 */
+  --petrol-200: 200 75% 75%; /* #85CDD8 */
+  --petrol-300: 200 80% 65%; /* #52B8C8 */
+  --petrol-400: 200 85% 55%; /* #1FA4B8 */
+  --petrol-500: 200 85% 45%; /* #1A8FA0 - Base */
+  --petrol-600: 200 85% 35%; /* #157A88 */
+  --petrol-700: 200 85% 25%; /* #0B5D6B - Principal */
+  --petrol-800: 200 85% 20%; /* #084A55 */
+  --petrol-900: 200 85% 15%; /* #06373D */
 }
 
 .dark {
