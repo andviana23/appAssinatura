@@ -712,6 +712,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comissões routes
+  // Rota para barbeiros acessarem suas próprias comissões
+  app.get("/api/comissoes/barbeiro", requireAuth, async (req, res) => {
+    try {
+      // Para barbeiros, usar o ID da sessão
+      if (req.session.userRole === 'barbeiro' && req.session.barbeiroId) {
+        const comissoes = await storage.getComissoesByBarbeiro(req.session.barbeiroId);
+        return res.json(comissoes);
+      }
+      
+      // Para outros usuários, retornar erro
+      return res.status(403).json({ message: "Acesso negado" });
+    } catch (error) {
+      console.error("Erro ao buscar comissões:", error);
+      res.status(500).json({ message: "Erro ao buscar comissões do barbeiro" });
+    }
+  });
+
   app.get("/api/comissoes/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
     try {
       const barbeiroId = parseInt(req.params.barbeiroId);
@@ -2312,11 +2329,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { mesAno } = req.query;
       const mesConsulta = mesAno ? mesAno.toString() : new Date().toISOString().substring(0, 7);
       
-      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
+      // Permitir acesso para admin, recepcionista e barbeiro
+      if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista' && req.session.userRole !== 'barbeiro') {
         return res.status(403).json({ message: 'Acesso negado' });
       }
 
       const filaMensal = await storage.getFilaMensal(mesConsulta);
+      
+      // Se for barbeiro, retornar apenas as informações dele
+      if (req.session.userRole === 'barbeiro' && req.session.barbeiroId) {
+        const filaBarbeiro = filaMensal.filter(item => item.barbeiro.id === req.session.barbeiroId);
+        return res.json(filaBarbeiro);
+      }
+      
       res.json(filaMensal);
     } catch (error: any) {
       console.error('Erro ao buscar fila mensal:', error);
