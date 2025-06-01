@@ -1997,6 +1997,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Buscar faturamento do Asaas por mês específico
+  app.get("/api/asaas/faturamento-mensal", requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query; // formato YYYY-MM
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
+      }
+
+      const baseUrl = asaasEnv === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Se não especificar mês, usar mês atual
+      const targetMonth = mes || new Date().toISOString().slice(0, 7);
+      const dateFrom = `${targetMonth}-01`;
+      const dateTo = `${targetMonth}-31`;
+
+      // Buscar pagamentos confirmados do mês específico
+      const paymentsResponse = await fetch(
+        `${baseUrl}/payments?status=CONFIRMED&paymentDate[ge]=${dateFrom}&paymentDate[le]=${dateTo}&limit=1000`, 
+        {
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!paymentsResponse.ok) {
+        throw new Error(`Erro na API do Asaas: ${paymentsResponse.status}`);
+      }
+
+      const paymentsData = await paymentsResponse.json();
+      
+      let totalRevenue = 0;
+      let subscriptionRevenue = 0;
+      let subscriptionCount = 0;
+      
+      for (const payment of paymentsData.data || []) {
+        totalRevenue += payment.value;
+        
+        // Filtrar apenas pagamentos de assinaturas
+        if (payment.subscription) {
+          subscriptionRevenue += payment.value;
+          subscriptionCount++;
+        }
+      }
+
+      res.json({
+        mes: targetMonth,
+        totalRevenue,
+        subscriptionRevenue,
+        subscriptionCount,
+        totalPayments: paymentsData.data?.length || 0
+      });
+    } catch (error: any) {
+      console.error("Erro ao buscar faturamento mensal do Asaas:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Dados de faturamento diário para gráfico
   app.get("/api/asaas/faturamento-diario", requireAuth, requireAdmin, async (req, res) => {
     try {

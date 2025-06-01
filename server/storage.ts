@@ -846,11 +846,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAtendimentosDiariosByMes(mesAno: string): Promise<AtendimentoDiario[]> {
     // mesAno formato "YYYY-MM"
-    const mesPattern = `${mesAno}-%`;
     return await db
       .select()
       .from(atendimentosDiarios)
-      .where(sql`${atendimentosDiarios.mesAno} = ${mesAno}`)
+      .where(eq(atendimentosDiarios.mesAno, mesAno))
       .orderBy(atendimentosDiarios.data, atendimentosDiarios.barbeiroId);
   }
 
@@ -903,13 +902,19 @@ export class DatabaseStorage implements IStorage {
     const barbeirosComTotais = barbeirosList.map(barbeiro => {
       const atendimentosBarbeiro = atendimentosMes.filter(a => a.barbeiroId === barbeiro.id);
       
-      const totalAtendimentos = atendimentosBarbeiro.reduce((sum, a) => sum + a.atendimentosDiarios, 0);
-      const diasPassouAVez = atendimentosBarbeiro.filter(a => a.passouAVez).length;
-      const totalAtendimentosMes = totalAtendimentos + diasPassouAVez;
+      // Contar atendimentos normais e manuais
+      const totalAtendimentos = atendimentosBarbeiro.filter(a => 
+        a.tipoAtendimento === 'NORMAL' || a.tipoAtendimento === 'MANUAL'
+      ).length;
+      
+      // Contar quantas vezes passou a vez
+      const diasPassouAVez = atendimentosBarbeiro.filter(a => 
+        a.tipoAtendimento === 'PASSOU_VEZ'
+      ).length;
 
       return {
         barbeiro,
-        totalAtendimentosMes,
+        totalAtendimentosMes: totalAtendimentos,
         diasPassouAVez
       };
     });

@@ -105,13 +105,13 @@ export default function ListaDaVez() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
-            <p className="text-gray-600 mt-2">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
+            <p className="text-gray-600 mt-1">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
           </div>
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <Calendar className="h-4 w-4" />
@@ -128,37 +128,37 @@ export default function ListaDaVez() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-hidden">
+            <div className="overflow-x-auto">
               {/* Header da tabela */}
-              <div className="grid grid-cols-5 gap-4 p-6 bg-gray-50 border-b font-semibold text-gray-700">
+              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gray-50 border-b font-semibold text-gray-700 text-sm">
                 <div>Barbeiro</div>
+                <div className="text-center">Ranking</div>
                 <div className="text-center">Total de Atendimentos</div>
-                <div className="text-center">Posição no Mês</div>
                 <div className="text-center">Vezes que Passou</div>
                 <div className="text-center">Ações</div>
               </div>
 
-              {/* Linhas da tabela */}
-              <div className="divide-y divide-gray-100">
+              {/* Linhas da tabela - Desktop */}
+              <div className="hidden lg:block divide-y divide-gray-100">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-6 hover:bg-gray-50 transition-colors">
+                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-gray-50 transition-colors items-center">
                     {/* Barbeiro */}
                     <div>
-                      <div className="font-semibold text-gray-900">{item.barbeiro.nome}</div>
-                      <div className="text-sm text-gray-500">{item.barbeiro.email}</div>
+                      <div className="font-semibold text-gray-900 text-sm">{item.barbeiro.nome}</div>
+                      <div className="text-xs text-gray-500 truncate">{item.barbeiro.email}</div>
                     </div>
 
-                    {/* Total de Atendimentos */}
+                    {/* Ranking */}
                     <div className="text-center">
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-3 py-1 font-bold`}
+                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs`}
                       >
-                        {item.posicaoMensal}º lugar
+                        {item.posicaoMensal}º
                       </Badge>
                     </div>
 
-                    {/* Posição no Mês */}
+                    {/* Total de Atendimentos */}
                     <div className="text-center">
                       <span className="text-lg font-bold text-gray-900">{item.totalAtendimentosMes}</span>
                     </div>
@@ -169,31 +169,86 @@ export default function ListaDaVez() {
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1">
                       {(isAdmin || isRecepcionista) && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
                             onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                             disabled={adicionarAtendimento.isPending}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Adicionar Cliente
+                            <Plus className="h-3 w-3 mr-1" />
+                            Cliente
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                            className="border-orange-300 text-orange-600 hover:bg-orange-50 text-xs px-2 py-1"
                             onClick={() => passarVez.mutate(item.barbeiro.id)}
                             disabled={passarVez.isPending}
                           >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Passar Vez
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            Passar
                           </Button>
                         </>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Versão Mobile - Cards */}
+              <div className="lg:hidden space-y-4 p-4">
+                {filaMensal.map((item: any, index: number) => (
+                  <div key={item.barbeiro.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900">{item.barbeiro.nome}</div>
+                        <div className="text-sm text-gray-500 truncate">{item.barbeiro.email}</div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs ml-2`}
+                      >
+                        {item.posicaoMensal}º lugar
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-900">{item.totalAtendimentosMes}</div>
+                        <div className="text-xs text-gray-500">Atendimentos</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-600">{item.diasPassouAVez}</div>
+                        <div className="text-xs text-gray-500">Passou a Vez</div>
+                      </div>
+                    </div>
+
+                    {(isAdmin || isRecepcionista) && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 flex-1"
+                          onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
+                          disabled={adicionarAtendimento.isPending}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Adicionar Cliente
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-orange-300 text-orange-600 hover:bg-orange-50 flex-1"
+                          onClick={() => passarVez.mutate(item.barbeiro.id)}
+                          disabled={passarVez.isPending}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-1" />
+                          Passar Vez
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
