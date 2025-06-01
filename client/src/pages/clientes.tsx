@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 
@@ -32,6 +33,12 @@ interface ClientesStats {
 
 export default function Clientes() {
   const { toast } = useToast();
+  
+  // Estados para filtros de data
+  const currentDate = new Date();
+  const [filtroMes, setFiltroMes] = useState<string>((currentDate.getMonth() + 1).toString().padStart(2, '0'));
+  const [filtroAno, setFiltroAno] = useState<string>(currentDate.getFullYear().toString());
+  const [filtroOrigem, setFiltroOrigem] = useState<string>('todos');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes-unified/stats'],
@@ -41,6 +48,25 @@ export default function Clientes() {
   const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
     queryKey: ['/api/clientes-unified'],
     refetchInterval: 300000,
+  });
+
+  // Filtrar clientes baseado nos filtros selecionados
+  const clientesFiltrados = clientes.filter(cliente => {
+    // Filtro por origem
+    const matchOrigem = filtroOrigem === 'todos' || cliente.origem.toLowerCase() === filtroOrigem;
+    
+    // Filtro por data de cadastro/pagamento
+    const dataReferencia = cliente.dataInicioAssinatura || cliente.createdAt;
+    if (dataReferencia) {
+      const dataCliente = new Date(dataReferencia);
+      const mesCliente = (dataCliente.getMonth() + 1).toString().padStart(2, '0');
+      const anoCliente = dataCliente.getFullYear().toString();
+      
+      const matchData = mesCliente === filtroMes && anoCliente === filtroAno;
+      return matchOrigem && matchData;
+    }
+    
+    return matchOrigem;
   });
 
   const handleRefresh = async () => {
@@ -159,11 +185,76 @@ export default function Clientes() {
           </Card>
         </div>
 
+        {/* Filtros */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Mês</label>
+                <Select value={filtroMes} onValueChange={setFiltroMes}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="01">Janeiro</SelectItem>
+                    <SelectItem value="02">Fevereiro</SelectItem>
+                    <SelectItem value="03">Março</SelectItem>
+                    <SelectItem value="04">Abril</SelectItem>
+                    <SelectItem value="05">Maio</SelectItem>
+                    <SelectItem value="06">Junho</SelectItem>
+                    <SelectItem value="07">Julho</SelectItem>
+                    <SelectItem value="08">Agosto</SelectItem>
+                    <SelectItem value="09">Setembro</SelectItem>
+                    <SelectItem value="10">Outubro</SelectItem>
+                    <SelectItem value="11">Novembro</SelectItem>
+                    <SelectItem value="12">Dezembro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Ano</label>
+                <Select value={filtroAno} onValueChange={setFiltroAno}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2023">2023</SelectItem>
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                    <SelectItem value="2026">2026</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Origem</label>
+                <Select value={filtroOrigem} onValueChange={setFiltroOrigem}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="asaas">Asaas</SelectItem>
+                    <SelectItem value="externo">Externo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Lista de Clientes */}
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-gray-900">
-              Lista de Clientes ({clientes.length})
+              Lista de Clientes ({clientesFiltrados.length} de {clientes.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -177,7 +268,7 @@ export default function Clientes() {
                   </div>
                 ))
               ) : (
-                clientes.map((cliente) => (
+                clientesFiltrados.map((cliente) => (
                   <div key={cliente.id} className="border rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex justify-between items-start">
                       <div>
@@ -211,14 +302,17 @@ export default function Clientes() {
                 ))
               )}
               
-              {clientes.length === 0 && !clientesLoading && (
+              {clientesFiltrados.length === 0 && !clientesLoading && (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Nenhum cliente encontrado
                   </h3>
                   <p className="text-gray-500">
-                    Os clientes aparecerão aqui quando forem cadastrados
+                    {clientes.length === 0 
+                      ? "Os clientes aparecerão aqui quando forem cadastrados"
+                      : "Ajuste os filtros para encontrar os clientes desejados"
+                    }
                   </p>
                 </div>
               )}

@@ -506,6 +506,7 @@ export class DatabaseStorage implements IStorage {
     const allClientes = await this.getAllClientesUnified();
     
     const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7); // formato YYYY-MM
     
     // Clientes ativos = status ATIVO e dentro da validade
     const activeClientes = allClientes.filter(cliente => {
@@ -516,10 +517,17 @@ export class DatabaseStorage implements IStorage {
       return vencimento >= now; // Ainda não venceu
     });
     
-    // Receita total de assinatura (apenas clientes ativos)
-    const totalSubscriptionRevenue = activeClientes.reduce((total, cliente) => {
-      if (!cliente.planoValor) return total;
-      return total + parseFloat(cliente.planoValor.toString());
+    // Receita APENAS dos pagamentos feitos no mês atual
+    const monthlySubscriptionRevenue = allClientes.filter(cliente => {
+      if (cliente.statusAssinatura !== 'ATIVO') return false;
+      if (!cliente.dataInicioAssinatura || !cliente.planoValor) return false;
+      
+      const dataInicio = new Date(cliente.dataInicioAssinatura);
+      const paymentMonth = dataInicio.toISOString().slice(0, 7);
+      
+      return paymentMonth === currentMonth; // Apenas pagamentos do mês atual
+    }).reduce((total, cliente) => {
+      return total + parseFloat(cliente.planoValor!.toString());
     }, 0);
     
     // Assinaturas expirando nos próximos 7 dias
@@ -534,7 +542,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       totalActiveClients: activeClientes.length,
-      totalSubscriptionRevenue,
+      totalSubscriptionRevenue: monthlySubscriptionRevenue, // Apenas do mês atual
       totalExpiringSubscriptions: expiringClientes.length,
     };
   }
