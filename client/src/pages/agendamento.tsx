@@ -298,9 +298,9 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex gap-6 p-6">
-      {/* Agenda Principal */}
-      <div className="flex-1">
+    <div className="min-h-screen bg-gray-50">
+      {/* Agenda Principal - Tela Completa */}
+      <div className="w-full">
         {/* Cabeçalho Moderno */}
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center justify-between">
@@ -366,10 +366,10 @@ export default function Agendamento() {
           </div>
         </div>
 
-        {/* Grade da Agenda Moderna */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        {/* Grade da Agenda Moderna - Tela Completa */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mx-6">
           {/* Header com nomes dos barbeiros */}
-          <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
+          <div className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
             <div className="p-4 border-r border-white/20 font-bold flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Horário
@@ -391,8 +391,8 @@ export default function Agendamento() {
           {/* Linhas de horário - Expandidas */}
           <div className="max-h-[70vh] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
-              <div key={timeSlot} className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] border-b border-gray-100 min-h-[70px] hover:bg-gray-50/50 transition-colors">
-                <div className="p-3 border-r border-gray-100 text-sm font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
+              <div key={timeSlot} className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] border-b border-gray-100 min-h-[90px] hover:bg-gray-50/50 transition-colors">
+                <div className="p-4 border-r border-gray-100 text-sm font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3" />
                     {timeSlot}
@@ -454,77 +454,7 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {/* Calendário Lateral */}
-      <div className="w-80 flex-shrink-0">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
-          <h3 className="text-xl font-bold text-[#1e3a8a] mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Calendário
-          </h3>
-          
-          {/* Navegação do Calendário */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={previousMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4 text-[#1e3a8a]" />
-            </button>
-            <h4 className="font-semibold text-[#1e3a8a]">
-              {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
-            </h4>
-            <button
-              onClick={nextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronRight className="h-4 w-4 text-[#1e3a8a]" />
-            </button>
-          </div>
 
-          {/* Grid do Calendário */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-              <div key={day} className="text-center text-xs font-semibold text-gray-500 p-2">
-                {day}
-              </div>
-            ))}
-          </div>
-          
-          <div className="grid grid-cols-7 gap-1">
-            {daysInMonth.map(day => (
-              <button
-                key={day.toISOString()}
-                onClick={() => selectCalendarDate(day)}
-                className={`
-                  p-2 text-sm rounded-lg transition-all duration-200 relative
-                  ${isSameDay(day, selectedDate) 
-                    ? 'bg-[#1e3a8a] text-white font-bold' 
-                    : isToday(day)
-                    ? 'bg-blue-100 text-[#1e3a8a] font-semibold'
-                    : isSameMonth(day, currentCalendarDate)
-                    ? 'text-gray-900 hover:bg-gray-100'
-                    : 'text-gray-400'
-                  }
-                  ${hasAgendamentos(day) ? 'ring-2 ring-[#1e3a8a] ring-opacity-50' : ''}
-                `}
-              >
-                {format(day, 'd')}
-                {hasAgendamentos(day) && (
-                  <div className="absolute top-1 right-1 w-2 h-2 bg-[#1e3a8a] rounded-full"></div>
-                )}
-              </button>
-            ))}
-          </div>
-          
-          <div className="mt-4 text-sm text-gray-600 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#1e3a8a] rounded-full"></div>
-              <span>Dias com agendamentos</span>
-            </div>
-            <p className="text-xs">Clique em uma data para visualizar na agenda</p>
-          </div>
-        </div>
-      </div>
 
       {/* Modal de Agendamento Modernizado */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
