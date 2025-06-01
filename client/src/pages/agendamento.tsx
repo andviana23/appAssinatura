@@ -546,7 +546,7 @@ export default function Agendamento() {
                         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                           <DialogTrigger asChild>
                             <button
-                              className="w-full h-full border-2 border-dashed border-gray-200 rounded-xl hover:bg-gradient-to-br hover:from-[#8B4513]/5 hover:to-[#A0522D]/5 hover:border-[#8B4513]/30 flex flex-col items-center justify-center gap-2 group transition-all duration-300 relative overflow-hidden"
+                              className="w-full h-full hover:bg-gray-50 flex items-center justify-center transition-colors"
                               onClick={() => {
                                 setSelectedHour(timeSlot);
                                 setSelectedBarbeiro(barbeiro.id.toString());

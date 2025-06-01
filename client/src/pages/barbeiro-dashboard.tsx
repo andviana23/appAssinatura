@@ -23,6 +23,12 @@ export default function BarbeiroDashboard() {
     queryFn: () => apiRequest("/api/agendamentos"),
   });
 
+  // Buscar dados da fila mensal
+  const { data: filaMensal, isLoading: filaLoading } = useQuery({
+    queryKey: ["/api/lista-da-vez/fila-mensal"],
+    queryFn: () => apiRequest("/api/lista-da-vez/fila-mensal"),
+  });
+
   const hoje = new Date();
   const mesAtual = format(hoje, "yyyy-MM");
 
@@ -49,10 +55,24 @@ export default function BarbeiroDashboard() {
   const horasTrabalhadasMes = Math.floor(tempoTrabalhadoMes / 60);
   const minutosRestantes = tempoTrabalhadoMes % 60;
 
+  // Calcular posição na fila e informações da lista da vez
+  const meuDadosFila = Array.isArray(filaMensal) 
+    ? filaMensal.find(item => item.barbeiro?.id === user?.barbeiroId)
+    : null;
+  
+  const posicaoNaFila = meuDadosFila?.posicaoMensal || 0;
+  const clientesAtendidosMes = meuDadosFila?.totalAtendimentosMes || 0;
+  
+  // Verificar se é a vez do barbeiro (posição 1 na fila)
+  const ehMinhaVez = posicaoNaFila === 1;
+  
+  // Calcular quando será a vez (se não for a vez atual)
+  const proximosNaFila = ehMinhaVez ? 0 : posicaoNaFila - 1;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setLocation("/")}
@@ -74,8 +94,8 @@ export default function BarbeiroDashboard() {
         </div>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* Cards de Resumo - Responsivos */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -159,6 +179,49 @@ export default function BarbeiroDashboard() {
               </div>
               <div className="h-12 w-12 bg-[#d3b791]/20 rounded-2xl flex items-center justify-center">
                 <Award className="h-6 w-6 text-[#d3b791]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cards da Lista da Vez */}
+        <Card className={ehMinhaVez ? "border-green-500 bg-green-50" : "border-orange-500 bg-orange-50"}>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {ehMinhaVez ? "É Sua Vez!" : "Posição na Fila"}
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                  {filaLoading ? "..." : ehMinhaVez ? "1º" : `${posicaoNaFila}º`}
+                </p>
+                <p className="text-xs sm:text-sm mt-1" style={{color: ehMinhaVez ? "#059669" : "#ea580c"}}>
+                  {ehMinhaVez ? "Atenda agora!" : `${proximosNaFila} na frente`}
+                </p>
+              </div>
+              <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center ${ehMinhaVez ? "bg-green-100" : "bg-orange-100"}`}>
+                <Award className={`h-5 w-5 sm:h-6 sm:w-6 ${ehMinhaVez ? "text-green-600" : "text-orange-600"}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Clientes Atendidos
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">
+                  {filaLoading ? "..." : clientesAtendidosMes}
+                </p>
+                <p className="text-xs sm:text-sm text-purple-600 mt-1">
+                  Este mês
+                </p>
+              </div>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-2xl flex items-center justify-center">
+                <Scissors className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
