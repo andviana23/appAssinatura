@@ -23,17 +23,22 @@ export async function logout(): Promise<void> {
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const response = await apiRequest("/api/auth/me", "GET");
-    if (!response.ok) {
-      throw new Error('Unauthorized');
-    }
-    return response.json();
-  } catch (error: any) {
-    // Se não estiver autenticado, retorna null
-    if (error.message === 'Unauthorized' || error.status === 401) {
+    const response = await fetch("/api/auth/me", {
+      credentials: "include",
+    });
+    
+    if (response.status === 401) {
       return null;
     }
-    throw error;
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.json();
+  } catch (error: any) {
+    // Para qualquer erro de rede ou não autorizado, retorna null
+    return null;
   }
 }
 

@@ -14,7 +14,11 @@ export function useAuth() {
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: Infinity, // Cache indefinitely until manually invalidated
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: false,
   });
 
   const loginMutation = useMutation({
