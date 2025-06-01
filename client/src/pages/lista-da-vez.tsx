@@ -208,8 +208,8 @@ export default function ListaDaVez() {
                 <Calendar className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">Lista da Vez - Atendimento Mensal</h1>
-                <p className="text-gray-600 mt-1 text-lg">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">Lista da Vez</h1>
+                <p className="text-gray-600 mt-1">Controle mensal de atendimentos</p>
               </div>
             </div>
           </div>
@@ -278,44 +278,44 @@ export default function ListaDaVez() {
         </div>
 
         {/* Estatísticas Resumidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-lg">
-                  <UserCheck className="h-6 w-6 text-white" />
+                <div className="h-10 w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center shadow-md">
+                  <UserCheck className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total de Barbeiros</p>
-                  <p className="text-2xl font-bold text-[#365e78]">{totalBarbeiros}</p>
+                  <p className="text-xs text-gray-600">Total de Barbeiros</p>
+                  <p className="text-xl font-bold text-[#365e78]">{totalBarbeiros}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Plus className="h-6 w-6 text-white" />
+                <div className="h-10 w-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                  <Plus className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Total de Atendimentos</p>
-                  <p className="text-2xl font-bold text-green-600">{totalAtendimentos}</p>
+                  <p className="text-xs text-gray-600">Total de Atendimentos</p>
+                  <p className="text-xl font-bold text-green-600">{totalAtendimentos}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <RotateCcw className="h-6 w-6 text-white" />
+                <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
+                  <RotateCcw className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Média por Barbeiro</p>
-                  <p className="text-2xl font-bold text-orange-600">{mediaAtendimentos}</p>
+                  <p className="text-xs text-gray-600">Média por Barbeiro</p>
+                  <p className="text-xl font-bold text-orange-600">{mediaAtendimentos}</p>
                 </div>
               </div>
             </CardContent>
@@ -416,57 +416,57 @@ export default function ListaDaVez() {
               </div>
 
               {/* Versão Mobile - Cards */}
-              <div className="lg:hidden space-y-6 p-6">
+              <div className="lg:hidden space-y-4 p-4">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="bg-white/90 backdrop-blur-sm border-0 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-lg">
-                          <User className="h-6 w-6 text-white" />
+                  <div key={item.barbeiro.id} className="bg-white/90 backdrop-blur-sm border-0 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center shadow-md">
+                          <User className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <div className="font-bold text-gray-900 text-lg">{item.barbeiro.nome}</div>
+                          <div className="font-bold text-gray-900">{item.barbeiro.nome}</div>
                           <div className="text-sm text-gray-500 truncate">{item.barbeiro.email}</div>
                         </div>
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-3 py-2 font-bold shadow-lg`}
+                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs shadow-md`}
                       >
                         {item.posicaoMensal}º
                       </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="text-center bg-gradient-to-br from-[#365e78]/5 to-[#2a4a5e]/5 rounded-xl p-4 border border-[#365e78]/10">
-                        <div className="text-2xl font-bold text-[#365e78]">{item.totalAtendimentosMes}</div>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="text-center bg-gradient-to-br from-[#365e78]/5 to-[#2a4a5e]/5 rounded-lg p-3 border border-[#365e78]/10">
+                        <div className="text-xl font-bold text-[#365e78]">{item.totalAtendimentosMes}</div>
                         <div className="text-xs text-gray-500 mt-1">Atendimentos</div>
                       </div>
-                      <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
-                        <div className="text-2xl font-bold text-orange-600">{item.diasPassouAVez}</div>
+                      <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
+                        <div className="text-xl font-bold text-orange-600">{item.diasPassouAVez}</div>
                         <div className="text-xs text-gray-500 mt-1">Passou a Vez</div>
                       </div>
                     </div>
 
                     {(isAdmin || isRecepcionista) && (
-                      <div className="flex space-x-3">
+                      <div className="flex space-x-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white py-3 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                          className="flex-1 bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white py-2 shadow-md hover:shadow-lg transition-all duration-200 text-xs"
                           onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                           disabled={adicionarAtendimento.isPending}
                         >
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="h-3 w-3 mr-1" />
                           Adicionar Cliente
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 py-3 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                          className="flex-1 border border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 py-2 shadow-md hover:shadow-lg transition-all duration-200 text-xs"
                           onClick={() => passarVez.mutate(item.barbeiro.id)}
                           disabled={passarVez.isPending}
                         >
-                          <RotateCcw className="h-4 w-4 mr-2" />
+                          <RotateCcw className="h-3 w-3 mr-1" />
                           Passar Vez
                         </Button>
                       </div>
