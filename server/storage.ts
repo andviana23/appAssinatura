@@ -370,6 +370,10 @@ export class DatabaseStorage implements IStorage {
     return cliente;
   }
 
+  async getAllClientesExternos(): Promise<ClienteExterno[]> {
+    return await db.select().from(clientesExternos).orderBy(clientesExternos.nome);
+  }
+
   async createCliente(cliente: InsertCliente): Promise<Cliente> {
     const [created] = await db.insert(clientes).values(cliente).returning();
     return created;
