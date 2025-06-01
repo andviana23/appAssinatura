@@ -2263,27 +2263,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/lista-da-vez/adicionar-atendimento - Adicionar atendimento manual
+  // POST /api/lista-da-vez/adicionar-atendimento - Adicionar atendimento seguindo ordem da fila
   app.post('/api/lista-da-vez/adicionar-atendimento', requireAuth, async (req, res) => {
     try {
       if (req.session.userRole !== 'admin' && req.session.userRole !== 'recepcionista') {
         return res.status(403).json({ message: 'Acesso negado' });
       }
 
-      const { barbeiroId, data, mesAno } = req.body;
+      const { barbeiroId, data, mesAno, tipoAtendimento } = req.body;
       
-      if (!barbeiroId || !data || !mesAno) {
-        return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
+      if (!data || !mesAno) {
+        return res.status(400).json({ message: 'Data e mês/ano são obrigatórios' });
+      }
+
+      let targetBarbeiroId = barbeiroId;
+
+      // Se não especificar barbeiro OU se for adicionar cliente normal, 
+      // automaticamente selecionar o próximo da fila
+      if (!barbeiroId || tipoAtendimento === 'MANUAL') {
+        const filaMensal = await storage.getFilaMensal(mesAno);
+        if (filaMensal.length > 0) {
+          // Pegar o barbeiro com menos atendimentos (primeiro da fila ordenada)
+          targetBarbeiroId = filaMensal[0].barbeiro.id;
+        } else {
+          return res.status(400).json({ message: 'Nenhum barbeiro disponível' });
+        }
       }
 
       await storage.createOrUpdateAtendimentoDiario({
-        barbeiroId: parseInt(barbeiroId),
-        data: new Date(data),
+        barbeiroId: parseInt(targetBarbeiroId),
+        data: data, // Manter como string no formato YYYY-MM-DD
         mesAno: mesAno,
-        tipoAtendimento: 'MANUAL'
+        tipoAtendimento: tipoAtendimento || 'NORMAL'
       });
 
-      res.json({ message: 'Atendimento adicionado com sucesso' });
+      // Buscar nome do barbeiro para resposta
+      const barbeiro = await storage.getBarbeiroById(parseInt(targetBarbeiroId));
+      const nomeBarbeiro = barbeiro?.nome || 'Barbeiro';
+
+      res.json({ 
+        message: `Cliente adicionado para ${nomeBarbeiro}`,
+        barbeiroId: targetBarbeiroId,
+        barbeiroNome: nomeBarbeiro
+      });
     } catch (error: any) {
       console.error('Erro ao adicionar atendimento:', error);
       res.status(500).json({ message: error.message });
@@ -2305,7 +2327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.createOrUpdateAtendimentoDiario({
         barbeiroId: parseInt(barbeiroId),
-        data: new Date(data),
+        data: data, // Manter como string no formato YYYY-MM-DD
         mesAno: mesAno,
         tipoAtendimento: 'PASSOU_VEZ'
       });

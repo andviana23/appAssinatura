@@ -24,7 +24,34 @@ export default function ListaDaVez() {
     }
   });
 
-  // Adicionar atendimento manual
+  // Adicionar cliente automaticamente para o próximo da fila
+  const adicionarCliente = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/lista-da-vez/adicionar-atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          data: dayjs().format("YYYY-MM-DD"),
+          mesAno: mesAtual,
+          tipoAtendimento: "NORMAL"
+        })
+      });
+      if (!response.ok) throw new Error('Erro ao adicionar cliente');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: `Cliente adicionado para ${data.barbeiroNome}!`,
+        description: "O próximo barbeiro da fila foi selecionado automaticamente."
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal"] });
+    },
+    onError: () => {
+      toast({ title: "Erro ao adicionar cliente", variant: "destructive" });
+    }
+  });
+
+  // Adicionar atendimento manual para barbeiro específico
   const adicionarAtendimento = useMutation({
     mutationFn: async (barbeiroId: number) => {
       const response = await fetch('/api/lista-da-vez/adicionar-atendimento', {
@@ -40,8 +67,11 @@ export default function ListaDaVez() {
       if (!response.ok) throw new Error('Erro ao adicionar atendimento');
       return response.json();
     },
-    onSuccess: () => {
-      toast({ title: "Atendimento adicionado com sucesso!" });
+    onSuccess: (data) => {
+      toast({ 
+        title: `Cliente adicionado para ${data.barbeiroNome}!`,
+        description: "Atendimento manual registrado."
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal"] });
     },
     onError: () => {
@@ -113,9 +143,21 @@ export default function ListaDaVez() {
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
             <p className="text-gray-600 mt-1">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
           </div>
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <Calendar className="h-4 w-4" />
-            <span className="font-medium">{dayjs().format("MMMM [de] YYYY")}</span>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
+            <div className="flex items-center space-x-4 text-sm text-gray-500">
+              <Calendar className="h-4 w-4" />
+              <span className="font-medium">{dayjs().format("MMMM [de] YYYY")}</span>
+            </div>
+            {(isAdmin || isRecepcionista) && (
+              <Button
+                className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
+                onClick={() => adicionarCliente.mutate()}
+                disabled={adicionarCliente.isPending}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {adicionarCliente.isPending ? 'Adicionando...' : 'Adicionar Próximo Cliente'}
+              </Button>
+            )}
           </div>
         </div>
 
