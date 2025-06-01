@@ -80,6 +80,10 @@ export default function Agendamento() {
     queryKey: ["/api/servicos/assinatura"],
   });
 
+  const { data: todosServicos = [] } = useQuery({
+    queryKey: ["/api/servicos"],
+  });
+
   // Mutations
   const createAgendamento = useMutation({
     mutationFn: (data: any) => 
@@ -205,14 +209,7 @@ export default function Agendamento() {
     return format(endTime, "HH:mm");
   };
 
-  // Serviços e produtos disponíveis para a comanda
-  const servicosComanda = [
-    { id: 'corte', nome: 'Corte', preco: 25.00 },
-    { id: 'barba', nome: 'Barba', preco: 15.00 },
-    { id: 'sobrancelha', nome: 'Sobrancelha', preco: 10.00 },
-    { id: 'bigode', nome: 'Bigode', preco: 8.00 },
-  ];
-
+  // Produtos fixos para a comanda
   const produtosComanda = [
     { id: 'pomada', nome: 'Pomada', preco: 30.00 },
     { id: 'shampoo', nome: 'Shampoo', preco: 20.00 },
@@ -499,50 +496,52 @@ export default function Agendamento() {
 
       {/* Modal da Comanda */}
       <Dialog open={isComandaOpen} onOpenChange={setIsComandaOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#8B4513]">
-              Comanda - {selectedAgendamento?.cliente?.nome}
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100">
+          <DialogHeader className="border-b pb-4 mb-6">
+            <DialogTitle className="text-2xl font-bold text-[#8B4513] flex items-center gap-3">
+              📋 Comanda - {selectedAgendamento?.cliente?.nome}
             </DialogTitle>
-            <div className="text-sm text-gray-600">
-              <strong>Data:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "dd/MM/yyyy", { locale: ptBR })} | 
-              <strong> Horário:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "HH:mm")}
+            <div className="text-sm text-gray-600 bg-white rounded-lg p-3 shadow-sm">
+              <strong>📅 Data:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "dd/MM/yyyy", { locale: ptBR })} | 
+              <strong> ⏰ Horário:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "HH:mm")} |
+              <strong> 💼 Profissional:</strong> {selectedAgendamento?.barbeiro?.nome}
             </div>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Seção Serviços */}
-            <div>
-              <h3 className="text-lg font-semibold text-[#8B4513] mb-3 flex items-center">
-                🔧 Serviços
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-[#8B4513] mb-4 flex items-center gap-2 border-b pb-2">
+                ✂️ Serviços Disponíveis
               </h3>
-              <div className="space-y-2">
-                {servicosComanda.map((servico) => (
-                  <div key={servico.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="space-y-3">
+                {Array.isArray(todosServicos) && todosServicos.map((servico) => (
+                  <div key={servico.id} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-[#8B4513] transition-all duration-200 hover:shadow-md">
                     <div className="flex-1">
-                      <span className="font-medium">{servico.nome}</span>
-                      <span className="text-gray-600 ml-2">R$ {servico.preco.toFixed(2)}</span>
+                      <div className="font-semibold text-gray-800">{servico.nome}</div>
+                      <div className="text-sm text-gray-600">{servico.tempoMinutos} min</div>
+                      <div className="text-lg font-bold text-[#8B4513]">R$ {servico.preco?.toFixed(2) || '0,00'}</div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0 text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => removerItemComanda(servico.id)}
-                        disabled={!comandaItems[servico.id]?.quantidade}
+                        className="h-10 w-10 p-0 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
+                        onClick={() => removerItemComanda(servico.id.toString())}
+                        disabled={!comandaItems[servico.id.toString()]?.quantidade}
                       >
-                        -
+                        ➖
                       </Button>
-                      <span className="w-8 text-center font-semibold">
-                        {comandaItems[servico.id]?.quantidade || 0}
+                      <span className="w-12 text-center font-bold text-xl text-[#8B4513] bg-gray-100 rounded-lg py-2">
+                        {comandaItems[servico.id.toString()]?.quantidade || 0}
                       </span>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0 text-blue-600 border-blue-200 hover:bg-blue-50"
-                        onClick={() => adicionarItemComanda(servico.id, servico.nome, servico.preco)}
+                        className="h-10 w-10 p-0 text-green-600 border-green-300 hover:bg-green-50 hover:border-green-400"
+                        onClick={() => adicionarItemComanda(servico.id.toString(), servico.nome, servico.preco || 0)}
                       >
-                        +
+                        ➕
                       </Button>
                     </div>
                   </div>
@@ -551,83 +550,91 @@ export default function Agendamento() {
             </div>
 
             {/* Seção Produtos */}
-            <div>
-              <h3 className="text-lg font-semibold text-[#8B4513] mb-3 flex items-center">
-                🧴 Produtos
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-[#8B4513] mb-4 flex items-center gap-2 border-b pb-2">
+                🧴 Produtos Disponíveis
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {produtosComanda.map((produto) => (
-                  <div key={produto.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={produto.id} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-[#8B4513] transition-all duration-200 hover:shadow-md">
                     <div className="flex-1">
-                      <span className="font-medium">{produto.nome}</span>
-                      <span className="text-gray-600 ml-2">R$ {produto.preco.toFixed(2)}</span>
+                      <div className="font-semibold text-gray-800">{produto.nome}</div>
+                      <div className="text-lg font-bold text-[#8B4513]">R$ {produto.preco.toFixed(2)}</div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0 text-red-600 border-red-200 hover:bg-red-50"
+                        className="h-10 w-10 p-0 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
                         onClick={() => removerItemComanda(produto.id)}
                         disabled={!comandaItems[produto.id]?.quantidade}
                       >
-                        -
+                        ➖
                       </Button>
-                      <span className="w-8 text-center font-semibold">
+                      <span className="w-12 text-center font-bold text-xl text-[#8B4513] bg-gray-100 rounded-lg py-2">
                         {comandaItems[produto.id]?.quantidade || 0}
                       </span>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 p-0 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="h-10 w-10 p-0 text-green-600 border-green-300 hover:bg-green-50 hover:border-green-400"
                         onClick={() => adicionarItemComanda(produto.id, produto.nome, produto.preco)}
                       >
-                        +
+                        ➕
                       </Button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Resumo da Comanda */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-semibold text-[#8B4513] mb-3">Resumo</h3>
-              {Object.keys(comandaItems).length > 0 ? (
-                <div className="space-y-2">
+          {/* Resumo da Comanda */}
+          <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-xl font-bold text-[#8B4513] mb-4 flex items-center gap-2 border-b pb-2">
+              📊 Resumo da Comanda
+            </h3>
+            {Object.keys(comandaItems).length > 0 ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
                   {Object.entries(comandaItems).map(([id, item]) => (
-                    <div key={id} className="flex justify-between">
-                      <span>{item.quantidade}x {item.nome}</span>
-                      <span>R$ {(item.quantidade * item.preco).toFixed(2)}</span>
+                    <div key={id} className="flex justify-between items-center py-2 px-4 bg-gray-50 rounded-lg">
+                      <span className="font-medium">{item.quantidade}x {item.nome}</span>
+                      <span className="font-bold text-[#8B4513]">R$ {(item.quantidade * item.preco).toFixed(2)}</span>
                     </div>
                   ))}
-                  <hr className="my-3" />
-                  <div className="flex justify-between items-center text-xl font-bold text-white bg-green-600 p-3 rounded-lg">
-                    <span>TOTAL:</span>
-                    <span>R$ {calcularTotalComanda().toFixed(2)}</span>
-                  </div>
                 </div>
-              ) : (
-                <p className="text-gray-500">Nenhum item adicionado</p>
-              )}
-            </div>
+                <hr className="border-2 border-gray-200" />
+                <div className="flex justify-between items-center text-2xl font-bold text-white bg-gradient-to-r from-green-600 to-green-700 p-4 rounded-xl shadow-lg">
+                  <span>💰 TOTAL GERAL:</span>
+                  <span>R$ {calcularTotalComanda().toFixed(2)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">📝</div>
+                <p className="font-medium">Nenhum item adicionado à comanda</p>
+                <p className="text-sm">Selecione serviços ou produtos acima</p>
+              </div>
+            )}
+          </div>
 
-            {/* Botões de Ação */}
-            <div className="flex space-x-3 pt-4">
-              <Button 
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                onClick={finalizarComanda}
-                disabled={Object.keys(comandaItems).length === 0}
-              >
-                ✅ Finalizar Atendimento
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={fecharComanda}
-              >
-                ❌ Cancelar
-              </Button>
-            </div>
+          {/* Botões de Ação */}
+          <div className="flex flex-col sm:flex-row gap-4 mt-8">
+            <Button 
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-bold shadow-lg"
+              onClick={finalizarComanda}
+              disabled={Object.keys(comandaItems).length === 0}
+            >
+              ✅ Finalizar Comanda
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex-1 border-2 border-gray-300 hover:bg-gray-50 py-4 text-lg font-bold"
+              onClick={fecharComanda}
+            >
+              ❌ Cancelar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
