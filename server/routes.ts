@@ -987,48 +987,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Buscar estatísticas das cobranças confirmadas do Asaas no mês atual
-      const asaasApiKey = process.env.ASAAS_API_KEY;
-      if (asaasApiKey) {
-        try {
-          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
-            ? 'https://api.asaas.com/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
-
-          // Buscar cobranças confirmadas do mês atual
-          const inicioMesStr = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-          const fimMesStr = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
-          
-          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMesStr}&receivedInCashDate[le]=${fimMesStr}&limit=100`, {
-            headers: {
-              'access_token': asaasApiKey,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (paymentsResponse.ok) {
-            const paymentsData = await paymentsResponse.json();
-            
-            // Contar clientes únicos que pagaram no mês
-            const clientesUnicosAsaas = new Set();
-            
-            for (const payment of paymentsData.data || []) {
-              clientesUnicosAsaas.add(payment.customer);
-              totalMonthlyRevenue += payment.value || 0;
-              
-              const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
-              if (dataPagamento >= inicioMes) {
-                newClientsThisMonth++;
-              }
-            }
-            
-            totalAsaasClients = clientesUnicosAsaas.size;
-            totalActiveClients += totalAsaasClients;
-          }
-        } catch (asaasError) {
-          console.error("Erro ao buscar stats do Asaas:", asaasError);
-        }
-      }
+      // Não precisamos mais buscar estatísticas do Asaas separadamente
+      // pois todos os clientes já estão sincronizados no banco local
 
       res.json({
         totalActiveClients,
@@ -1040,6 +1000,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Erro ao buscar estatísticas unificadas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Rota para clientes por origem (asaas ou externo)
+  app.get("/api/clientes/by-origin/:origem", requireAuth, async (req, res) => {
+    try {
+      const { origem } = req.params;
+      const clientesFiltrados = [];
+      const hoje = new Date();
+      
+      // Buscar todos os clientes do banco local
+      const clientesExternos = await storage.getAllClientes();
+      
+      for (const cliente of clientesExternos) {
+        // Filtrar por origem
+        const isAsaas = cliente.asaasCustomerId ? true : false;
+        const isExterno = !cliente.asaasCustomerId;
+        
+        if ((origem === 'asaas' && !isAsaas) || (origem === 'externo' && !isExterno)) {
+          continue;
+        }
+        
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const status = validade >= hoje ? 'ATIVO' : 'VENCIDO';
+          
+          clientesFiltrados.push({
+            id: cliente.id,
+            nome: cliente.nome,
+            email: cliente.email,
+            telefone: cliente.telefone,
+            cpf: cliente.cpf,
+            planoNome: cliente.planoNome || 'Não informado',
+            planoValor: parseFloat(cliente.planoValor?.toString() || '0'),
+            formaPagamento: cliente.formaPagamento || (isAsaas ? 'Asaas' : 'Externo'),
+            dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
+            dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
+            status: status,
+            origem: isAsaas ? 'ASAAS' : 'EXTERNO'
+          });
+        }
+      }
+      
+      res.json(clientesFiltrados);
+    } catch (error) {
+      console.error("Erro ao buscar clientes por origem:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });

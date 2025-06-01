@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserCheck, Calendar, DollarSign, RefreshCw, ExternalLink, CreditCard } from "lucide-react";
+import { UserCheck, Calendar, DollarSign, RefreshCw, ExternalLink, CreditCard, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ interface ClientesStats {
 
 export default function Clientes() {
   const { toast } = useToast();
+  const [filtroOrigem, setFiltroOrigem] = useState<'todos' | 'asaas' | 'externo'>('todos');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes/unified-stats'],
@@ -50,7 +52,7 @@ export default function Clientes() {
   });
 
   const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
-    queryKey: ['/api/clientes/unified'],
+    queryKey: filtroOrigem === 'todos' ? ['/api/clientes/unified'] : ['/api/clientes/by-origin', filtroOrigem],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
@@ -149,16 +151,52 @@ export default function Clientes() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Clientes Ativos</h2>
-          <p className="text-muted-foreground">Clientes com cobranças confirmadas no Asaas (mês atual) + Pagamentos externos válidos</p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Clientes Ativos</h2>
+            <p className="text-muted-foreground">Clientes com cobranças confirmadas no Asaas (mês atual) + Pagamentos externos válidos</p>
+          </div>
+          
+          <Button onClick={handleRefresh} className="rounded-xl">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar (5min automático)
+          </Button>
         </div>
-        
-        <Button onClick={handleRefresh} className="rounded-xl">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar (5min automático)
-        </Button>
+
+        {/* Filtros por Origem */}
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Filtrar por origem:</span>
+          <div className="flex gap-2">
+            <Button 
+              variant={filtroOrigem === 'todos' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFiltroOrigem('todos')}
+              className="rounded-lg"
+            >
+              Todos ({stats?.totalActiveClients || 0})
+            </Button>
+            <Button 
+              variant={filtroOrigem === 'asaas' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFiltroOrigem('asaas')}
+              className="rounded-lg"
+            >
+              <CreditCard className="h-3 w-3 mr-1" />
+              Asaas ({stats?.totalAsaasClients || 0})
+            </Button>
+            <Button 
+              variant={filtroOrigem === 'externo' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFiltroOrigem('externo')}
+              className="rounded-lg"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Externos ({stats?.totalExternalClients || 0})
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
