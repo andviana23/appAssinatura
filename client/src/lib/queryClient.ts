@@ -48,7 +48,13 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Não retentar em caso de 401 (não autorizado)
+        if (error?.message?.includes('401')) {
+          return false;
+        }
+        return failureCount < 3;
+      },
     },
     mutations: {
       retry: false,
