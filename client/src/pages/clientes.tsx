@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export default function Clientes() {
   const [filtroMes, setFiltroMes] = useState<string>((currentDate.getMonth() + 1).toString().padStart(2, '0'));
   const [filtroAno, setFiltroAno] = useState<string>(currentDate.getFullYear().toString());
   const [filtroOrigem, setFiltroOrigem] = useState<string>('todos');
+  const [buscaNome, setBuscaNome] = useState<string>('');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes-unified/stats'],
@@ -55,6 +57,11 @@ export default function Clientes() {
     // Filtro por origem
     const matchOrigem = filtroOrigem === 'todos' || cliente.origem.toLowerCase() === filtroOrigem;
     
+    // Filtro por nome (busca)
+    const matchNome = buscaNome === '' || 
+      cliente.nome.toLowerCase().includes(buscaNome.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(buscaNome.toLowerCase());
+    
     // Filtro por data de cadastro/pagamento
     const dataReferencia = cliente.dataInicioAssinatura || cliente.createdAt;
     if (dataReferencia) {
@@ -63,10 +70,10 @@ export default function Clientes() {
       const anoCliente = dataCliente.getFullYear().toString();
       
       const matchData = mesCliente === filtroMes && anoCliente === filtroAno;
-      return matchOrigem && matchData;
+      return matchOrigem && matchNome && matchData;
     }
     
-    return matchOrigem;
+    return matchOrigem && matchNome;
   });
 
   const handleRefresh = async () => {
@@ -194,6 +201,22 @@ export default function Clientes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Barra de Busca */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar Cliente</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Digite o nome ou email do cliente..."
+                  value={buscaNome}
+                  onChange={(e) => setBuscaNome(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Filtros de Data e Origem */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Mês</label>
