@@ -2495,6 +2495,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/clientes/all - Buscar TODOS os clientes (ativos e inativos)
+  app.get('/api/clientes/all', requireAuth, async (req, res) => {
+    try {
+      // Buscar clientes do Asaas
+      const asaasClientes = await fetch(`${process.env.ASAAS_ENVIRONMENT}/customers`, {
+        headers: {
+          'access_token': process.env.ASAAS_API_KEY || '',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      let clientesUnificados = [];
+      
+      if (asaasClientes.ok) {
+        const asaasData = await asaasClientes.json();
+        
+        for (const cliente of asaasData.data || []) {
+          // Buscar assinaturas do cliente
+          const subscriptionsResponse = await fetch(`${process.env.ASAAS_ENVIRONMENT}/subscriptions?customer=${cliente.id}`, {
+            headers: {
+              'access_token': process.env.ASAAS_API_KEY || '',
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (subscriptionsResponse.ok) {
+            const subscriptionsData = await subscriptionsResponse.json();
+            
+            for (const subscription of subscriptionsData.data || []) {
+              const dataValidade = new Date(subscription.nextDueDate);
+              const hoje = new Date();
+              const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+              
+              let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
+              if (subscription.status === 'ACTIVE' && daysRemaining > 0) {
+                status = 'ATIVO';
+              } else if (daysRemaining < 0) {
+                status = 'VENCIDO';
+              }
+
+              clientesUnificados.push({
+                id: cliente.id,
+                nome: cliente.name,
+                email: cliente.email,
+                telefone: cliente.mobilePhone || cliente.phone,
+                cpf: cliente.cpfCnpj,
+                planoNome: subscription.description || 'Plano Asaas',
+                planoValor: parseFloat(subscription.value),
+                formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                               subscription.billingType === 'BOLETO' ? 'Boleto' : 
+                               subscription.billingType === 'PIX' ? 'PIX' : 'Outros',
+                dataInicio: subscription.dateCreated,
+                dataValidade: subscription.nextDueDate,
+                status,
+                origem: 'ASAAS' as const,
+                billingType: subscription.billingType,
+                daysRemaining
+              });
+            }
+          }
+        }
+      }
+
+      // Buscar clientes externos do banco de dados
+      const clientesExternos = await storage.getAllClientesExternos();
+      for (const cliente of clientesExternos) {
+        const dataValidade = new Date(cliente.dataValidade);
+        const hoje = new Date();
+        const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
+        if (daysRemaining > 0) {
+          status = 'ATIVO';
+        } else if (daysRemaining < 0) {
+          status = 'VENCIDO';
+        }
+
+        clientesUnificados.push({
+          id: `ext_${cliente.id}`,
+          nome: cliente.nome,
+          email: cliente.email,
+          telefone: cliente.telefone,
+          cpf: cliente.cpf,
+          planoNome: cliente.planoNome,
+          planoValor: parseFloat(cliente.valorMensal),
+          formaPagamento: cliente.formaPagamento,
+          dataInicio: cliente.dataInicio,
+          dataValidade: cliente.dataValidade,
+          status,
+          origem: 'EXTERNO' as const,
+          daysRemaining
+        });
+      }
+
+      res.json(clientesUnificados);
+    } catch (error: any) {
+      console.error('Erro ao buscar todos os clientes:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/clientes/unified-stats - Estatísticas unificadas de clientes
+  app.get('/api/clientes/unified-stats', requireAuth, async (req, res) => {
+    try {
+      // Buscar todos os clientes
+      const clientesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/clientes/all`, {
+        headers: {
+          'Cookie': req.headers.cookie || ''
+        }
+      });
+
+      let clientes = [];
+      if (clientesResponse.ok) {
+        clientes = await clientesResponse.json();
+      }
+
+      // Calcular estatísticas
+      const totalClients = clientes.length;
+      const totalActiveClients = clientes.filter((c: any) => c.status === 'ATIVO').length;
+      const totalInactiveClients = clientes.filter((c: any) => c.status !== 'ATIVO').length;
+      const totalAsaasClients = clientes.filter((c: any) => c.origem === 'ASAAS').length;
+      const totalExternalClients = clientes.filter((c: any) => c.origem === 'EXTERNO').length;
+      const overdueClients = clientes.filter((c: any) => c.status === 'VENCIDO').length;
+
+      // Calcular receita APENAS de serviços PAGOS no mês atual
+      const agendamentos = await storage.getAllAgendamentos();
+      const mesAtual = new Date().toISOString().slice(0, 7);
+      const agendamentosFinalizados = agendamentos.filter(a => 
+        a.status === 'finalizado' && 
+        a.dataHora.toISOString().slice(0, 7) === mesAtual
+      );
+
+      // Receita baseada nos serviços realmente finalizados
+      const monthlyPaidServicesRevenue = agendamentosFinalizados.reduce((total, agendamento) => {
+        // Assumindo valor médio de R$ 60 por serviço finalizado
+        return total + 60;
+      }, 0);
+
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const newClientsThisMonth = clientes.filter((c: any) => {
+        const dataInicio = new Date(c.dataInicio);
+        return dataInicio.getMonth() === currentMonth && dataInicio.getFullYear() === currentYear;
+      }).length;
+
+      res.json({
+        totalClients,
+        totalActiveClients,
+        totalInactiveClients,
+        monthlyPaidServicesRevenue,
+        newClientsThisMonth,
+        overdueClients,
+        totalExternalClients,
+        totalAsaasClients
+      });
+    } catch (error: any) {
+      console.error('Erro ao calcular estatísticas unificadas:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/comissao/services-finished - Serviços finalizados para cálculo de comissão
+  app.get('/api/comissao/services-finished', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query;
+      const targetMonth = mes || new Date().toISOString().slice(0, 7);
+
+      // Buscar agendamentos finalizados do mês
+      const agendamentos = await storage.getAllAgendamentos();
+      const agendamentosFinalizados = agendamentos.filter(a => 
+        a.status === 'finalizado' && 
+        a.dataHora.toISOString().slice(0, 7) === targetMonth
+      );
+
+      // Agrupar por barbeiro e calcular comissões
+      const servicosPorBarbeiro: { [key: number]: any } = {};
+
+      for (const agendamento of agendamentosFinalizados) {
+        const barbeiroId = agendamento.barbeiroId;
+        
+        if (!servicosPorBarbeiro[barbeiroId]) {
+          const barbeiro = await storage.getBarbeiroById(barbeiroId);
+          servicosPorBarbeiro[barbeiroId] = {
+            barbeiro,
+            servicos: [],
+            totalServicos: 0,
+            tempoTotalMinutos: 0,
+            comissaoTotal: 0
+          };
+        }
+
+        const servico = agendamento.servico;
+        const valorServico = 60; // Valor padrão por serviço
+        const comissaoServico = valorServico * (servico?.percentualComissao || 50) / 100;
+
+        servicosPorBarbeiro[barbeiroId].servicos.push({
+          ...agendamento,
+          valorServico,
+          comissaoServico
+        });
+        
+        servicosPorBarbeiro[barbeiroId].totalServicos++;
+        servicosPorBarbeiro[barbeiroId].tempoTotalMinutos += servico?.tempoMinutos || 30;
+        servicosPorBarbeiro[barbeiroId].comissaoTotal += comissaoServico;
+      }
+
+      const resultado = Object.values(servicosPorBarbeiro);
+
+      res.json({
+        mes: targetMonth,
+        barbeiros: resultado,
+        totalServicosFinalizados: agendamentosFinalizados.length,
+        receitaTotalServicos: agendamentosFinalizados.length * 60
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar serviços finalizados:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // POST /api/admin/reset-passwords - Resetar senhas de todos os profissionais (apenas admin)
   app.post('/api/admin/reset-passwords', requireAuth, async (req, res) => {
     try {
