@@ -1,0 +1,190 @@
+Melhorias para Dashboard e Tela de Cliente - Sistema Barbearia
+FUNCIONALIDADES A IMPLEMENTAR
+1. Sistema de Filtros por Data
+Tela de Cliente:
+
+Adicionar filtros: Mês e Dia
+Localização: No topo da tela de cliente
+Funcionalidade: Permitir visualizar comissões por período específico
+Comportamento padrão: Mostrar sempre o mês atual sem usar filtros
+Contador de comissão: Deve aparecer automaticamente para o mês atual
+
+Tela de Dashboard:
+
+Mesmo sistema de filtros: Mês e Dia idênticos à tela de cliente
+Comportamento padrão: Sempre mostrar dados do mês atual
+Mudança de dados: Todos os KPIs devem atualizar conforme filtros selecionados
+
+2. Gráfico de Pagamentos
+Especificações:
+
+Localização: Parte inferior do dashboard
+Dados padrão: Apenas do mês atual
+Comportamento: Deve mudar automaticamente conforme filtros aplicados
+Tipo de gráfico: Visualização clara de pagamentos por período
+Informações: Valores totais, datas de pagamento, métodos de pagamento
+
+3. Remoções Necessárias
+Remover do Dashboard:
+
+❌ Ranking de barbeiros (remover completamente)
+❌ Assinaturas prestes a vencer (remover completamente)
+
+4. Novos KPIs Essenciais
+KPI 1: Assinaturas Vencidas
+
+Fonte de dados: Integração com ASAAS
+Lógica: Faturas que passaram da data de pagamento do mês atual
+Display: Número de assinaturas vencidas + valor total em atraso
+Alerta visual: Destacar em vermelho se houver vencidas
+Detalhes: Nome do cliente e dias em atraso
+
+KPI 2: Dias de Maior Movimento
+
+Fonte de dados: Dados REAIS do sistema de agendamentos registrados
+Análise: Identificar quais dias da semana/mês têm mais atendimentos baseado nos agendamentos efetivamente realizados
+Display: Ranking dos dias com mais movimento real
+Informações: Dia da semana + número de agendamentos finalizados + tempo total de atendimento
+Período: Baseado no filtro selecionado (padrão: mês atual)
+
+KPI 3: Top 5 Serviços
+
+Fonte de dados: Dados REAIS registrados nos atendimentos finalizados do sistema
+Análise: Serviços mais realizados baseado nos atendimentos efetivamente concluídos
+Display: Lista dos 5 serviços mais realizados
+Métrica principal: SOMA DO TEMPO DE SERVIÇO (não valor financeiro)
+Informações: Nome do serviço + tempo total realizado + quantidade de vezes executado
+Ordenação: Por tempo total de serviço realizado
+
+5. KPIs Importantes para Tomada de Decisão
+KPI Financeiros:
+
+Receita Total do Mês: Valor total faturado no período baseado em atendimentos finalizados
+Tempo Médio por Atendimento: Média de tempo gasto por atendimento (não valor financeiro)
+Crescimento Mensal: Comparativo com mês anterior (% de crescimento)
+Receita por Forma de Pagamento: Distribuição entre dinheiro, cartão, PIX
+
+KPI Operacionais:
+
+Total de Atendimentos: Quantidade de clientes atendidos
+Taxa de Ocupação: Percentual de horários preenchidos vs disponíveis
+Atendimentos por Dia: Média diária de atendimentos
+Horário de Pico: Faixas de horário com maior movimento
+
+KPI de Clientes:
+
+Clientes Novos: Quantidade de primeiros atendimentos
+Clientes Recorrentes: Percentual de clientes que retornaram
+Tempo Médio entre Visitas: Frequência de retorno dos clientes
+Taxa de Retenção: Percentual de clientes que voltaram no mês
+
+KPI de Produtos:
+
+Produtos Mais Vendidos: Top produtos vendidos junto com serviços
+Receita de Produtos vs Serviços: Proporção entre venda de produtos e serviços
+Margem de Produtos: Lucratividade dos produtos vendidos
+
+6. Layout e Organização do Dashboard
+Seção Superior (Filtros):
+
+Filtros de Mês e Dia
+Botão "Aplicar Filtros"
+Indicador do período atual selecionado
+
+Seção de KPIs Principais (Cards):
+
+Receita Total do Mês
+Total de Atendimentos
+Ticket Médio
+Assinaturas Vencidas (destaque se houver)
+
+Seção de Análises (Meio):
+
+Dias de Maior Movimento (gráfico ou lista)
+Top 5 Serviços (lista com valores)
+Crescimento Mensal (comparativo)
+
+Seção de Gráficos (Inferior):
+
+Gráfico de Pagamentos (por período filtrado)
+Gráfico de Atendimentos por Dia
+Distribuição de Formas de Pagamento
+
+Seção de Insights (Lateral ou Inferior):
+
+Clientes Novos vs Recorrentes
+Taxa de Ocupação
+Produtos Mais Vendidos
+
+7. Integração com ASAAS
+Funcionalidades Necessárias:
+
+Conexão automática: Buscar dados de faturas do ASAAS
+Identificação de vencidas: Comparar data atual com vencimento das faturas
+Atualização em tempo real: Dados sempre atualizados
+Tratamento de erros: Caso API do ASAAS esteja indisponível
+
+Dados a Capturar do ASAAS:
+
+Status das faturas (paga, vencida, pendente)
+Datas de vencimento
+Valores das faturas
+Dados dos clientes
+Histórico de pagamentos
+
+8. Requisitos Técnicos
+Performance:
+
+Carregamento rápido dos KPIs
+Filtros responsivos
+Atualização em tempo real quando possível
+
+Responsividade:
+
+Dashboard adaptável para desktop e mobile
+KPIs organizados adequadamente em telas menores
+Gráficos redimensionáveis
+
+Usabilidade:
+
+Interface intuitiva para aplicação de filtros
+KPIs com explicações claras
+Cores e indicadores visuais para facilitar leitura
+
+CORREÇÕES E ESPECIFICAÇÕES IMPORTANTES
+Dados Reais do Sistema:
+
+Todos os KPIs devem usar dados REAIS registrados no sistema de agendamentos e atendimentos
+Não usar dados simulados ou estimados
+Base de dados: Agendamentos finalizados e comandas concluídas
+
+Métricas Baseadas em Tempo:
+
+Foco principal: Tempo de serviço ao invés de valores financeiros
+Top 5 Serviços: Ordenar por tempo total executado
+Análises de produtividade: Baseadas em tempo de atendimento real
+
+Filtros de Clientes:
+
+Apenas clientes ativos: Não mostrar clientes inativos
+Receita mensal: Padrão para mês atual, com opção de ver histórico
+
+Após implementação, o sistema deve ter:
+
+Filtros funcionais em Cliente e Dashboard
+KPIs relevantes para gestão da barbearia
+Integração com ASAAS para dados de assinatura
+Análises úteis (dias de movimento, top serviços)
+Dashboard focado em tomada de decisão
+Dados sempre do mês atual por padrão
+Gráficos interativos que respondem aos filtros
+
+PRIORIDADES DE IMPLEMENTAÇÃO
+
+PRIORIDADE 1: Sistema de filtros e dados do mês atual
+PRIORIDADE 2: Remoção dos elementos desnecessários
+PRIORIDADE 3: Implementação dos novos KPIs essenciais
+PRIORIDADE 4: Integração com ASAAS para assinaturas vencidas
+PRIORIDADE 5: Gráficos e análises adicionais
+
+Implemente essas funcionalidades mantendo a performance e usabilidade do sistema. O foco deve ser em dados úteis para gestão eficiente da barbearia.

@@ -2360,6 +2360,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/analytics/dias-movimento - Dias de maior movimento baseado em agendamentos reais
+  app.get('/api/analytics/dias-movimento', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query;
+      const mesAtual = mes || format(new Date(), 'yyyy-MM');
+      
+      // Buscar todos os agendamentos finalizados do mês
+      const agendamentos = await storage.getAllAgendamentos();
+      const agendamentosFinalizados = agendamentos.filter(a => 
+        a.status === 'finalizado' && 
+        format(new Date(a.dataHora), 'yyyy-MM') === mesAtual
+      );
+
+      // Agrupar por dia da semana
+      const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      const movimentoPorDia = diasSemana.map(dia => ({
+        dia,
+        atendimentos: 0,
+        tempoTotal: 0
+      }));
+
+      agendamentosFinalizados.forEach(agendamento => {
+        const diaSemana = new Date(agendamento.dataHora).getDay();
+        movimentoPorDia[diaSemana].atendimentos++;
+        movimentoPorDia[diaSemana].tempoTotal += agendamento.servico?.tempoMinutos || 30;
+      });
+
+      // Ordenar por número de atendimentos
+      const ranking = movimentoPorDia
+        .filter(item => item.atendimentos > 0)
+        .sort((a, b) => b.atendimentos - a.atendimentos)
+        .slice(0, 5);
+
+      res.json(ranking);
+    } catch (error: any) {
+      console.error('Erro ao buscar dias de movimento:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/servicos/top-5 - Top 5 serviços baseado em tempo real executado
+  app.get('/api/servicos/top-5', requireAuth, async (req, res) => {
+    try {
+      const { mes } = req.query;
+      const mesAtual = mes || format(new Date(), 'yyyy-MM');
+      
+      // Buscar todos os agendamentos finalizados do mês
+      const agendamentos = await storage.getAllAgendamentos();
+      const agendamentosFinalizados = agendamentos.filter(a => 
+        a.status === 'finalizado' && 
+        format(new Date(a.dataHora), 'yyyy-MM') === mesAtual
+      );
+
+      // Agrupar por serviço
+      const servicosMap = new Map();
+      
+      for (const agendamento of agendamentosFinalizados) {
+        const servicoId = agendamento.servicoId;
+        const servico = await storage.getServicoById(servicoId);
+        
+        if (servico) {
+          const key = servico.nome;
+          if (!servicosMap.has(key)) {
+            servicosMap.set(key, {
+              servico: servico.nome,
+              quantidade: 0,
+              tempoTotal: 0,
+              tempoMinutos: servico.tempoMinutos
+            });
+          }
+          
+          const item = servicosMap.get(key);
+          item.quantidade++;
+          item.tempoTotal += servico.tempoMinutos;
+        }
+      }
+
+      // Converter para array e ordenar por tempo total
+      const topServicos = Array.from(servicosMap.values())
+        .sort((a, b) => b.tempoTotal - a.tempoTotal)
+        .slice(0, 5);
+
+      res.json(topServicos);
+    } catch (error: any) {
+      console.error('Erro ao buscar top serviços:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // GET /api/analytics/kpis-dashboard - KPIs principais do dashboard
+  app.get('/api/analytics/kpis-dashboard', requireAuth, async (req, res) => {
+    try {
+      const { mes, dia } = req.query;
+      const mesAtual = mes || format(new Date(), 'yyyy-MM');
+      
+      // Buscar agendamentos do período
+      const agendamentos = await storage.getAllAgendamentos();
+      let agendamentosFiltrados = agendamentos.filter(a => 
+        a.status === 'finalizado' && 
+        format(new Date(a.dataHora), 'yyyy-MM') === mesAtual
+      );
+
+      // Filtrar por dia se especificado
+      if (dia && dia !== 'todos' && typeof dia === 'string') {
+        agendamentosFiltrados = agendamentosFiltrados.filter(a => 
+          format(new Date(a.dataHora), 'dd') === dia.padStart(2, '0')
+        );
+      }
+
+      // Calcular KPIs
+      const totalAtendimentos = agendamentosFiltrados.length;
+      const tempoTotalMinutos = agendamentosFiltrados.reduce((sum, a) => {
+        return sum + (a.servico?.tempoMinutos || 30);
+      }, 0);
+      const tempoMedioPorAtendimento = totalAtendimentos > 0 ? 
+        Math.round(tempoTotalMinutos / totalAtendimentos) : 0;
+
+      // Receita estimada baseada no tempo de serviço (R$ 2,00 por minuto como base)
+      const receitaTotal = tempoTotalMinutos * 2;
+
+      const ticketMedio = totalAtendimentos > 0 ? receitaTotal / totalAtendimentos : 0;
+
+      res.json({
+        totalAtendimentos,
+        receitaTotal,
+        ticketMedio,
+        tempoMedioPorAtendimento,
+        tempoTotalMinutos
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar KPIs do dashboard:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

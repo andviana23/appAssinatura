@@ -52,12 +52,20 @@ export default function DashboardMelhorado() {
     refetchInterval: 300000,
   });
 
-  const { data: topServicos, isLoading: servicosLoading } = useQuery<any[]>({
-    queryKey: ['/api/servicos/top-5', selectedMonth],
+  // Query para KPIs baseados em dados reais do sistema
+  const { data: kpisDashboard, isLoading: kpisLoading } = useQuery<any>({
+    queryKey: ['/api/analytics/kpis-dashboard', selectedMonth, selectedDay],
+    refetchInterval: 60000,
   });
 
-  const { data: diasMovimento, isLoading: movimentoLoading } = useQuery<any[]>({
+  const { data: topServicos = [], isLoading: servicosLoading } = useQuery<any[]>({
+    queryKey: ['/api/servicos/top-5', selectedMonth],
+    refetchInterval: 60000,
+  });
+
+  const { data: diasMovimento = [], isLoading: movimentoLoading } = useQuery<any[]>({
     queryKey: ['/api/analytics/dias-movimento', selectedMonth],
+    refetchInterval: 60000,
   });
 
   // Gerar opções de mês
@@ -98,11 +106,12 @@ export default function DashboardMelhorado() {
     return matchesMonth;
   });
 
-  // Calcular KPIs
-  const receitaTotal = filteredRevenue.reduce((sum, item) => sum + (item.value || 0), 0);
+  // Calcular KPIs baseados em dados reais do sistema
+  const receitaTotal = kpisDashboard?.receitaTotal || 0;
+  const totalAtendimentos = kpisDashboard?.totalAtendimentos || 0;
+  const ticketMedio = kpisDashboard?.ticketMedio || 0;
+  const tempoMedioPorAtendimento = kpisDashboard?.tempoMedioPorAtendimento || 0;
   const assinaturasVencidas = clientesStats?.overdueClients || 0;
-  const ticketMedio = clientesStats?.totalActiveClients ? 
-    receitaTotal / clientesStats.totalActiveClients : 0;
 
   if (statsLoading) {
     return (
@@ -209,14 +218,14 @@ export default function DashboardMelhorado() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Assinaturas Ativas
+                  Total de Atendimentos
                 </p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {clientesStats?.totalActiveClients || 0}
+                  {totalAtendimentos}
                 </p>
                 <p className="text-sm text-blue-600 mt-1">
                   <Users className="inline h-3 w-3 mr-1" />
-                  Clientes ativos
+                  Período selecionado
                 </p>
               </div>
               <div className="h-12 w-12 bg-blue-100 rounded-2xl flex items-center justify-center">
@@ -317,21 +326,31 @@ export default function DashboardMelhorado() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { dia: "Segunda-feira", atendimentos: 15, receita: 1200 },
-                { dia: "Sexta-feira", atendimentos: 18, receita: 1450 },
-                { dia: "Sábado", atendimentos: 22, receita: 1800 },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold">{item.dia}</p>
-                    <p className="text-sm text-gray-600">{item.atendimentos} atendimentos</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#8B4513]">{formatCurrency(item.receita)}</p>
-                  </div>
+              {movimentoLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                  ))}
                 </div>
-              ))}
+              ) : diasMovimento.length > 0 ? (
+                diasMovimento.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold">{item.dia}</p>
+                      <p className="text-sm text-gray-600">{item.atendimentos} atendimentos</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#8B4513]">{item.tempoTotal} min</p>
+                      <p className="text-xs text-gray-500">Tempo total</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Clock className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p>Nenhum movimento registrado no período</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -345,23 +364,31 @@ export default function DashboardMelhorado() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { servico: "Corte Masculino", quantidade: 45, receita: 2250 },
-                { servico: "Barba", quantidade: 32, receita: 1280 },
-                { servico: "Corte + Barba", quantidade: 28, receita: 1680 },
-                { servico: "Sobrancelha", quantidade: 15, receita: 450 },
-                { servico: "Relaxamento", quantidade: 8, receita: 560 },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold">{item.servico}</p>
-                    <p className="text-sm text-gray-600">{item.quantidade} realizados</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#8B4513]">{formatCurrency(item.receita)}</p>
-                  </div>
+              {servicosLoading ? (
+                <div className="space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                  ))}
                 </div>
-              ))}
+              ) : topServicos.length > 0 ? (
+                topServicos.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold">{item.servico}</p>
+                      <p className="text-sm text-gray-600">{item.quantidade} realizados</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#8B4513]">{item.tempoTotal} min</p>
+                      <p className="text-xs text-gray-500">Tempo total</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Star className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p>Nenhum serviço registrado no período</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
