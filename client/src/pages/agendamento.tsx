@@ -302,11 +302,11 @@ export default function Agendamento() {
       {/* Agenda Principal */}
       <div className="flex-1">
         {/* Cabeçalho Moderno */}
-        <div className="bg-gradient-to-r from-[#8B4513] to-[#A0522D] rounded-2xl p-6 mb-8 shadow-2xl">
+        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-white hover:text-yellow-200 transition-colors bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20"
+              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-semibold">Voltar</span>
@@ -314,7 +314,7 @@ export default function Agendamento() {
 
             <div className="text-center">
               <h1 className="text-3xl font-bold text-white mb-2">Agenda do Dia</h1>
-              <div className="text-xl font-semibold text-yellow-200">
+              <div className="text-xl font-semibold text-blue-100">
                 {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}
               </div>
             </div>
@@ -333,7 +333,7 @@ export default function Agendamento() {
                 variant={isToday(selectedDate) ? "default" : "outline"}
                 size="lg"
                 onClick={() => setSelectedDate(new Date())}
-                className={isToday(selectedDate) ? "bg-yellow-500 hover:bg-yellow-600 text-[#8B4513] font-bold" : "border-white/30 text-white hover:bg-white/20 hover:text-white bg-white/10"}
+                className={isToday(selectedDate) ? "bg-white text-[#1e3a8a] hover:bg-blue-50 font-bold" : "border-white/30 text-white hover:bg-white/20 hover:text-white bg-white/10"}
               >
                 Hoje
               </Button>

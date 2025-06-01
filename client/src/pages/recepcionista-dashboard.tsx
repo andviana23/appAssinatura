@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Users, CreditCard, DollarSign, Clock, Plus } from "lucide-react";
+import { Calendar, Users, CreditCard, DollarSign, Clock, Plus, List, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
@@ -41,19 +41,29 @@ export default function RecepcionistaDashboard() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#365e78]">Recepção</h1>
-          <p className="text-gray-600">
-            {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+      <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Recepção</h1>
+            <p className="text-blue-100">
+              {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Link href="/lista-da-vez">
+              <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
+                <List className="h-4 w-4 mr-2" />
+                Lista da Vez
+              </Button>
+            </Link>
+            <Link href="/agendamento">
+              <Button className="bg-white text-[#1e3a8a] hover:bg-blue-50">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Agendamento
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/agendamento">
-          <Button className="bg-[#365e78] hover:bg-[#2d4f63] text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Agendamento
-          </Button>
-        </Link>
       </div>
 
       {/* Cards de Resumo */}
@@ -112,13 +122,13 @@ export default function RecepcionistaDashboard() {
                 <p className="text-2xl font-bold text-foreground">
                   {clientesLoading ? "..." : (clientesStats?.totalActiveClients || 0)}
                 </p>
-                <p className="text-sm text-[#365e78] mt-1">
+                <p className="text-sm text-[#1e3a8a] mt-1">
                   <Users className="inline h-3 w-3 mr-1" />
                   Com assinatura
                 </p>
               </div>
-              <div className="h-12 w-12 bg-[#365e78]/10 rounded-2xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-[#365e78]" />
+              <div className="h-12 w-12 bg-[#1e3a8a]/10 rounded-2xl flex items-center justify-center">
+                <Users className="h-6 w-6 text-[#1e3a8a]" />
               </div>
             </div>
           </CardContent>
@@ -134,13 +144,13 @@ export default function RecepcionistaDashboard() {
                 <p className="text-2xl font-bold text-foreground">
                   {clientesLoading ? "..." : `R$ ${(clientesStats?.totalSubscriptionRevenue || 0).toFixed(2)}`}
                 </p>
-                <p className="text-sm text-[#d3b791] mt-1">
+                <p className="text-sm text-[#1e3a8a] mt-1">
                   <CreditCard className="inline h-3 w-3 mr-1" />
                   Assinaturas
                 </p>
               </div>
-              <div className="h-12 w-12 bg-[#d3b791]/20 rounded-2xl flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-[#d3b791]" />
+              <div className="h-12 w-12 bg-[#1e3a8a]/10 rounded-2xl flex items-center justify-center">
+                <CreditCard className="h-6 w-6 text-[#1e3a8a]" />
               </div>
             </div>
           </CardContent>
@@ -152,7 +162,7 @@ export default function RecepcionistaDashboard() {
         <Link href="/agendamento">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-[#365e78]">
+              <CardTitle className="flex items-center gap-3 text-[#1e3a8a]">
                 <Calendar className="h-6 w-6" />
                 Agenda
               </CardTitle>
@@ -168,7 +178,7 @@ export default function RecepcionistaDashboard() {
         <Link href="/clientes">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-[#365e78]">
+              <CardTitle className="flex items-center gap-3 text-[#1e3a8a]">
                 <Users className="h-6 w-6" />
                 Clientes
               </CardTitle>
@@ -181,17 +191,17 @@ export default function RecepcionistaDashboard() {
           </Card>
         </Link>
 
-        <Link href="/planos">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Link href="/lista-da-vez">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-[#1e3a8a]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-[#365e78]">
-                <CreditCard className="h-6 w-6" />
-                Planos
+              <CardTitle className="flex items-center gap-3 text-[#1e3a8a]">
+                <UserCheck className="h-6 w-6" />
+                Lista da Vez
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Visualizar e oferecer planos de assinatura
+                Controlar a fila de atendimentos diários
               </p>
             </CardContent>
           </Card>
@@ -201,7 +211,7 @@ export default function RecepcionistaDashboard() {
       {/* Próximos Agendamentos */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-[#365e78]">
+          <CardTitle className="flex items-center gap-3 text-[#1e3a8a]">
             <Clock className="h-6 w-6" />
             Próximos Agendamentos
           </CardTitle>
@@ -222,7 +232,7 @@ export default function RecepcionistaDashboard() {
                 .map((agendamento: any) => (
                   <div
                     key={agendamento.id}
-                    className="flex items-center justify-between p-3 rounded-xl border-l-4 border-[#365e78] bg-gray-50"
+                    className="flex items-center justify-between p-3 rounded-xl border-l-4 border-[#1e3a8a] bg-blue-50"
                   >
                     <div>
                       <div className="font-medium text-gray-900">
@@ -233,7 +243,7 @@ export default function RecepcionistaDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-[#365e78]">
+                      <div className="text-sm font-semibold text-[#1e3a8a]">
                         {format(new Date(agendamento.dataHora), "HH:mm")}
                       </div>
                       <div className="text-xs text-gray-500">
