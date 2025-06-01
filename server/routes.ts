@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { storage } from "./storage";
-import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema } from "@shared/schema";
+import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema, insertAgendamentoSchema, insertClienteSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
 
@@ -787,19 +787,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientesUnificados = [];
       
-      // Buscar clientes externos (nosso banco)
+      // Buscar todos os clientes do banco local
       const clientesExternos = await storage.getAllClientes();
       const hoje = new Date();
       
+      // Adicionar clientes externos (cadastrados diretamente no banco)
       for (const cliente of clientesExternos) {
         if (cliente.dataVencimentoAssinatura) {
           const validade = new Date(cliente.dataVencimentoAssinatura);
           const status = validade >= hoje ? 'ATIVO' : 'VENCIDO';
           
-          // Só incluir clientes ativos
           if (status === 'ATIVO') {
             clientesUnificados.push({
-              id: `ext_${cliente.id}`,
+              id: cliente.id, // ID numérico do banco local
               nome: cliente.nome,
               email: cliente.email,
               telefone: cliente.telefone,
@@ -810,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
               dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
               status: status,
-              origem: 'EXTERNO'
+              origem: cliente.asaasCustomerId ? 'ASAAS' : 'EXTERNO'
             });
           }
         }
@@ -896,24 +896,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     console.error('Erro ao sincronizar cliente:', error);
                   }
                   
-                  clientesUnicos.set(payment.customer, {
-                    id: clienteLocal ? clienteLocal.id : `asaas_${payment.customer}`,
-                    nome: customer.name,
-                    email: customer.email,
-                    telefone: customer.phone,
-                    cpf: customer.cpfCnpj,
-                    planoNome: payment.description || 'Cobrança Asaas',
-                    planoValor: payment.value,
-                    formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
-                                   payment.billingType === 'PIX' ? 'PIX' : 
-                                   payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
-                    dataInicio: payment.paymentDate || payment.confirmedDate,
-                    dataValidade: dataValidade.toISOString(),
-                    status: 'ATIVO',
-                    origem: 'ASAAS',
-                    billingType: payment.billingType,
-                    clienteLocalId: clienteLocal ? clienteLocal.id : null
-                  });
+                  // Só adicionar se o cliente foi sincronizado com sucesso no banco local
+                  if (clienteLocal) {
+                    clientesUnicos.set(payment.customer, {
+                      id: clienteLocal.id, // Sempre usar ID numérico do banco local
+                      nome: customer.name,
+                      email: customer.email,
+                      telefone: customer.phone,
+                      cpf: customer.cpfCnpj,
+                      planoNome: payment.description || 'Cobrança Asaas',
+                      planoValor: payment.value,
+                      formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                     payment.billingType === 'PIX' ? 'PIX' : 
+                                     payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                      dataInicio: payment.paymentDate || payment.confirmedDate,
+                      dataValidade: dataValidade.toISOString(),
+                      status: 'ATIVO',
+                      origem: 'ASAAS',
+                      billingType: payment.billingType,
+                      asaasCustomerId: payment.customer
+                    });
+                  }
                 }
               }
             }
