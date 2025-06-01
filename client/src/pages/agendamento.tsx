@@ -298,11 +298,80 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Agenda Principal - Tela Completa */}
-      <div className="w-full">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Calendário Lateral */}
+      <div className="w-80 bg-white shadow-xl">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-bold text-[#1e3a8a]">Calendário</h2>
+        </div>
+        
+        {/* Mini Calendário */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <h3 className="font-semibold">
+              {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
+            </h3>
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
+              <div key={day} className="p-2 font-medium text-gray-500">{day}</div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {daysInMonth.map(date => (
+              <button
+                key={date.toISOString()}
+                onClick={() => selectCalendarDate(date)}
+                className={`
+                  p-2 text-sm rounded hover:bg-blue-100 transition-colors
+                  ${isSameDay(date, selectedDate) ? 'bg-[#1e3a8a] text-white' : ''}
+                  ${isToday(date) ? 'font-bold border border-blue-500' : ''}
+                  ${hasAgendamentos(date) ? 'bg-green-100' : ''}
+                `}
+              >
+                {format(date, "d")}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Navegação de Data */}
+        <div className="p-4 border-t">
+          <div className="flex gap-2">
+            <button
+              onClick={() => selectCalendarDate(subDays(selectedDate, 1))}
+              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() => selectCalendarDate(new Date())}
+              className="flex-1 p-2 bg-[#1e3a8a] text-white hover:bg-[#1e40af] rounded text-sm"
+            >
+              Hoje
+            </button>
+            <button
+              onClick={() => selectCalendarDate(addDays(selectedDate, 1))}
+              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+            >
+              Próximo →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Área Principal da Agenda */}
+      <div className="flex-1">
         {/* Cabeçalho Moderno */}
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-8 shadow-xl">
+        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl m-6 p-6 shadow-xl">
           <div className="flex items-center justify-between">
             <button
               onClick={() => setLocation("/")}
@@ -366,34 +435,45 @@ export default function Agendamento() {
           </div>
         </div>
 
-        {/* Grade da Agenda Moderna - Tela Completa */}
+        {/* Grade da Agenda Moderna - Compacta para caber todos os barbeiros */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mx-6">
           {/* Header com nomes dos barbeiros */}
-          <div className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
-            <div className="p-4 border-r border-white/20 font-bold flex items-center gap-2">
+          <div 
+            className="grid bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg"
+            style={{ 
+              gridTemplateColumns: `100px repeat(${activeBarbeiros.length}, 1fr)` 
+            }}
+          >
+            <div className="p-3 border-r border-white/20 font-bold flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Horário
+              <span className="text-xs">Horário</span>
             </div>
             {activeBarbeiros.map((barbeiro: Barbeiro) => (
-              <div key={barbeiro.id} className="p-4 border-r border-white/20 text-center">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">
+              <div key={barbeiro.id} className="p-3 border-r border-white/20 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="h-6 w-6 bg-white/20 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">
                       {barbeiro.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="font-bold text-sm">{barbeiro.nome}</span>
+                  <span className="font-bold text-xs truncate w-full">{barbeiro.nome}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Linhas de horário - Expandidas */}
+          {/* Linhas de horário - Compactas */}
           <div className="max-h-[70vh] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
-              <div key={timeSlot} className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] border-b border-gray-100 min-h-[90px] hover:bg-gray-50/50 transition-colors">
-                <div className="p-4 border-r border-gray-100 text-sm font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
-                  <div className="flex items-center gap-2">
+              <div 
+                key={timeSlot} 
+                className="grid border-b border-gray-100 min-h-[60px] hover:bg-gray-50/50 transition-colors"
+                style={{ 
+                  gridTemplateColumns: `100px repeat(${activeBarbeiros.length}, 1fr)` 
+                }}
+              >
+                <div className="p-2 border-r border-gray-100 text-xs font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
+                  <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {timeSlot}
                   </div>
@@ -406,19 +486,19 @@ export default function Agendamento() {
                     <div key={barbeiro.id} className="border-r border-gray-200 p-1 relative">
                       {agendamento ? (
                         <div 
-                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border-2 rounded-lg p-2 text-xs h-full cursor-pointer hover:opacity-90 transition-all duration-200`}
+                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full cursor-pointer hover:opacity-90 transition-all duration-200`}
                           onClick={() => abrirComanda(agendamento)}
                         >
-                          <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-sm`}>
+                          <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
                             {agendamento.cliente?.nome}
                           </div>
-                          <div className={`${getAgendamentoColors(agendamento).text} text-xs mt-1`}>
+                          <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
                             {agendamento.servico?.nome}
                           </div>
                           
                           {agendamento.status === "FINALIZADO" && (
-                            <div className="mt-1 text-xs font-bold opacity-80">
-                              ✅ FINALIZADO
+                            <div className="text-xs font-bold opacity-80">
+                              ✅
                             </div>
                           )}
                         </div>

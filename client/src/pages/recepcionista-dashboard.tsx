@@ -93,7 +93,15 @@ export default function RecepcionistaDashboard() {
         {/* Footer do Sidebar */}
         <div className="p-4 border-t">
           <button
-            onClick={() => setLocation("/")}
+            onClick={async () => {
+              try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                setLocation('/');
+              } catch (error) {
+                console.error('Erro no logout:', error);
+                setLocation('/');
+              }
+            }}
             className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
           >
             <LogOut className="h-5 w-5" />
