@@ -14,6 +14,7 @@ import {
   LogOut,
   Settings,
   ListOrdered,
+  ClipboardList,
 } from "lucide-react";
 
 const navigation = [
@@ -56,6 +57,11 @@ const navigation = [
     name: "Relatórios",
     href: "/relatorios",
     icon: Target,
+  },
+  {
+    name: "Lista da Vez",
+    href: "/lista-da-vez-mensal",
+    icon: ClipboardList,
   },
 ];
 

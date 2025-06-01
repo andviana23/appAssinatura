@@ -23,6 +23,7 @@ import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
 import ListaDaVezRecepcionista from "@/pages/lista-da-vez-recepcionista";
 import ListaDaVezBarbeiro from "@/pages/lista-da-vez-barbeiro";
+import ListaDaVezMensal from "@/pages/lista-da-vez-mensal";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -46,6 +47,7 @@ function AuthenticatedRoutes() {
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />
           <Route path="/lista-da-vez" component={ListaDaVezRecepcionista} />
+          <Route path="/lista-da-vez-mensal" component={ListaDaVezMensal} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>

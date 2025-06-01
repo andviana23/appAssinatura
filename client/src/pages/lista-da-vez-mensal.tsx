@@ -48,13 +48,10 @@ export default function ListaDaVezMensal() {
 
   const adicionarAtendimentoMutation = useMutation({
     mutationFn: async (barbeiroId: number) => {
-      return apiRequest('/api/lista-da-vez/adicionar-atendimento', {
-        method: 'POST',
-        body: {
-          barbeiroId,
-          data: new Date().toISOString().split('T')[0],
-          mesAno: mesAtual
-        }
+      return apiRequest('/api/lista-da-vez/adicionar-atendimento', 'POST', {
+        barbeiroId,
+        data: new Date().toISOString().split('T')[0],
+        mesAno: mesAtual
       });
     },
     onSuccess: () => {
@@ -75,13 +72,10 @@ export default function ListaDaVezMensal() {
 
   const passarVezMutation = useMutation({
     mutationFn: async (barbeiroId: number) => {
-      return apiRequest('/api/lista-da-vez/passar-vez', {
-        method: 'POST',
-        body: {
-          barbeiroId,
-          data: new Date().toISOString().split('T')[0],
-          mesAno: mesAtual
-        }
+      return apiRequest('/api/lista-da-vez/passar-vez', 'POST', {
+        barbeiroId,
+        data: new Date().toISOString().split('T')[0],
+        mesAno: mesAtual
       });
     },
     onSuccess: () => {
