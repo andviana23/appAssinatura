@@ -2550,18 +2550,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Agendamentos filtrados para KPIs: ${agendamentosFiltrados.length} encontrados`);
 
-      // Buscar estatísticas de clientes unificadas para receita real
-      const clientesStats = await storage.getClientesUnifiedStats();
+      // Buscar estatísticas de clientes unificadas para o mês específico
+      const [ano, mesNum] = (mesAtual as string).split('-');
+      const clientesStats = await storage.getClientesUnifiedStats(mesNum, ano);
       
-      // Calcular KPIs com dados reais
+      // Calcular KPIs com dados reais do mês
       const totalAtendimentos = agendamentosFiltrados.length;
       
-      // Receita real das assinaturas (dados reais)
+      // Receita real das assinaturas do mês vigente
       const receitaTotal = clientesStats.totalSubscriptionRevenue || 0;
       
-      // Ticket médio baseado em receita real
-      const ticketMedio = clientesStats.totalActiveClients > 0 ? 
-        receitaTotal / clientesStats.totalActiveClients : 0;
+      // Ticket médio baseado em clientes com pagamentos no mês vigente
+      const clientesComPagamentoMes = clientesStats.totalActiveClients || 0;
+      const ticketMedio = clientesComPagamentoMes > 0 ? 
+        receitaTotal / clientesComPagamentoMes : 0;
 
       // Tempo médio por atendimento
       const tempoTotalMinutos = agendamentosFiltrados.reduce((sum, a) => {

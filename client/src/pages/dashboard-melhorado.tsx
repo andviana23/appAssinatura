@@ -37,13 +37,14 @@ interface ClientesStats {
 }
 
 export default function DashboardMelhorado() {
-  // Estados para filtros de data - padrão mês atual
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  // Estados para filtros de data - sempre usar mês atual
+  const currentMonth = format(new Date(), "yyyy-MM");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedDay, setSelectedDay] = useState("");
 
-  // Queries para dados do dashboard
+  // Queries para dados do dashboard - sempre dados do mês atual
   const { data: clientesStats, isLoading: statsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/clientes/unified-stats'],
+    queryKey: ['/api/clientes-unified/stats'],
     refetchInterval: 300000,
   });
 
@@ -52,19 +53,19 @@ export default function DashboardMelhorado() {
     refetchInterval: 300000,
   });
 
-  // Query para KPIs baseados em dados reais do sistema
+  // Query para KPIs baseados em dados reais do mês atual
   const { data: kpisDashboard, isLoading: kpisLoading } = useQuery<any>({
-    queryKey: ['/api/analytics/kpis-dashboard', selectedMonth, selectedDay],
+    queryKey: ['/api/analytics/kpis-dashboard', currentMonth, selectedDay],
     refetchInterval: 60000,
   });
 
   const { data: topServicos = [], isLoading: servicosLoading } = useQuery<any[]>({
-    queryKey: ['/api/servicos/top-5', selectedMonth],
+    queryKey: ['/api/servicos/top-5', currentMonth],
     refetchInterval: 60000,
   });
 
   const { data: diasMovimento = [], isLoading: movimentoLoading } = useQuery<any[]>({
-    queryKey: ['/api/analytics/dias-movimento', selectedMonth],
+    queryKey: ['/api/analytics/dias-movimento', currentMonth],
     refetchInterval: 60000,
   });
 
