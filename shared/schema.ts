@@ -128,14 +128,23 @@ export const atendimentosDiarios = pgTable("atendimentos_diarios", {
   id: serial("id").primaryKey(),
   barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull(),
   data: text("data").notNull(), // formato "YYYY-MM-DD"
-  atendimentosDiarios: integer("atendimentos_diarios").notNull().default(0),
-  passouAVez: boolean("passou_a_vez").notNull().default(false),
+  mesAno: text("mes_ano").notNull(), // formato "YYYY-MM"
+  tipoAtendimento: text("tipo_atendimento").default("NORMAL"), // NORMAL, MANUAL, PASSOU_VEZ
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  // Garantir que não haverá duplicatas para o mesmo barbeiro no mesmo dia
-  uniqueBarbeiroData: unique("unique_barbeiro_data").on(table.barbeiroId, table.data),
+  uniqueBarbeiroDataMes: unique("unique_barbeiro_data_mes").on(table.barbeiroId, table.data, table.mesAno),
 }));
+
+// Configuração da sequência de barbeiros
+export const sequenciaBarbeiros = pgTable("sequencia_barbeiros", {
+  id: serial("id").primaryKey(),
+  barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull().unique(),
+  ordem: integer("ordem").notNull(),
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // Insert schemas
 export const insertBarbeiroSchema = createInsertSchema(barbeiros).omit({
@@ -215,6 +224,12 @@ export const insertAtendimentoDiarioSchema = createInsertSchema(atendimentosDiar
   updatedAt: true,
 });
 
+export const insertSequenciaBarbeiroSchema = createInsertSchema(sequenciaBarbeiros).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type Barbeiro = typeof barbeiros.$inferSelect;
 export type InsertBarbeiro = z.infer<typeof insertBarbeiroSchema>;
@@ -251,3 +266,6 @@ export type InsertAgendamento = z.infer<typeof insertAgendamentoSchema>;
 
 export type AtendimentoDiario = typeof atendimentosDiarios.$inferSelect;
 export type InsertAtendimentoDiario = z.infer<typeof insertAtendimentoDiarioSchema>;
+
+export type SequenciaBarbeiro = typeof sequenciaBarbeiros.$inferSelect;
+export type InsertSequenciaBarbeiro = z.infer<typeof insertSequenciaBarbeiroSchema>;

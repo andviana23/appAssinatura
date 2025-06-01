@@ -18,6 +18,7 @@ import {
   totalServicos,
   agendamentos,
   atendimentosDiarios,
+  sequenciaBarbeiros,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -40,6 +41,8 @@ import {
   type InsertTotalServico,
   type AtendimentoDiario,
   type InsertAtendimentoDiario,
+  type SequenciaBarbeiro,
+  type InsertSequenciaBarbeiro,
 } from "@shared/schema";
 
 // Debug da conexão
@@ -859,7 +862,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(atendimentosDiarios.barbeiroId, atendimento.barbeiroId),
-          eq(atendimentosDiarios.data, atendimento.data)
+          eq(atendimentosDiarios.data, atendimento.data),
+          eq(atendimentosDiarios.mesAno, atendimento.mesAno)
         )
       )
       .limit(1);
@@ -869,8 +873,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(atendimentosDiarios)
         .set({
-          atendimentosDiarios: atendimento.atendimentosDiarios,
-          passouAVez: atendimento.passouAVez,
+          tipoAtendimento: atendimento.tipoAtendimento,
           updatedAt: new Date()
         })
         .where(eq(atendimentosDiarios.id, existing[0].id))
