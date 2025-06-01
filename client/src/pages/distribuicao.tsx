@@ -32,17 +32,28 @@ interface ComissaoStats {
 export default function Distribuicao() {
   const [selectedBarbeiro, setSelectedBarbeiro] = useState<BarbeiroComissao | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  
+  // Estados para filtro por período
+  const currentDate = new Date();
+  const [dataInicio, setDataInicio] = useState(() => {
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    return firstDayOfMonth.toISOString().split('T')[0];
+  });
+  const [dataFim, setDataFim] = useState(() => {
+    const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    return lastDayOfMonth.toISOString().split('T')[0];
+  });
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
-  // Query para buscar dados de comissão dos barbeiros
+  // Query para buscar dados de comissão dos barbeiros com filtro por período
   const { data: comissaoData, isLoading } = useQuery({
-    queryKey: ["/api/comissao/barbeiros", currentMonth],
+    queryKey: ["/api/comissao/barbeiros", currentMonth, dataInicio, dataFim],
   });
 
-  // Query para estatísticas gerais de comissão
+  // Query para estatísticas gerais de comissão com filtro por período
   const { data: statsData } = useQuery({
-    queryKey: ["/api/comissao/stats", currentMonth],
+    queryKey: ["/api/comissao/stats", currentMonth, dataInicio, dataFim],
   });
 
   const barbeirosComissao: BarbeiroComissao[] = Array.isArray(comissaoData) ? comissaoData : [];
@@ -93,8 +104,61 @@ export default function Distribuicao() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Comissão dos Barbeiros</h1>
         <p className="text-gray-600">
-          Distribuição automática baseada nos atendimentos finalizados em {currentMonth}
+          Distribuição automática baseada nos atendimentos finalizados
         </p>
+        
+        {/* Filtros por Período */}
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Filtrar por Período</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <Label htmlFor="dataInicio" className="text-sm font-medium text-gray-700">
+                Data Início
+              </Label>
+              <Input
+                id="dataInicio"
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="dataFim" className="text-sm font-medium text-gray-700">
+                Data Fim
+              </Label>
+              <Input
+                id="dataFim"
+                type="date"
+                value={dataFim}
+                onChange={(e) => setDataFim(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Button 
+                onClick={() => {
+                  // Força atualização das queries
+                  window.location.reload();
+                }}
+                className="w-full bg-[#8B4513] hover:bg-[#654321]"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Aplicar Filtro
+              </Button>
+            </div>
+          </div>
+          
+          <p className="text-xs text-gray-500 mt-2">
+            Período selecionado: {new Date(dataInicio).toLocaleDateString('pt-BR')} até {new Date(dataFim).toLocaleDateString('pt-BR')}
+          </p>
+        </div>
       </div>
 
       {/* Cards de estatísticas gerais */}
