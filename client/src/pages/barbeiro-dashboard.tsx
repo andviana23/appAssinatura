@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Scissors, Clock, DollarSign, Calendar, TrendingUp, Award } from "lucide-react";
+import { Scissors, Clock, DollarSign, Calendar, TrendingUp, Award, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 export default function BarbeiroDashboard() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   
   // Buscar dados de comissão do barbeiro específico
   const { data: comissaoData, isLoading: comissaoLoading } = useQuery({
@@ -51,11 +53,20 @@ export default function BarbeiroDashboard() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#365e78]">Meu Desempenho</h1>
-          <p className="text-gray-600">
-            {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-semibold">Voltar</span>
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-[#365e78]">Meu Desempenho</h1>
+            <p className="text-gray-600">
+              {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-[#365e78]">
           <Scissors className="h-6 w-6" />

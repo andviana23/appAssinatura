@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Users, CreditCard, DollarSign, Clock, Plus, List, UserCheck } from "lucide-react";
+import { Calendar, Users, CreditCard, DollarSign, Clock, Plus, List, UserCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function RecepcionistaDashboard() {
+  const [, setLocation] = useLocation();
+
   // Buscar dados do faturamento do dia
   const { data: faturamentoDiario, isLoading: faturamentoLoading } = useQuery({
     queryKey: ["/api/asaas/faturamento-diario"],
@@ -43,11 +45,20 @@ export default function RecepcionistaDashboard() {
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Recepção</h1>
-            <p className="text-blue-100">
-              {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-semibold">Voltar</span>
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Recepção</h1>
+              <p className="text-blue-100">
+                {format(hoje, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
             <Link href="/lista-da-vez">
