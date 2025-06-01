@@ -158,7 +158,7 @@ export default function RecepcionistaDashboard() {
       </div>
 
       {/* Ações Rápidas */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Link href="/agendamento">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardHeader>
@@ -202,6 +202,22 @@ export default function RecepcionistaDashboard() {
             <CardContent>
               <p className="text-gray-600">
                 Controlar a fila de atendimentos diários
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/planos">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-green-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-green-600">
+                <CreditCard className="h-6 w-6" />
+                Planos & Vendas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Vender planos de assinatura para clientes
               </p>
             </CardContent>
           </Card>

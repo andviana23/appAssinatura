@@ -298,9 +298,9 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="flex gap-6 p-6">
-      {/* Agenda Principal */}
-      <div className="flex-1">
+    <div className="min-h-screen bg-gray-50">
+      {/* Agenda Principal - Tela Completa */}
+      <div className="w-full">
         {/* Cabeçalho Moderno */}
         <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex items-center justify-between">
@@ -366,10 +366,10 @@ export default function Agendamento() {
           </div>
         </div>
 
-        {/* Grade da Agenda Moderna */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        {/* Grade da Agenda Moderna - Expandida */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mx-6">
           {/* Header com nomes dos barbeiros */}
-          <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
+          <div className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
             <div className="p-4 border-r border-white/20 font-bold flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Horário
@@ -388,10 +388,10 @@ export default function Agendamento() {
             ))}
           </div>
 
-          {/* Linhas de horário */}
-          <div className="max-h-[600px] overflow-y-auto">
+          {/* Linhas de horário - Expandidas */}
+          <div className="max-h-[70vh] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
-              <div key={timeSlot} className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] border-b border-gray-100 min-h-[80px] hover:bg-gray-50/50 transition-colors">
+              <div key={timeSlot} className="grid grid-cols-[120px_repeat(auto-fit,minmax(200px,1fr))] border-b border-gray-100 min-h-[90px] hover:bg-gray-50/50 transition-colors">
                 <div className="p-4 border-r border-gray-100 text-sm font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3" />
