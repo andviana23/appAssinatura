@@ -2278,9 +2278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let targetBarbeiroId = barbeiroId;
 
-      // Se não especificar barbeiro OU se for adicionar cliente normal, 
-      // automaticamente selecionar o próximo da fila
-      if (!barbeiroId || tipoAtendimento === 'MANUAL') {
+      // Se não especificar barbeiro, automaticamente selecionar o próximo da fila
+      if (!barbeiroId) {
         const filaMensal = await storage.getFilaMensal(mesAno);
         if (filaMensal.length > 0) {
           // Pegar o barbeiro com menos atendimentos (primeiro da fila ordenada)

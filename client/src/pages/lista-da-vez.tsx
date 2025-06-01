@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, RotateCcw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Plus, RotateCcw, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import dayjs from "dayjs";
@@ -13,6 +14,7 @@ export default function ListaDaVez() {
   const { isAdmin, isRecepcionista } = useAuth();
   const queryClient = useQueryClient();
   const [mesAtual] = useState(dayjs().format("YYYY-MM"));
+  const [barbeiroSelecionado, setBarbeiroSelecionado] = useState<string>("");
 
   // Buscar fila mensal
   const { data: filaMensal = [], isLoading } = useQuery({
@@ -45,6 +47,35 @@ export default function ListaDaVez() {
         description: "O próximo barbeiro da fila foi selecionado automaticamente."
       });
       queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal"] });
+    },
+    onError: () => {
+      toast({ title: "Erro ao adicionar cliente", variant: "destructive" });
+    }
+  });
+
+  // Adicionar cliente para barbeiro específico
+  const adicionarClienteEspecifico = useMutation({
+    mutationFn: async (barbeiroId: number) => {
+      const response = await fetch('/api/lista-da-vez/adicionar-atendimento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          barbeiroId,
+          data: dayjs().format("YYYY-MM-DD"),
+          mesAno: mesAtual,
+          tipoAtendimento: "NORMAL"
+        })
+      });
+      if (!response.ok) throw new Error('Erro ao adicionar cliente');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: `Cliente adicionado para ${data.barbeiroNome}!`,
+        description: "Barbeiro selecionado manualmente."
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal"] });
+      setBarbeiroSelecionado("");
     },
     onError: () => {
       toast({ title: "Erro ao adicionar cliente", variant: "destructive" });
@@ -149,14 +180,44 @@ export default function ListaDaVez() {
               <span className="font-medium">{dayjs().format("MMMM [de] YYYY")}</span>
             </div>
             {(isAdmin || isRecepcionista) && (
-              <Button
-                className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
-                onClick={() => adicionarCliente.mutate()}
-                disabled={adicionarCliente.isPending}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {adicionarCliente.isPending ? 'Adicionando...' : 'Adicionar Próximo Cliente'}
-              </Button>
+              <div className="flex flex-col lg:flex-row gap-3">
+                <Button
+                  className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
+                  onClick={() => adicionarCliente.mutate()}
+                  disabled={adicionarCliente.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {adicionarCliente.isPending ? 'Adicionando...' : 'Adicionar Próximo Cliente'}
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Select value={barbeiroSelecionado} onValueChange={setBarbeiroSelecionado}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Escolher barbeiro" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filaMensal.map((item: any) => (
+                        <SelectItem key={item.barbeiro.id} value={item.barbeiro.id.toString()}>
+                          {item.barbeiro.nome} ({item.totalAtendimentosMes})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      if (barbeiroSelecionado) {
+                        adicionarClienteEspecifico.mutate(parseInt(barbeiroSelecionado));
+                      }
+                    }}
+                    disabled={!barbeiroSelecionado || adicionarClienteEspecifico.isPending}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {adicionarClienteEspecifico.isPending ? 'Adicionando...' : 'Adicionar'}
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
