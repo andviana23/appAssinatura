@@ -197,33 +197,41 @@ export default function Profissionais() {
   // Renderizar formulário se estivermos em modo de cadastro ou edição
   if (isNovo || isEdicao) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
-        {/* Botão Voltar */}
-        <button
-          onClick={() => setLocation("/profissionais")}
-          className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
-          style={{
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="p-6 max-w-4xl mx-auto">
+          {/* Botão Voltar */}
+          <button
+            onClick={() => setLocation("/profissionais")}
+            className="flex items-center gap-2 mb-6 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105"
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Voltar
+          </button>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#8B4513] mb-2">
-            {isEdicao ? "Editar" : "Cadastrar"} {tipoProfissional === 'recepcionista' ? 'Recepcionista' : 'Barbeiro'}
-          </h1>
-          <p className="text-gray-600">
-            {isEdicao ? "Edite os dados do profissional" : "Preencha os dados para cadastrar um novo profissional"}
-          </p>
-        </div>
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
+                  {isEdicao ? "Editar" : "Cadastrar"} {tipoProfissional === 'recepcionista' ? 'Recepcionista' : 'Barbeiro'}
+                </h1>
+                <p className="text-gray-600 text-lg">
+                  {isEdicao ? "Edite os dados do profissional" : "Preencha os dados para cadastrar um novo profissional"}
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <Card>
-          <CardContent className="p-6">
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -359,6 +367,7 @@ export default function Profissionais() {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
