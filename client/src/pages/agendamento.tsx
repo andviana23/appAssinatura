@@ -454,6 +454,78 @@ export default function Agendamento() {
         </div>
       </div>
 
+      {/* Calendário Lateral */}
+      <div className="w-80 flex-shrink-0">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
+          <h3 className="text-xl font-bold text-[#1e3a8a] mb-4 flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Calendário
+          </h3>
+          
+          {/* Navegação do Calendário */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={previousMonth}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4 text-[#1e3a8a]" />
+            </button>
+            <h4 className="font-semibold text-[#1e3a8a]">
+              {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
+            </h4>
+            <button
+              onClick={nextMonth}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="h-4 w-4 text-[#1e3a8a]" />
+            </button>
+          </div>
+
+          {/* Grid do Calendário */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+              <div key={day} className="text-center text-xs font-semibold text-gray-500 p-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {daysInMonth.map(day => (
+              <button
+                key={day.toISOString()}
+                onClick={() => selectCalendarDate(day)}
+                className={`
+                  p-2 text-sm rounded-lg transition-all duration-200 relative
+                  ${isSameDay(day, selectedDate) 
+                    ? 'bg-[#1e3a8a] text-white font-bold' 
+                    : isToday(day)
+                    ? 'bg-blue-100 text-[#1e3a8a] font-semibold'
+                    : isSameMonth(day, currentCalendarDate)
+                    ? 'text-gray-900 hover:bg-gray-100'
+                    : 'text-gray-400'
+                  }
+                  ${hasAgendamentos(day) ? 'ring-2 ring-[#1e3a8a] ring-opacity-50' : ''}
+                `}
+              >
+                {format(day, 'd')}
+                {hasAgendamentos(day) && (
+                  <div className="absolute top-1 right-1 w-2 h-2 bg-[#1e3a8a] rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <div className="mt-4 text-sm text-gray-600 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#1e3a8a] rounded-full"></div>
+              <span>Dias com agendamentos</span>
+            </div>
+            <p className="text-xs">Clique em uma data para visualizar na agenda</p>
+          </div>
+        </div>
+      </div>
+
       {/* Modal de Agendamento Modernizado */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-2xl border-0">
