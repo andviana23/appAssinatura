@@ -50,6 +50,9 @@ export default function Agendamento() {
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedServico, setSelectedServico] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isComandaOpen, setIsComandaOpen] = useState(false);
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
+  const [comandaItems, setComandaItems] = useState<{ [key: string]: { quantidade: number; preco: number; nome: string } }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -202,6 +205,72 @@ export default function Agendamento() {
     return format(endTime, "HH:mm");
   };
 
+  // Serviços e produtos disponíveis para a comanda
+  const servicosComanda = [
+    { id: 'corte', nome: 'Corte', preco: 25.00 },
+    { id: 'barba', nome: 'Barba', preco: 15.00 },
+    { id: 'sobrancelha', nome: 'Sobrancelha', preco: 10.00 },
+    { id: 'bigode', nome: 'Bigode', preco: 8.00 },
+  ];
+
+  const produtosComanda = [
+    { id: 'pomada', nome: 'Pomada', preco: 30.00 },
+    { id: 'shampoo', nome: 'Shampoo', preco: 20.00 },
+    { id: 'oleo-barba', nome: 'Óleo para barba', preco: 15.00 },
+    { id: 'balm', nome: 'Balm', preco: 25.00 },
+  ];
+
+  // Funções da comanda
+  const abrirComanda = (agendamento: Agendamento) => {
+    setSelectedAgendamento(agendamento);
+    setComandaItems({});
+    setIsComandaOpen(true);
+  };
+
+  const adicionarItemComanda = (id: string, nome: string, preco: number) => {
+    setComandaItems(prev => ({
+      ...prev,
+      [id]: {
+        quantidade: (prev[id]?.quantidade || 0) + 1,
+        preco,
+        nome
+      }
+    }));
+  };
+
+  const removerItemComanda = (id: string) => {
+    setComandaItems(prev => {
+      const newItems = { ...prev };
+      if (newItems[id]) {
+        newItems[id].quantidade--;
+        if (newItems[id].quantidade <= 0) {
+          delete newItems[id];
+        }
+      }
+      return newItems;
+    });
+  };
+
+  const calcularTotalComanda = () => {
+    return Object.values(comandaItems).reduce((total, item) => {
+      return total + (item.quantidade * item.preco);
+    }, 0);
+  };
+
+  const finalizarComanda = () => {
+    // Aqui você pode implementar a lógica para salvar a comanda
+    toast({ title: "Atendimento finalizado com sucesso!" });
+    setIsComandaOpen(false);
+    setSelectedAgendamento(null);
+    setComandaItems({});
+  };
+
+  const fecharComanda = () => {
+    setIsComandaOpen(false);
+    setSelectedAgendamento(null);
+    setComandaItems({});
+  };
+
   return (
     <div className="flex gap-6 p-6">
       {/* Agenda Principal */}
@@ -282,7 +351,10 @@ export default function Agendamento() {
                   return (
                     <div key={barbeiro.id} className="border-r border-gray-200 p-1 relative">
                       {agendamento ? (
-                        <div className="bg-[#90EE90] border border-[#32CD32] rounded p-2 text-xs h-full">
+                        <div 
+                          className="bg-[#90EE90] border border-[#32CD32] rounded p-2 text-xs h-full cursor-pointer hover:bg-[#98FB98] transition-colors"
+                          onClick={() => abrirComanda(agendamento)}
+                        >
                           <div className="font-semibold text-[#006400]">
                             {timeSlot} – {getAgendamentoEndTime(agendamento)}
                           </div>
@@ -297,7 +369,10 @@ export default function Agendamento() {
                             <Button
                               size="sm"
                               className="mt-1 h-6 px-2 bg-[#8B4513] hover:bg-[#A0522D] text-white"
-                              onClick={() => finalizarAtendimento.mutate(agendamento.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                finalizarAtendimento.mutate(agendamento.id);
+                              }}
                             >
                               <Check className="h-3 w-3 mr-1" />
                               Finalizar
@@ -421,6 +496,141 @@ export default function Agendamento() {
           }}
         />
       </div>
+
+      {/* Modal da Comanda */}
+      <Dialog open={isComandaOpen} onOpenChange={setIsComandaOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[#8B4513]">
+              Comanda - {selectedAgendamento?.cliente?.nome}
+            </DialogTitle>
+            <div className="text-sm text-gray-600">
+              <strong>Data:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "dd/MM/yyyy", { locale: ptBR })} | 
+              <strong> Horário:</strong> {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "HH:mm")}
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Seção Serviços */}
+            <div>
+              <h3 className="text-lg font-semibold text-[#8B4513] mb-3 flex items-center">
+                🔧 Serviços
+              </h3>
+              <div className="space-y-2">
+                {servicosComanda.map((servico) => (
+                  <div key={servico.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <span className="font-medium">{servico.nome}</span>
+                      <span className="text-gray-600 ml-2">R$ {servico.preco.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => removerItemComanda(servico.id)}
+                        disabled={!comandaItems[servico.id]?.quantidade}
+                      >
+                        -
+                      </Button>
+                      <span className="w-8 text-center font-semibold">
+                        {comandaItems[servico.id]?.quantidade || 0}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        onClick={() => adicionarItemComanda(servico.id, servico.nome, servico.preco)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Seção Produtos */}
+            <div>
+              <h3 className="text-lg font-semibold text-[#8B4513] mb-3 flex items-center">
+                🧴 Produtos
+              </h3>
+              <div className="space-y-2">
+                {produtosComanda.map((produto) => (
+                  <div key={produto.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <span className="font-medium">{produto.nome}</span>
+                      <span className="text-gray-600 ml-2">R$ {produto.preco.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => removerItemComanda(produto.id)}
+                        disabled={!comandaItems[produto.id]?.quantidade}
+                      >
+                        -
+                      </Button>
+                      <span className="w-8 text-center font-semibold">
+                        {comandaItems[produto.id]?.quantidade || 0}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-blue-600 border-blue-200 hover:bg-blue-50"
+                        onClick={() => adicionarItemComanda(produto.id, produto.nome, produto.preco)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Resumo da Comanda */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold text-[#8B4513] mb-3">Resumo</h3>
+              {Object.keys(comandaItems).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(comandaItems).map(([id, item]) => (
+                    <div key={id} className="flex justify-between">
+                      <span>{item.quantidade}x {item.nome}</span>
+                      <span>R$ {(item.quantidade * item.preco).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <hr className="my-3" />
+                  <div className="flex justify-between items-center text-xl font-bold text-white bg-green-600 p-3 rounded-lg">
+                    <span>TOTAL:</span>
+                    <span>R$ {calcularTotalComanda().toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500">Nenhum item adicionado</p>
+              )}
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={finalizarComanda}
+                disabled={Object.keys(comandaItems).length === 0}
+              >
+                ✅ Finalizar Atendimento
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={fecharComanda}
+              >
+                ❌ Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

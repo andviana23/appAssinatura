@@ -1,0 +1,317 @@
+PROBLEMA ATUAL - IMPLEMENTAR COMANDA POP-UP
+❌ FALTA IMPLEMENTAR: Quando clico em um agendamento na agenda, NÃO está abrindo a comanda em pop-up conforme necessário.
+FUNCIONALIDADE NECESSÁRIA - Pop-up da Comanda
+Comportamento Obrigatório:
+Quando clico em qualquer agendamento → Deve abrir POP-UP/MODAL da comanda
+Especificações do Pop-up da Comanda:
+Layout do Modal/Pop-up:
+
+Cabeçalho:
+
+Título: "Comanda - [Nome do Cliente]"
+Data e horário do agendamento
+Botão X para fechar no canto superior direito
+
+
+Seção Serviços:
+
+Título: "Adicionar Serviços"
+Lista de serviços disponíveis:
+
+Corte (R$ 25,00)
+Barba (R$ 15,00)
+Sobrancelha (R$ 10,00)
+Bigode (R$ 8,00)
+
+
+Botão "+" ao lado de cada serviço para adicionar
+Contador de quantidade por serviço selecionado
+
+
+Seção Produtos:
+
+Título: "Adicionar Produtos"
+Lista de produtos disponíveis:
+
+Pomada (R$ 30,00)
+Shampoo (R$ 20,00)
+Óleo para barba (R$ 15,00)
+Balm (R$ 25,00)
+
+
+Botão "+" ao lado de cada produto para adicionar
+Contador de quantidade por produto selecionado
+
+
+Resumo da Comanda:
+
+Lista dos itens adicionados com quantidades
+Subtotal por item (quantidade × preço unitário)
+TOTAL GERAL em destaque e negrito
+
+
+Botões de Ação (rodapé):
+
+"Finalizar Atendimento" (botão verde) - Salva comanda e fecha pop-up
+"Cancelar" (botão cinza) - Fecha pop-up sem salvar
+
+
+
+Exemplo de Código para Implementação:
+html<!-- Modal/Pop-up da Comanda -->
+<div id="modalComanda" class="modal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Comanda - <span id="nomeCliente"></span></h2>
+      <p><strong>Data:</strong> <span id="dataAgendamento"></span> | <strong>Horário:</strong> <span id="horarioAgendamento"></span></p>
+      <span class="close" onclick="fecharModal()">&times;</span>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Seção Serviços -->
+      <div class="secao-servicos">
+        <h3>🔧 Serviços</h3>
+        <div class="lista-itens">
+          <div class="item">
+            <span class="nome-item">Corte</span>
+            <span class="preco-item">R$ 25,00</span>
+            <button class="btn-menos" onclick="removerItem('corte')">-</button>
+            <span class="quantidade" id="qty-corte">0</span>
+            <button class="btn-mais" onclick="adicionarItem('corte', 25)">+</button>
+          </div>
+          <div class="item">
+            <span class="nome-item">Barba</span>
+            <span class="preco-item">R$ 15,00</span>
+            <button class="btn-menos" onclick="removerItem('barba')">-</button>
+            <span class="quantidade" id="qty-barba">0</span>
+            <button class="btn-mais" onclick="adicionarItem('barba', 15)">+</button>
+          </div>
+          <div class="item">
+            <span class="nome-item">Sobrancelha</span>
+            <span class="preco-item">R$ 10,00</span>
+            <button class="btn-menos" onclick="removerItem('sobrancelha')">-</button>
+            <span class="quantidade" id="qty-sobrancelha">0</span>
+            <button class="btn-mais" onclick="adicionarItem('sobrancelha', 10)">+</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Seção Produtos -->
+      <div class="secao-produtos">
+        <h3>🧴 Produtos</h3>
+        <div class="lista-itens">
+          <div class="item">
+            <span class="nome-item">Pomada</span>
+            <span class="preco-item">R$ 30,00</span>
+            <button class="btn-menos" onclick="removerItem('pomada')">-</button>
+            <span class="quantidade" id="qty-pomada">0</span>
+            <button class="btn-mais" onclick="adicionarItem('pomada', 30)">+</button>
+          </div>
+          <div class="item">
+            <span class="nome-item">Shampoo</span>
+            <span class="preco-item">R$ 20,00</span>
+            <button class="btn-menos" onclick="removerItem('shampoo')">-</button>
+            <span class="quantidade" id="qty-shampoo">0</span>
+            <button class="btn-mais" onclick="adicionarItem('shampoo', 20)">+</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Resumo Total -->
+      <div class="resumo-total">
+        <div id="listaItensComanda"></div>
+        <hr>
+        <h2 class="total-final">TOTAL: R$ <span id="totalGeral">0,00</span></h2>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-finalizar" onclick="finalizarComanda()">✅ Finalizar Atendimento</button>
+      <button class="btn-cancelar" onclick="fecharModal()">❌ Cancelar</button>
+    </div>
+  </div>
+</div>
+css/* CSS para o Modal */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 15px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #999;
+}
+
+.close:hover {
+  color: #000;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin: 5px 0;
+  border-radius: 8px;
+}
+
+.btn-mais, .btn-menos {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.btn-menos {
+  background-color: #dc3545;
+}
+
+.quantidade {
+  font-weight: bold;
+  padding: 0 15px;
+  font-size: 18px;
+}
+
+.total-final {
+  background-color: #28a745;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.btn-finalizar {
+  background-color: #28a745;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.btn-cancelar {
+  background-color: #6c757d;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+javascript// JavaScript para funcionalidade
+let comandaAtual = {};
+let totalComanda = 0;
+
+function abrirComanda(nomeCliente, dataAgendamento, horarioAgendamento) {
+  document.getElementById('nomeCliente').textContent = nomeCliente;
+  document.getElementById('dataAgendamento').textContent = dataAgendamento;
+  document.getElementById('horarioAgendamento').textContent = horarioAgendamento;
+  document.getElementById('modalComanda').style.display = 'flex';
+  
+  // Reset da comanda
+  comandaAtual = {};
+  totalComanda = 0;
+  atualizarDisplay();
+}
+
+function adicionarItem(nome, preco) {
+  if (!comandaAtual[nome]) {
+    comandaAtual[nome] = { quantidade: 0, preco: preco };
+  }
+  comandaAtual[nome].quantidade++;
+  atualizarDisplay();
+}
+
+function removerItem(nome) {
+  if (comandaAtual[nome] && comandaAtual[nome].quantidade > 0) {
+    comandaAtual[nome].quantidade--;
+    if (comandaAtual[nome].quantidade === 0) {
+      delete comandaAtual[nome];
+    }
+  }
+  atualizarDisplay();
+}
+
+function atualizarDisplay() {
+  // Atualizar contadores
+  Object.keys(comandaAtual).forEach(item => {
+    document.getElementById(`qty-${item}`).textContent = comandaAtual[item].quantidade;
+  });
+  
+  // Calcular total
+  totalComanda = 0;
+  Object.keys(comandaAtual).forEach(item => {
+    totalComanda += comandaAtual[item].quantidade * comandaAtual[item].preco;
+  });
+  
+  document.getElementById('totalGeral').textContent = totalComanda.toFixed(2);
+}
+
+function finalizarComanda() {
+  // Salvar comanda no sistema
+  console.log('Comanda finalizada:', comandaAtual);
+  alert('Atendimento finalizado com sucesso!');
+  fecharModal();
+}
+
+function fecharModal() {
+  document.getElementById('modalComanda').style.display = 'none';
+  comandaAtual = {};
+  totalComanda = 0;
+}
+IMPLEMENTAÇÃO OBRIGATÓRIA:
+
+Adicionar o HTML do modal no seu arquivo principal
+Incluir o CSS para estilização
+Implementar o JavaScript com as funções
+Modificar os agendamentos para chamar abrirComanda() quando clicados
+Testar todas as funcionalidades:
+
+✅ Clique no agendamento abre pop-up
+✅ Botões + e - funcionam
+✅ Total calcula automaticamente
+✅ Finalizar salva e fecha
+✅ Cancelar fecha sem salvar
+
+
+
+Por favor, implemente exatamente como mostrado acima. O pop-up da comanda deve funcionar perfeitamente quando clico em qualquer agendamento na agenda!
