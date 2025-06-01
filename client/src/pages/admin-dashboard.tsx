@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, getInitials } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DollarSign,
@@ -13,6 +15,8 @@ import {
   TrendingUp,
   Users,
   AlertTriangle,
+  Calendar,
+  Filter,
 } from "lucide-react";
 import {
   LineChart,
@@ -54,22 +58,25 @@ interface AssinaturaVencendo {
 }
 
 export default function AdminDashboard() {
+  // Estados para filtros de data
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [selectedDay, setSelectedDay] = useState("");
+
+  // Query para estatísticas de clientes
   const { data: clientesStats, isLoading: clientesStatsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes/unified-stats'],
     refetchInterval: 300000,
   });
 
-  const { data: ranking, isLoading: rankingLoading } = useQuery<BarbeiroRanking[]>({
-    queryKey: ["/api/dashboard/ranking"],
-  });
-
-  const { data: assinaturasVencendo, isLoading: vencendoLoading } = useQuery<AssinaturaVencendo[]>({
-    queryKey: ['/api/clientes/expiring'],
+  // Query para faturamento diário com filtros
+  const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery<any[]>({
+    queryKey: ['/api/asaas/faturamento-diario', selectedMonth, selectedDay],
     refetchInterval: 300000,
   });
 
-  const { data: dailyRevenue = [], isLoading: dailyRevenueLoading } = useQuery<any[]>({
-    queryKey: ['/api/asaas/faturamento-diario'],
+  // Query para assinaturas vencidas (novo KPI)
+  const { data: assinaturasVencidas, isLoading: vencidasLoading } = useQuery<any[]>({
+    queryKey: ['/api/asaas/assinaturas-vencidas', selectedMonth],
     refetchInterval: 300000,
   });
 

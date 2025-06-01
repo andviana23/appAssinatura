@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Pages
 import Login from "@/pages/login-aprimorado";
-import AdminDashboard from "@/pages/admin-dashboard-clean";
+import AdminDashboard from "@/pages/dashboard-melhorado";
 import Barbeiros from "@/pages/barbeiros";
 import Profissionais from "@/pages/profissionais";
 import Clientes from "@/pages/clientes";
