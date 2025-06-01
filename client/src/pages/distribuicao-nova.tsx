@@ -237,9 +237,7 @@ export default function DistribuicaoNova() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(
-                  servicosData?.barbeiros.reduce((total, b) => total + b.comissaoTotal, 0) || 0
-                )}
+                {formatCurrency((receitaAssinaturas?.totalSubscriptionRevenue || 0) * 0.4)}
               </div>
               <p className="text-xs text-gray-500 mt-1">Total de comissões a pagar</p>
             </CardContent>
@@ -332,7 +330,7 @@ export default function DistribuicaoNova() {
         </Card>
 
         {/* Resumo do Período */}
-        {servicosData && servicosData.barbeiros.length > 0 && (
+        {receitaAssinaturas && (
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">Resumo do Período</CardTitle>
@@ -341,26 +339,21 @@ export default function DistribuicaoNova() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#365e78] mb-2">
-                    {formatCurrency(servicosData.receitaTotalServicos)}
+                    {formatCurrency(receitaAssinaturas.totalSubscriptionRevenue)}
                   </div>
                   <p className="text-sm text-gray-600">Receita Total dos Serviços</p>
                 </div>
                 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600 mb-2">
-                    {formatCurrency(
-                      servicosData.barbeiros.reduce((total, b) => total + b.comissaoTotal, 0)
-                    )}
+                    {formatCurrency(receitaAssinaturas.totalSubscriptionRevenue * 0.4)}
                   </div>
                   <p className="text-sm text-gray-600">Total de Comissões</p>
                 </div>
                 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 mb-2">
-                    {(
-                      (servicosData.barbeiros.reduce((total, b) => total + b.comissaoTotal, 0) / 
-                      servicosData.receitaTotalServicos) * 100
-                    ).toFixed(1)}%
+                    40.0%
                   </div>
                   <p className="text-sm text-gray-600">Percentual de Comissão</p>
                 </div>
