@@ -370,9 +370,7 @@ export class DatabaseStorage implements IStorage {
     return cliente;
   }
 
-  async getAllClientesExternos(): Promise<ClienteExterno[]> {
-    return await db.select().from(clientesExternos).orderBy(clientesExternos.nome);
-  }
+  // Método removido - não existe tabela clientesExternos no schema atual
 
   async createCliente(cliente: InsertCliente): Promise<Cliente> {
     const [created] = await db.insert(clientes).values(cliente).returning();

@@ -2498,95 +2498,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/clientes/all - Buscar TODOS os clientes (ativos e inativos)
   app.get('/api/clientes/all', requireAuth, async (req, res) => {
     try {
-      // Buscar clientes do Asaas
-      const asaasClientes = await fetch(`${process.env.ASAAS_ENVIRONMENT}/customers`, {
-        headers: {
-          'access_token': process.env.ASAAS_API_KEY || '',
-          'Content-Type': 'application/json'
-        }
-      });
-
       let clientesUnificados = [];
-      
-      if (asaasClientes.ok) {
-        const asaasData = await asaasClientes.json();
-        
-        for (const cliente of asaasData.data || []) {
-          // Buscar assinaturas do cliente
-          const subscriptionsResponse = await fetch(`${process.env.ASAAS_ENVIRONMENT}/subscriptions?customer=${cliente.id}`, {
+
+      // Buscar clientes do banco local
+      const clientesLocais = await storage.getAllClientes();
+      for (const cliente of clientesLocais) {
+        clientesUnificados.push({
+          id: `local_${cliente.id}`,
+          nome: cliente.nome,
+          email: cliente.email,
+          telefone: '',
+          cpf: '',
+          planoNome: 'Cliente Local',
+          planoValor: 0,
+          formaPagamento: 'Local',
+          dataInicio: cliente.createdAt.toISOString(),
+          dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'ATIVO' as const,
+          origem: 'EXTERNO' as const,
+          daysRemaining: 30
+        });
+      }
+
+      // Tentar buscar clientes do Asaas apenas se as credenciais estiverem configuradas
+      if (process.env.ASAAS_API_KEY && process.env.ASAAS_ENVIRONMENT) {
+        try {
+          const asaasUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://api.asaas.com/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
+          
+          const asaasClientes = await fetch(`${asaasUrl}/customers`, {
             headers: {
-              'access_token': process.env.ASAAS_API_KEY || '',
+              'access_token': process.env.ASAAS_API_KEY,
               'Content-Type': 'application/json'
             }
           });
 
-          if (subscriptionsResponse.ok) {
-            const subscriptionsData = await subscriptionsResponse.json();
+          if (asaasClientes.ok) {
+            const asaasData = await asaasClientes.json();
             
-            for (const subscription of subscriptionsData.data || []) {
-              const dataValidade = new Date(subscription.nextDueDate);
-              const hoje = new Date();
-              const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-              
-              let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
-              if (subscription.status === 'ACTIVE' && daysRemaining > 0) {
-                status = 'ATIVO';
-              } else if (daysRemaining < 0) {
-                status = 'VENCIDO';
-              }
-
-              clientesUnificados.push({
-                id: cliente.id,
-                nome: cliente.name,
-                email: cliente.email,
-                telefone: cliente.mobilePhone || cliente.phone,
-                cpf: cliente.cpfCnpj,
-                planoNome: subscription.description || 'Plano Asaas',
-                planoValor: parseFloat(subscription.value),
-                formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
-                               subscription.billingType === 'BOLETO' ? 'Boleto' : 
-                               subscription.billingType === 'PIX' ? 'PIX' : 'Outros',
-                dataInicio: subscription.dateCreated,
-                dataValidade: subscription.nextDueDate,
-                status,
-                origem: 'ASAAS' as const,
-                billingType: subscription.billingType,
-                daysRemaining
+            for (const cliente of asaasData.data || []) {
+              const subscriptionsResponse = await fetch(`${asaasUrl}/subscriptions?customer=${cliente.id}`, {
+                headers: {
+                  'access_token': process.env.ASAAS_API_KEY,
+                  'Content-Type': 'application/json'
+                }
               });
+
+              if (subscriptionsResponse.ok) {
+                const subscriptionsData = await subscriptionsResponse.json();
+                
+                for (const subscription of subscriptionsData.data || []) {
+                  const dataValidade = new Date(subscription.nextDueDate);
+                  const hoje = new Date();
+                  const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
+                  if (subscription.status === 'ACTIVE' && daysRemaining > 0) {
+                    status = 'ATIVO';
+                  } else if (daysRemaining < 0) {
+                    status = 'VENCIDO';
+                  }
+
+                  clientesUnificados.push({
+                    id: cliente.id,
+                    nome: cliente.name,
+                    email: cliente.email,
+                    telefone: cliente.mobilePhone || cliente.phone,
+                    cpf: cliente.cpfCnpj,
+                    planoNome: subscription.description || 'Plano Asaas',
+                    planoValor: parseFloat(subscription.value),
+                    formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                   subscription.billingType === 'BOLETO' ? 'Boleto' : 
+                                   subscription.billingType === 'PIX' ? 'PIX' : 'Outros',
+                    dataInicio: subscription.dateCreated,
+                    dataValidade: subscription.nextDueDate,
+                    status,
+                    origem: 'ASAAS' as const,
+                    billingType: subscription.billingType,
+                    daysRemaining
+                  });
+                }
+              }
             }
           }
+        } catch (asaasError) {
+          console.warn('Erro ao conectar com Asaas, usando apenas dados locais:', asaasError);
         }
-      }
-
-      // Buscar clientes externos do banco de dados
-      const clientesExternos = await storage.getAllClientesExternos();
-      for (const cliente of clientesExternos) {
-        const dataValidade = new Date(cliente.dataValidade);
-        const hoje = new Date();
-        const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
-        if (daysRemaining > 0) {
-          status = 'ATIVO';
-        } else if (daysRemaining < 0) {
-          status = 'VENCIDO';
-        }
-
-        clientesUnificados.push({
-          id: `ext_${cliente.id}`,
-          nome: cliente.nome,
-          email: cliente.email,
-          telefone: cliente.telefone,
-          cpf: cliente.cpf,
-          planoNome: cliente.planoNome,
-          planoValor: parseFloat(cliente.valorMensal),
-          formaPagamento: cliente.formaPagamento,
-          dataInicio: cliente.dataInicio,
-          dataValidade: cliente.dataValidade,
-          status,
-          origem: 'EXTERNO' as const,
-          daysRemaining
-        });
       }
 
       res.json(clientesUnificados);
@@ -2664,10 +2662,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar agendamentos finalizados do mês
       const agendamentos = await storage.getAllAgendamentos();
-      const agendamentosFinalizados = agendamentos.filter(a => 
-        a.status === 'finalizado' && 
-        a.dataHora.toISOString().slice(0, 7) === targetMonth
-      );
+      console.log('Total agendamentos:', agendamentos.length);
+      console.log('Target month:', targetMonth);
+      
+      const agendamentosFinalizados = agendamentos.filter(a => {
+        const agendamentoMonth = new Date(a.dataHora).toISOString().slice(0, 7);
+        const isFinalized = a.status === 'finalizado';
+        console.log(`Agendamento ${a.id}: status=${a.status}, month=${agendamentoMonth}, isFinalized=${isFinalized}`);
+        return isFinalized && agendamentoMonth === targetMonth;
+      });
+      
+      console.log('Agendamentos finalizados encontrados:', agendamentosFinalizados.length);
 
       // Agrupar por barbeiro e calcular comissões
       const servicosPorBarbeiro: { [key: number]: any } = {};
