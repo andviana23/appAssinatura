@@ -791,30 +791,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesExternos = await storage.getAllClientes();
       const hoje = new Date();
       
-      // Adicionar clientes externos (cadastrados diretamente no banco)
-      for (const cliente of clientesExternos) {
-        if (cliente.dataVencimentoAssinatura) {
-          const validade = new Date(cliente.dataVencimentoAssinatura);
-          const status = validade >= hoje ? 'ATIVO' : 'VENCIDO';
-          
-          if (status === 'ATIVO') {
-            clientesUnificados.push({
-              id: cliente.id, // ID numérico do banco local
-              nome: cliente.nome,
-              email: cliente.email,
-              telefone: cliente.telefone,
-              cpf: cliente.cpf,
-              planoNome: cliente.planoNome || 'Não informado',
-              planoValor: parseFloat(cliente.planoValor?.toString() || '0'),
-              formaPagamento: cliente.formaPagamento || 'Externo',
-              dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
-              dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
-              status: status,
-              origem: cliente.asaasCustomerId ? 'ASAAS' : 'EXTERNO'
-            });
-          }
-        }
-      }
+      // Primeiro, sincronizar clientes do Asaas (se houver)
+      let clientesAsaasSincronizados = new Set();
 
       // Buscar cobranças confirmadas do Asaas no mês atual
       const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -898,6 +876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   // Só adicionar se o cliente foi sincronizado com sucesso no banco local
                   if (clienteLocal) {
+                    // Marcar este cliente como sincronizado do Asaas
+                    clientesAsaasSincronizados.add(clienteLocal.id);
+                    
                     clientesUnicos.set(payment.customer, {
                       id: clienteLocal.id, // Sempre usar ID numérico do banco local
                       nome: customer.name,
@@ -921,11 +902,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Adicionar clientes únicos à lista
+            // Adicionar clientes únicos do Asaas à lista
             clientesUnificados.push(...Array.from(clientesUnicos.values()));
           }
         } catch (asaasError) {
           console.error("Erro ao buscar dados do Asaas:", asaasError);
+        }
+      }
+
+      // Adicionar apenas clientes externos que NÃO foram sincronizados do Asaas
+      for (const cliente of clientesExternos) {
+        // Pular clientes que foram sincronizados do Asaas
+        if (clientesAsaasSincronizados.has(cliente.id)) {
+          continue;
+        }
+
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const status = validade >= hoje ? 'ATIVO' : 'VENCIDO';
+          
+          if (status === 'ATIVO') {
+            clientesUnificados.push({
+              id: cliente.id, // ID numérico do banco local
+              nome: cliente.nome,
+              email: cliente.email,
+              telefone: cliente.telefone,
+              cpf: cliente.cpf,
+              planoNome: cliente.planoNome || 'Não informado',
+              planoValor: parseFloat(cliente.planoValor?.toString() || '0'),
+              formaPagamento: cliente.formaPagamento || 'Externo',
+              dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
+              dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
+              status: status,
+              origem: 'EXTERNO'
+            });
+          }
         }
       }
 
@@ -948,15 +959,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hoje = new Date();
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
-      // Contar clientes externos ativos
+      // Primeiro, identificar clientes sincronizados do Asaas para evitar duplicação
+      let clientesAsaasSincronizados = new Set();
+      
+      // Contar clientes do banco local (incluindo sincronizados do Asaas)
       const clientesExternos = await storage.getAllClientes();
       for (const cliente of clientesExternos) {
         if (cliente.dataVencimentoAssinatura) {
           const validade = new Date(cliente.dataVencimentoAssinatura);
           if (validade >= hoje) {
-            totalExternalClients++;
             totalActiveClients++;
             totalMonthlyRevenue += parseFloat(cliente.planoValor?.toString() || '0');
+            
+            // Classificar origem
+            if (cliente.asaasCustomerId) {
+              totalAsaasClients++;
+              clientesAsaasSincronizados.add(cliente.asaasCustomerId);
+            } else {
+              totalExternalClients++;
+            }
             
             const dataInicio = new Date(cliente.dataInicioAssinatura || cliente.createdAt);
             if (dataInicio >= inicioMes) {
