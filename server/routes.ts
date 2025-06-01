@@ -2866,14 +2866,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const agendamentosFinalizados = agendamentos.filter(a => {
         const agendamentoMonth = new Date(a.dataHora).toISOString().slice(0, 7);
-        const isFinalized = a.status === 'FINALIZADO'; // Corrigido: estava 'finalizado', mas no banco é 'FINALIZADO'
+        const isFinalized = a.status === 'FINALIZADO';
         console.log(`Agendamento ${a.id}: status=${a.status}, month=${agendamentoMonth}, isFinalized=${isFinalized}`);
         return isFinalized && agendamentoMonth === targetMonth;
       });
       
       console.log('Agendamentos finalizados encontrados:', agendamentosFinalizados.length);
 
-      // Agrupar por barbeiro e calcular comissões
+      // Buscar receita total de assinaturas do mês
+      const [ano, mesNum] = targetMonth.split('-');
+      const clientesStats = await storage.getClientesUnifiedStats(mesNum, ano);
+      const receitaTotalAssinaturas = clientesStats.totalSubscriptionRevenue;
+      const comissaoTotal = receitaTotalAssinaturas * 0.4; // 40% da receita
+
+      // Buscar todos os serviços para obter tempos
+      const servicos = await storage.getAllServicos();
+      const servicosMap = new Map(servicos.map(s => [s.id, s]));
+
+      // Calcular total de minutos trabalhados por todos os barbeiros
+      let totalMinutosTrabalhados = 0;
+      
+      for (const agendamento of agendamentosFinalizados) {
+        const servico = servicosMap.get(agendamento.servicoId);
+        const tempoMinutos = servico?.tempoMinutos || 30;
+        totalMinutosTrabalhados += tempoMinutos;
+      }
+
+      // Agrupar por barbeiro e calcular tempos individuais
       const servicosPorBarbeiro: { [key: number]: any } = {};
 
       for (const agendamento of agendamentosFinalizados) {
@@ -2886,23 +2905,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             servicos: [],
             totalServicos: 0,
             tempoTotalMinutos: 0,
+            percentualTempo: 0,
             comissaoTotal: 0
           };
         }
 
-        const servico = agendamento.servico;
-        const valorServico = 60; // Valor padrão por serviço
-        const comissaoServico = valorServico * (servico?.percentualComissao || 50) / 100;
+        const servico = servicosMap.get(agendamento.servicoId);
+        const tempoMinutos = servico?.tempoMinutos || 30;
 
         servicosPorBarbeiro[barbeiroId].servicos.push({
           ...agendamento,
-          valorServico,
-          comissaoServico
+          tempoMinutos
         });
         
         servicosPorBarbeiro[barbeiroId].totalServicos++;
-        servicosPorBarbeiro[barbeiroId].tempoTotalMinutos += servico?.tempoMinutos || 30;
-        servicosPorBarbeiro[barbeiroId].comissaoTotal += comissaoServico;
+        servicosPorBarbeiro[barbeiroId].tempoTotalMinutos += tempoMinutos;
+      }
+
+      // Calcular percentual de tempo e comissão proporcional para cada barbeiro
+      for (const barbeiroId in servicosPorBarbeiro) {
+        const barbeiro = servicosPorBarbeiro[barbeiroId];
+        
+        // Calcular percentual de participação
+        barbeiro.percentualTempo = totalMinutosTrabalhados > 0 
+          ? (barbeiro.tempoTotalMinutos / totalMinutosTrabalhados) * 100 
+          : 0;
+        
+        // Calcular comissão proporcional
+        barbeiro.comissaoTotal = totalMinutosTrabalhados > 0 
+          ? (barbeiro.tempoTotalMinutos / totalMinutosTrabalhados) * comissaoTotal 
+          : 0;
       }
 
       const resultado = Object.values(servicosPorBarbeiro);
@@ -2911,7 +2943,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mes: targetMonth,
         barbeiros: resultado,
         totalServicosFinalizados: agendamentosFinalizados.length,
-        receitaTotalServicos: agendamentosFinalizados.length * 60
+        receitaTotalServicos: receitaTotalAssinaturas,
+        totalMinutosTrabalhados,
+        comissaoTotalDisponivel: comissaoTotal
       });
     } catch (error: any) {
       console.error('Erro ao buscar serviços finalizados:', error);
