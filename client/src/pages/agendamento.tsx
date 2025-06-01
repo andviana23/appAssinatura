@@ -443,13 +443,21 @@ export default function Agendamento() {
                         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                           <DialogTrigger asChild>
                             <button
-                              className="w-full h-full hover:bg-gray-50 flex items-center justify-center"
+                              className="w-full h-full border-2 border-dashed border-gray-200 rounded-xl hover:bg-gradient-to-br hover:from-[#8B4513]/5 hover:to-[#A0522D]/5 hover:border-[#8B4513]/30 flex flex-col items-center justify-center gap-2 group transition-all duration-300 relative overflow-hidden"
                               onClick={() => {
                                 setSelectedHour(timeSlot);
                                 setSelectedBarbeiro(barbeiro.id.toString());
                               }}
                             >
-                              <Plus className="h-4 w-4 text-gray-400" />
+                              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              <div className="relative flex flex-col items-center gap-1">
+                                <div className="h-8 w-8 rounded-full bg-gray-100 group-hover:bg-[#8B4513]/10 flex items-center justify-center transition-colors duration-300">
+                                  <Plus className="h-4 w-4 text-gray-400 group-hover:text-[#8B4513] transition-colors duration-300" />
+                                </div>
+                                <span className="text-xs font-medium text-gray-400 group-hover:text-[#8B4513] transition-colors duration-300">
+                                  Agendar
+                                </span>
+                              </div>
                             </button>
                           </DialogTrigger>
                         </Dialog>
@@ -463,37 +471,55 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {/* Modal de Agendamento */}
+      {/* Modal de Agendamento Modernizado */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Novo Agendamento</DialogTitle>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-2xl border-0">
+          <DialogHeader className="text-center pb-6">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-[#8B4513] to-[#A0522D] rounded-2xl flex items-center justify-center shadow-lg mb-4">
+              <Calendar className="h-8 w-8 text-white" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-[#8B4513]">Novo Agendamento</DialogTitle>
+            <p className="text-gray-600 mt-2">Preencha os dados para agendar o cliente</p>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="text-sm font-medium">Data e Horário</label>
-              <div className="text-sm text-gray-600">
-                {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às {selectedHour}
+              <label className="text-sm font-bold text-gray-700 mb-3 block">📅 Data e Horário</label>
+              <div className="p-4 bg-gradient-to-r from-[#8B4513]/5 to-[#A0522D]/5 rounded-xl border-2 border-[#8B4513]/20">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-[#8B4513]" />
+                  <span className="font-semibold text-[#8B4513]">
+                    {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às {selectedHour}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Barbeiro</label>
-              <div className="text-sm text-gray-600">
-                {activeBarbeiros.find(b => b.id.toString() === selectedBarbeiro)?.nome}
+              <label className="text-sm font-bold text-gray-700 mb-3 block">💼 Barbeiro</label>
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
+                      {activeBarbeiros.find(b => b.id.toString() === selectedBarbeiro)?.nome.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="font-semibold text-blue-700">
+                    {activeBarbeiros.find(b => b.id.toString() === selectedBarbeiro)?.nome}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Cliente</label>
+              <label className="text-sm font-bold text-gray-700 mb-3 block">👤 Cliente</label>
               <Select value={selectedCliente} onValueChange={setSelectedCliente} required>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl">
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {Array.isArray(clientes) ? clientes.map((cliente: any) => (
-                    <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                    <SelectItem key={cliente.id} value={cliente.id.toString()} className="rounded-lg">
                       {cliente.nome}
                     </SelectItem>
                   )) : null}
@@ -502,14 +528,14 @@ export default function Agendamento() {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Serviço</label>
+              <label className="text-sm font-bold text-gray-700 mb-3 block">✂️ Serviço</label>
               <Select value={selectedServico} onValueChange={setSelectedServico} required>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl">
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {Array.isArray(servicos) ? servicos.map((servico: any) => (
-                    <SelectItem key={servico.id} value={servico.id.toString()}>
+                    <SelectItem key={servico.id} value={servico.id.toString()} className="rounded-lg">
                       {servico.nome} ({servico.tempoMinutos}min)
                     </SelectItem>
                   )) : null}
@@ -517,22 +543,22 @@ export default function Agendamento() {
               </Select>
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-3 pt-6">
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1"
+                className="flex-1 h-12 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancelar
               </Button>
               <Button
                 type="button"
-                className="flex-1 bg-[#8B4513] hover:bg-[#A0522D]"
+                className="flex-1 h-12 bg-gradient-to-r from-[#8B4513] to-[#A0522D] hover:from-[#A0522D] hover:to-[#8B4513] text-white rounded-xl font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
                 disabled={createAgendamento.isPending}
                 onClick={handleCreateAgendamento}
               >
-                {createAgendamento.isPending ? "Criando..." : "Agendar"}
+{createAgendamento.isPending ? "Criando..." : "✅ AGENDAR"}
               </Button>
             </div>
           </div>
