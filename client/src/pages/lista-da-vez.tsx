@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, RotateCcw, UserPlus } from "lucide-react";
+import { Calendar, Plus, RotateCcw, UserPlus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import dayjs from "dayjs";
@@ -79,6 +79,29 @@ export default function ListaDaVez() {
     },
     onError: () => {
       toast({ title: "Erro ao adicionar cliente", variant: "destructive" });
+    }
+  });
+
+  // Zerar todos os atendimentos (apenas admin)
+  const zerarAtendimentos = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/lista-da-vez/zerar-atendimentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mesAno: mesAtual })
+      });
+      if (!response.ok) throw new Error('Erro ao zerar atendimentos');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ 
+        title: "Atendimentos zerados com sucesso!",
+        description: "Todos os registros do mês foram removidos."
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal"] });
+    },
+    onError: () => {
+      toast({ title: "Erro ao zerar atendimentos", variant: "destructive" });
     }
   });
 
@@ -217,6 +240,22 @@ export default function ListaDaVez() {
                     {adicionarClienteEspecifico.isPending ? 'Adicionando...' : 'Adicionar'}
                   </Button>
                 </div>
+
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => {
+                      if (confirm('Tem certeza que deseja zerar todos os atendimentos do mês?')) {
+                        zerarAtendimentos.mutate();
+                      }
+                    }}
+                    disabled={zerarAtendimentos.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {zerarAtendimentos.isPending ? 'Zerando...' : 'Zerar Mês'}
+                  </Button>
+                )}
               </div>
             )}
           </div>

@@ -168,6 +168,7 @@ export interface IStorage {
     posicaoMensal: number;
     totalAtendimentosMes: number;
   }>;
+  zerarAtendimentosMes(mesAno: string): Promise<void>;
 
   // Métricas
   getDashboardMetrics(): Promise<{
@@ -929,6 +930,12 @@ export class DatabaseStorage implements IStorage {
       posicaoMensal: barbeiroNaFila.posicaoMensal,
       totalAtendimentosMes: barbeiroNaFila.totalAtendimentosMes
     };
+  }
+
+  async zerarAtendimentosMes(mesAno: string): Promise<void> {
+    await db
+      .delete(atendimentosDiarios)
+      .where(eq(atendimentosDiarios.mesAno, mesAno));
   }
 }
 

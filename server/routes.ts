@@ -2338,6 +2338,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/lista-da-vez/zerar-atendimentos - Zerar todos os atendimentos do mês (apenas admin)
+  app.post('/api/lista-da-vez/zerar-atendimentos', requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem zerar atendimentos.' });
+      }
+
+      const { mesAno } = req.body;
+      
+      if (!mesAno) {
+        return res.status(400).json({ message: 'Mês/ano é obrigatório' });
+      }
+
+      await storage.zerarAtendimentosMes(mesAno);
+
+      res.json({ message: `Todos os atendimentos do mês ${mesAno} foram zerados com sucesso.` });
+    } catch (error: any) {
+      console.error('Erro ao zerar atendimentos:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

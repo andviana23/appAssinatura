@@ -1,0 +1,87 @@
+Problema Atual
+Meu sistema de agendamento de barbearia está com um bug: quando agendo um cliente, o agendamento está se repetindo automaticamente todos os dias, o que não deveria acontecer.
+Funcionalidades Necessárias
+1. Correção do Agendamento
+
+Problema: Agendamentos estão se repetindo diariamente de forma automática
+Solução esperada: Cada agendamento deve ser único e ocorrer apenas na data/hora selecionada
+Comportamento desejado: Permitir agendamentos únicos ou com opção manual de repetição (se necessário)
+
+2. Sistema de Comanda
+Preciso implementar um sistema completo de comanda com as seguintes funcionalidades:
+Botão "Abrir Comanda"
+
+Deve aparecer junto com cada agendamento
+Ao clicar, abre uma nova tela/modal de comanda
+
+Tela da Comanda
+
+Cabeçalho: Nome do cliente, data/hora do agendamento
+Seção de Produtos:
+
+Lista de produtos/serviços disponíveis
+Botão "Adicionar Produto" para cada item
+Quantidade e preço por produto
+Subtotal por produto
+
+
+Resumo:
+
+Total geral da comanda
+Botões de ação
+
+
+
+Botões de Finalização
+
+"Finalizar Comanda": Salva todos os produtos adicionados e fecha a comanda
+"Finalizar sem Produtos": Fecha a comanda sem adicionar produtos (apenas registra o atendimento)
+"Cancelar": Volta para a agenda sem salvar
+
+3. Estrutura de Dados Sugerida
+javascript// Agendamento
+{
+  id: string,
+  cliente: string,
+  data: Date,
+  hora: string,
+  servico: string,
+  status: 'agendado' | 'em_atendimento' | 'finalizado',
+  comanda_id: string | null
+}
+
+// Comanda
+{
+  id: string,
+  agendamento_id: string,
+  cliente: string,
+  data_abertura: Date,
+  produtos: [
+    {
+      nome: string,
+      quantidade: number,
+      preco_unitario: number,
+      subtotal: number
+    }
+  ],
+  total: number,
+  status: 'aberta' | 'finalizada'
+}
+Requisitos Técnicos
+
+Interface intuitiva e responsiva
+Validação de dados
+Persistência das informações
+Integração fluida entre agenda e sistema de comanda
+
+Exemplo de Fluxo
+
+Cliente agendado aparece na agenda
+Barbeiro clica em "Abrir Comanda"
+Sistema abre tela da comanda com dados do cliente
+Barbeiro adiciona produtos conforme necessário
+Barbeiro finaliza comanda (com ou sem produtos)
+Sistema atualiza status do agendamento
+Comanda fica salva no histórico
+
+Por favor, corrija o bug de repetição dos agendamentos e implemente o sistema de comanda conforme descrito acima. Mantenha o código organizado e bem comentado.
