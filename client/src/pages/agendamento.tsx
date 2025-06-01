@@ -369,7 +369,7 @@ export default function Agendamento() {
         {/* Grade da Agenda Moderna */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
           {/* Header com nomes dos barbeiros */}
-          <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] bg-gradient-to-r from-[#8B4513] to-[#A0522D] text-white shadow-lg">
+          <div className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg">
             <div className="p-4 border-r border-white/20 font-bold flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Horário
@@ -392,7 +392,7 @@ export default function Agendamento() {
           <div className="max-h-[600px] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
               <div key={timeSlot} className="grid grid-cols-[100px_repeat(auto-fit,minmax(180px,1fr))] border-b border-gray-100 min-h-[80px] hover:bg-gray-50/50 transition-colors">
-                <div className="p-4 border-r border-gray-100 text-sm font-bold text-[#8B4513] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
+                <div className="p-4 border-r border-gray-100 text-sm font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3" />
                     {timeSlot}
@@ -475,17 +475,17 @@ export default function Agendamento() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-2xl border-0">
           <DialogHeader className="text-center pb-6">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-[#8B4513] to-[#A0522D] rounded-2xl flex items-center justify-center shadow-lg mb-4">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl flex items-center justify-center shadow-lg mb-4">
               <Calendar className="h-8 w-8 text-white" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-[#8B4513]">Novo Agendamento</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-[#1e3a8a]">Novo Agendamento</DialogTitle>
             <p className="text-gray-600 mt-2">Preencha os dados para agendar o cliente</p>
           </DialogHeader>
           
           <div className="space-y-6">
             <div>
               <label className="text-sm font-bold text-gray-700 mb-3 block">📅 Data e Horário</label>
-              <div className="p-4 bg-gradient-to-r from-[#8B4513]/5 to-[#A0522D]/5 rounded-xl border-2 border-[#8B4513]/20">
+              <div className="p-4 bg-gradient-to-r from-[#1e3a8a]/5 to-[#1e40af]/5 rounded-xl border-2 border-[#1e3a8a]/20">
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-[#8B4513]" />
                   <span className="font-semibold text-[#8B4513]">
