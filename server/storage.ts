@@ -109,7 +109,7 @@ export interface IStorage {
   updateClienteExterno(id: number, cliente: Partial<InsertClienteExterno>): Promise<ClienteExterno>;
   
   // Unificado - todos os clientes
-  getClientesUnifiedStats(): Promise<{
+  getClientesUnifiedStats(mes?: string, ano?: string): Promise<{
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
@@ -497,7 +497,7 @@ export class DatabaseStorage implements IStorage {
     return clientesUnificados.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
-  async getClientesUnifiedStats(): Promise<{
+  async getClientesUnifiedStats(mes?: string, ano?: string): Promise<{
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
@@ -506,7 +506,9 @@ export class DatabaseStorage implements IStorage {
     const allClientes = await this.getAllClientesUnified();
     
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7); // formato YYYY-MM
+    
+    // Se mês/ano não fornecidos, usar o mês atual
+    const targetMonth = mes && ano ? `${ano}-${mes.padStart(2, '0')}` : now.toISOString().slice(0, 7);
     
     // Clientes ativos = status ATIVO e dentro da validade
     const activeClientes = allClientes.filter(cliente => {
@@ -517,7 +519,7 @@ export class DatabaseStorage implements IStorage {
       return vencimento >= now; // Ainda não venceu
     });
     
-    // Receita APENAS dos pagamentos feitos no mês atual
+    // Receita APENAS dos pagamentos feitos no mês selecionado
     const monthlySubscriptionRevenue = allClientes.filter(cliente => {
       if (cliente.statusAssinatura !== 'ATIVO') return false;
       if (!cliente.dataInicioAssinatura || !cliente.planoValor) return false;
@@ -525,7 +527,7 @@ export class DatabaseStorage implements IStorage {
       const dataInicio = new Date(cliente.dataInicioAssinatura);
       const paymentMonth = dataInicio.toISOString().slice(0, 7);
       
-      return paymentMonth === currentMonth; // Apenas pagamentos do mês atual
+      return paymentMonth === targetMonth; // Apenas pagamentos do mês selecionado
     }).reduce((total, cliente) => {
       return total + parseFloat(cliente.planoValor!.toString());
     }, 0);
@@ -542,7 +544,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       totalActiveClients: activeClientes.length,
-      totalSubscriptionRevenue: monthlySubscriptionRevenue, // Apenas do mês atual
+      totalSubscriptionRevenue: monthlySubscriptionRevenue, // Apenas do mês selecionado
       totalExpiringSubscriptions: expiringClientes.length,
     };
   }

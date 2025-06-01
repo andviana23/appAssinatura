@@ -43,7 +43,7 @@ export default function Clientes() {
   const [buscaNome, setBuscaNome] = useState<string>('');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/clientes-unified/stats'],
+    queryKey: ['/api/clientes-unified/stats', filtroMes, filtroAno],
     refetchInterval: 300000,
   });
 

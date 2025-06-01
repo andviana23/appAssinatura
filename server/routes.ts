@@ -609,7 +609,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats unificados (para Dashboard)
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
-      const stats = await storage.getClientesUnifiedStats();
+      const { mes, ano } = req.query;
+      const stats = await storage.getClientesUnifiedStats(mes as string, ano as string);
       res.json(stats);
     } catch (error) {
       console.error("Erro ao buscar estatísticas de clientes:", error);
@@ -1333,8 +1334,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { mes } = req.query;
       const mesAtual = mes as string || new Date().toISOString().slice(0, 7);
       
-      // Buscar receita total de assinatura
-      const clientesStats = await storage.getClientesUnifiedStats();
+      // Extrair mês e ano do parâmetro mes (formato YYYY-MM)
+      const [ano, mesNum] = mesAtual.split('-');
+      
+      // Buscar receita total de assinatura APENAS do mês vigente
+      const clientesStats = await storage.getClientesUnifiedStats(mesNum, ano);
       const faturamentoTotalAssinatura = clientesStats.totalSubscriptionRevenue;
       
       // Buscar atendimentos finalizados do mês
