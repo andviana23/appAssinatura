@@ -60,7 +60,7 @@ const navigation = [
   },
   {
     name: "Lista da Vez",
-    href: "/lista-da-vez-mensal",
+    href: "/lista-da-vez",
     icon: ClipboardList,
   },
 ];
@@ -78,14 +78,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   // Navegação dinâmica baseada no perfil do usuário
   const getNavigationItems = () => {
     if (isAdmin) {
-      return [
-        ...navigation,
-        {
-          name: "Lista da Vez",
-          href: "/lista-da-vez",
-          icon: ListOrdered,
-        },
-      ];
+      return navigation;
     }
     
     if (isRecepcionista) {

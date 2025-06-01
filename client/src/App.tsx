@@ -15,15 +15,13 @@ import Profissionais from "@/pages/profissionais";
 import Clientes from "@/pages/clientes";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
-import Distribuicao from "@/pages/distribuicao";
+import DistribuicaoNova from "@/pages/distribuicao-nova";
 import TotalServicos from "@/pages/total-servicos";
 import BarbeiroDashboard from "@/pages/barbeiro-dashboard";
 import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
-import ListaDaVezRecepcionista from "@/pages/lista-da-vez-recepcionista";
-import ListaDaVezBarbeiro from "@/pages/lista-da-vez-barbeiro";
-import ListaDaVezMensal from "@/pages/lista-da-vez-mensal";
+import ListaDaVez from "@/pages/lista-da-vez";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -43,11 +41,10 @@ function AuthenticatedRoutes() {
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/agendamento" component={Agendamento} />
-          <Route path="/distribuicao" component={Distribuicao} />
+          <Route path="/distribuicao" component={DistribuicaoNova} />
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />
-          <Route path="/lista-da-vez" component={ListaDaVezRecepcionista} />
-          <Route path="/lista-da-vez-mensal" component={ListaDaVezMensal} />
+          <Route path="/lista-da-vez" component={ListaDaVez} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>
