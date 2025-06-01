@@ -22,6 +22,9 @@ interface PlanoAsaas {
   urlCheckout: string;
   ativo: boolean;
   criadoEm: string;
+  categoria?: string;
+  detalhes?: string[];
+  popular?: boolean;
 }
 
 export default function Planos() {
@@ -52,7 +55,8 @@ export default function Planos() {
         detalhes: ["1x Corte por mês", "1x Barba por mês", "Atendimento personalizado"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       },
       { 
         id: "2", 
@@ -63,7 +67,8 @@ export default function Planos() {
         detalhes: ["1x Corte por mês", "Produtos premium", "Ambiente exclusivo"],
         popular: true,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       }
     ],
     gold: [
@@ -76,7 +81,8 @@ export default function Planos() {
         detalhes: ["Corte + Barba premium", "Produtos importados", "Atendimento VIP", "Horário exclusivo"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       },
       { 
         id: "4", 
@@ -87,7 +93,8 @@ export default function Planos() {
         detalhes: ["Corte premium", "Produtos importados", "Atendimento VIP"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       },
       { 
         id: "5", 
@@ -98,7 +105,8 @@ export default function Planos() {
         detalhes: ["Barba premium", "Produtos importados", "Técnicas exclusivas"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       }
     ],
     multi: [
@@ -111,7 +119,8 @@ export default function Planos() {
         detalhes: ["2x Corte por mês", "2x Barba por mês", "Agendamento flexível"],
         popular: true,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       },
       { 
         id: "7", 
@@ -122,7 +131,8 @@ export default function Planos() {
         detalhes: ["2x Corte por mês", "4x Barba por mês", "Cuidado especializado"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       },
       { 
         id: "8", 
@@ -133,7 +143,8 @@ export default function Planos() {
         detalhes: ["2x Corte por mês", "Agendamento prioritário", "Flexibilidade total"],
         popular: false,
         urlCheckout: "", 
-        ativo: true 
+        ativo: true,
+        criadoEm: ""
       }
     ]
   };
@@ -145,9 +156,6 @@ export default function Planos() {
     if (selectedCategory === 'todos') return allPlanos;
     return planosData[selectedCategory as keyof typeof planosData] || [];
   };
-  
-  const isLoading = false;
-  const isRefetching = false;
 
   const createCheckoutMutation = useMutation({
     mutationFn: async (data: typeof checkoutData) => {
@@ -193,9 +201,9 @@ export default function Planos() {
         email: checkoutData.email,
         telefone: checkoutData.telefone,
         cpf: checkoutData.cpf,
-        paymentMethod: paymentMethod,
         planoNome: checkoutData.planoSelecionado,
-        planoValor: 0 // Valor será definido posteriormente
+        formaPagamento: paymentMethod,
+        valorMensal: getFilteredPlanos().find(p => p.nome === checkoutData.planoSelecionado)?.valor || 0
       });
       return response.json();
     },
@@ -207,7 +215,6 @@ export default function Planos() {
       
       setShowExternalPaymentModal(false);
       setExternalPaymentMethod('');
-      // Reset form
       setCheckoutData({
         nome: '',
         email: '',
@@ -227,7 +234,6 @@ export default function Planos() {
   });
 
   const handleAssinar = (plano: PlanoAsaas) => {
-    // Abrir modal de checkout com plano selecionado
     setCheckoutData(prev => ({ ...prev, planoSelecionado: plano.nome }));
     setShowCheckoutModal(true);
     toast({
@@ -235,71 +241,6 @@ export default function Planos() {
       description: `Iniciando checkout para ${plano.nome}`,
     });
   };
-
-  const getPlanoDescription = (nome: string) => {
-    const descriptions: { [key: string]: string } = {
-      'Clube do Trato One - Corte Barba': 'Corte + Barba premium mensal',
-      'Clube do Trato One - Corte': 'Corte premium mensal',
-      'Clube do Trato Gold - Corte + Barba': 'Corte + Barba gold com benefícios exclusivos',
-      'Clube do Trato Gold - Corte': 'Corte gold com benefícios exclusivos',
-      'Clube do Trato Gold - Barba': 'Barba gold com benefícios exclusivos',
-      'Clube do Trato - Corte e Barba 2x': '2x Corte e Barba por mês',
-      'Clube do Trato - Corte 2x Barba 4x': '2x Corte + 4x Barba por mês',
-      'Clube do Trato - Corte 2x': '2x Corte por mês',
-      'Clube do Trato - Barba 4x': '4x Barba por mês'
-    };
-    return descriptions[nome] || 'Plano de assinatura Trato de Barbados';
-  };
-
-  const getPlanoTier = (nome: string) => {
-    if (nome.includes('Gold')) return 'gold';
-    if (nome.includes('One')) return 'premium';
-    return 'standard';
-  };
-
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'gold': return 'bg-gradient-to-r from-yellow-500 to-yellow-600';
-      case 'premium': return 'bg-gradient-to-r from-purple-500 to-purple-600';
-      default: return 'bg-gradient-to-r from-blue-500 to-blue-600';
-    }
-  };
-
-  const getTierBadge = (tier: string) => {
-    switch (tier) {
-      case 'gold': return <Badge className="bg-yellow-500 text-yellow-50">Gold</Badge>;
-      case 'premium': return <Badge className="bg-purple-500 text-purple-50">Premium</Badge>;
-      default: return <Badge className="bg-blue-500 text-blue-50">Standard</Badge>;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="relative">
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-12 w-24 mb-4" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
@@ -391,7 +332,7 @@ export default function Planos() {
 
                 {/* Lista de benefícios */}
                 <div className="space-y-3">
-                  {plano.detalhes.map((detalhe, index) => (
+                  {plano.detalhes?.map((detalhe, index) => (
                     <div key={index} className="flex items-center gap-3">
                       <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-primary"></div>
@@ -414,280 +355,134 @@ export default function Planos() {
             </Card>
           ))}
         </div>
-      </div>
-    </div>
 
-                {/* Botão de assinatura */}
-                <Button 
-                  className={`w-full ${tierColor} hover:opacity-90 text-white border-0`}
-                  onClick={() => handleAssinar(plano)}
-                  disabled={!plano.ativo}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {plano.ativo ? 'Assinar Agora' : 'Indisponível'}
-                </Button>
-
-                {/* Status */}
-                {!plano.ativo && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    Este plano está temporariamente indisponível
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Estado vazio */}
-      {planos?.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Nenhum plano disponível
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Não há planos de assinatura disponíveis no momento.
-            </p>
-            <Button variant="outline" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Tentar novamente
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Footer informativo */}
-      <Card className="bg-muted/50">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-2">
-            <h4 className="font-medium text-foreground">Como funciona?</h4>
-            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-              Ao clicar em "Assinar Agora", você será redirecionado para o checkout seguro do Asaas. 
-              Após a confirmação do pagamento, sua assinatura será ativada automaticamente e você poderá 
-              agendar seus serviços com prioridade.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal de Checkout */}
-      <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-500" />
-              Checkout - {checkoutData.planoSelecionado}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (checkoutData.nome && checkoutData.email && checkoutData.telefone && checkoutData.cpf && checkoutData.planoSelecionado) {
-                createCheckoutMutation.mutate(checkoutData);
-              }
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="nome">Nome completo *</Label>
-              <Input
-                id="nome"
-                value={checkoutData.nome}
-                onChange={(e) => setCheckoutData(prev => ({ ...prev, nome: e.target.value }))}
-                placeholder="Seu nome completo"
-                required
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="email">E-mail *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={checkoutData.email}
-                onChange={(e) => setCheckoutData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="seu@email.com"
-                required
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="telefone">Telefone *</Label>
-              <Input
-                id="telefone"
-                type="tel"
-                value={checkoutData.telefone}
-                onChange={(e) => setCheckoutData(prev => ({ ...prev, telefone: e.target.value }))}
-                placeholder="(11) 99999-9999"
-                required
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="cpf">CPF/CNPJ *</Label>
-              <Input
-                id="cpf"
-                value={checkoutData.cpf}
-                onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
-                placeholder="000.000.000-00 ou 00.000.000/0001-00"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label>Forma de pagamento *</Label>
+        {/* Modais de checkout */}
+        <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
+          <DialogContent className="max-w-md mx-auto">
+            <DialogHeader>
+              <DialogTitle className="text-center">Dados para Assinatura</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="nome">Nome Completo</Label>
+                <Input
+                  id="nome"
+                  value={checkoutData.nome}
+                  onChange={(e) => setCheckoutData(prev => ({ ...prev, nome: e.target.value }))}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={checkoutData.email}
+                  onChange={(e) => setCheckoutData(prev => ({ ...prev, email: e.target.value }))}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={checkoutData.telefone}
+                  onChange={(e) => setCheckoutData(prev => ({ ...prev, telefone: e.target.value }))}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  value={checkoutData.cpf}
+                  onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
+                  className="rounded-xl"
+                />
+              </div>
+              
               <RadioGroup 
                 value={checkoutData.billingType} 
                 onValueChange={(value) => setCheckoutData(prev => ({ ...prev, billingType: value }))}
-                className="mt-2"
+                className="space-y-3"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="CREDIT_CARD" id="credit_card" />
-                  <Label htmlFor="credit_card" className="cursor-pointer flex items-center space-x-2">
+                  <RadioGroupItem value="CREDIT_CARD" id="credit" />
+                  <Label htmlFor="credit" className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
-                    <span>Cartão de Crédito</span>
-                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Automático via Asaas
-                    </span>
+                    Cartão de Crédito
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="BOLETO" id="boleto" />
+                  <Label htmlFor="boleto" className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4" />
+                    Boleto
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="PIX" id="pix" />
+                  <Label htmlFor="pix" className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    PIX
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="EXTERNAL" id="external" />
-                  <Label htmlFor="external" className="cursor-pointer flex items-center space-x-2">
-                    <Banknote className="h-4 w-4" />
-                    <span>Pago Externamente</span>
-                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      PIX ou Débito
-                    </span>
+                  <Label htmlFor="external" className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    Pagamento Externo
                   </Label>
                 </div>
               </RadioGroup>
-            </div>
 
-            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <h4 className="font-medium text-orange-800 mb-2">Detalhes do teste:</h4>
-              <ul className="text-sm text-orange-700 space-y-1">
-                <li>• Valor: R$ 5,00 (mínimo para cartão)</li>
-                <li>• Pagamento: {
-                  checkoutData.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito (Automático)' :
-                  checkoutData.billingType === 'EXTERNAL' ? 'Pago Externamente (PIX ou Débito)' : 'Não selecionado'
-                }</li>
-                <li>• Checkout personalizado com identidade visual</li>
-                <li>• Cores: Azul aço (#365e78) e Dourado (#d3b791)</li>
-              </ul>
-              {checkoutData.billingType === 'PIX' && (
-                <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs text-yellow-800">
-                  ⚠️ Para pagamento via PIX, é necessário ter uma chave PIX cadastrada na conta Asaas
+              <Button
+                onClick={() => createCheckoutMutation.mutate(checkoutData)}
+                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email}
+                className="w-full bg-primary hover:bg-primary/90 rounded-xl"
+              >
+                {createCheckoutMutation.isPending ? 'Processando...' : 'Continuar'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showExternalPaymentModal} onOpenChange={setShowExternalPaymentModal}>
+          <DialogContent className="max-w-md mx-auto">
+            <DialogHeader>
+              <DialogTitle className="text-center">Forma de Pagamento</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <RadioGroup value={externalPaymentMethod} onValueChange={setExternalPaymentMethod}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Dinheiro" id="dinheiro" />
+                  <Label htmlFor="dinheiro">Dinheiro</Label>
                 </div>
-              )}
-            </div>
-            
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowCheckoutModal(false)}
-                disabled={createCheckoutMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90"
-                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email || !checkoutData.cpf}
-              >
-                {createCheckoutMutation.isPending ? 'Criando...' : 'Criar Checkout'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Cartão Débito" id="debito" />
+                  <Label htmlFor="debito">Cartão de Débito</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Cartão Crédito" id="credito-local" />
+                  <Label htmlFor="credito-local">Cartão de Crédito</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="PIX Local" id="pix-local" />
+                  <Label htmlFor="pix-local">PIX</Label>
+                </div>
+              </RadioGroup>
 
-      {/* Modal de Pagamento Externo */}
-      <Dialog open={showExternalPaymentModal} onOpenChange={setShowExternalPaymentModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Banknote className="h-5 w-5 text-blue-500" />
-              Como foi feito o pagamento?
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Selecione como o cliente realizou o pagamento externo:
-            </p>
-            
-            <RadioGroup 
-              value={externalPaymentMethod} 
-              onValueChange={setExternalPaymentMethod}
-              className="space-y-3"
-            >
-              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="PIX" id="external_pix" />
-                <Label htmlFor="external_pix" className="cursor-pointer flex items-center space-x-2 flex-1">
-                  <QrCode className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="font-medium">PIX</div>
-                    <div className="text-xs text-muted-foreground">Pagamento instantâneo</div>
-                  </div>
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="Débito" id="external_debit" />
-                <Label htmlFor="external_debit" className="cursor-pointer flex items-center space-x-2 flex-1">
-                  <CreditCard className="h-5 w-5 text-green-600" />
-                  <div>
-                    <div className="font-medium">Cartão de Débito</div>
-                    <div className="text-xs text-muted-foreground">Débito em conta</div>
-                  </div>
-                </Label>
-              </div>
-            </RadioGroup>
-
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800">
-                <strong>Cliente:</strong> {checkoutData.nome}<br/>
-                <strong>Plano:</strong> Clube do Trato Único<br/>
-                <strong>Validade:</strong> 30 dias a partir de hoje
-              </p>
-            </div>
-            
-            <div className="flex gap-3 pt-2">
               <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowExternalPaymentModal(false)}
-                disabled={createExternalClientMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  if (externalPaymentMethod) {
-                    createExternalClientMutation.mutate(externalPaymentMethod);
-                  }
-                }}
+                onClick={() => createExternalClientMutation.mutate(externalPaymentMethod)}
                 disabled={createExternalClientMutation.isPending || !externalPaymentMethod}
+                className="w-full bg-primary hover:bg-primary/90 rounded-xl"
               >
-                {createExternalClientMutation.isPending ? 'Cadastrando...' : 'Confirmar'}
+                {createExternalClientMutation.isPending ? 'Cadastrando...' : 'Cadastrar Cliente'}
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
