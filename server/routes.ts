@@ -2667,7 +2667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const agendamentosFinalizados = agendamentos.filter(a => {
         const agendamentoMonth = new Date(a.dataHora).toISOString().slice(0, 7);
-        const isFinalized = a.status === 'finalizado';
+        const isFinalized = a.status === 'FINALIZADO'; // Corrigido: estava 'finalizado', mas no banco é 'FINALIZADO'
         console.log(`Agendamento ${a.id}: status=${a.status}, month=${agendamentoMonth}, isFinalized=${isFinalized}`);
         return isFinalized && agendamentoMonth === targetMonth;
       });
