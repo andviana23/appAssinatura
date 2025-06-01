@@ -113,6 +113,7 @@ export interface IStorage {
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
+    clientesPagantesDoMes: number;
   }>;
   
   getAllClientesUnified(): Promise<Array<{
@@ -501,6 +502,7 @@ export class DatabaseStorage implements IStorage {
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
+    clientesPagantesDoMes: number;
   }> {
     // Usar o método unificado para pegar todos os clientes
     const allClientes = await this.getAllClientesUnified();
@@ -519,8 +521,8 @@ export class DatabaseStorage implements IStorage {
       return vencimento >= now; // Ainda não venceu
     });
     
-    // Receita APENAS dos pagamentos feitos no mês selecionado
-    const monthlySubscriptionRevenue = allClientes.filter(cliente => {
+    // Clientes que fizeram pagamentos especificamente no mês selecionado
+    const clientesPagantesDoMes = allClientes.filter(cliente => {
       if (cliente.statusAssinatura !== 'ATIVO') return false;
       if (!cliente.dataInicioAssinatura || !cliente.planoValor) return false;
       
@@ -528,7 +530,10 @@ export class DatabaseStorage implements IStorage {
       const paymentMonth = dataInicio.toISOString().slice(0, 7);
       
       return paymentMonth === targetMonth; // Apenas pagamentos do mês selecionado
-    }).reduce((total, cliente) => {
+    });
+    
+    // Receita APENAS dos pagamentos feitos no mês selecionado
+    const monthlySubscriptionRevenue = clientesPagantesDoMes.reduce((total, cliente) => {
       return total + parseFloat(cliente.planoValor!.toString());
     }, 0);
     
@@ -546,6 +551,7 @@ export class DatabaseStorage implements IStorage {
       totalActiveClients: activeClientes.length,
       totalSubscriptionRevenue: monthlySubscriptionRevenue, // Apenas do mês selecionado
       totalExpiringSubscriptions: expiringClientes.length,
+      clientesPagantesDoMes: clientesPagantesDoMes.length, // Quantidade de clientes que pagaram no mês
     };
   }
 

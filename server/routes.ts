@@ -2560,8 +2560,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Receita real das assinaturas do mês vigente
       const receitaTotal = clientesStats.totalSubscriptionRevenue || 0;
       
-      // Ticket médio baseado em clientes com pagamentos no mês vigente
-      const clientesComPagamentoMes = clientesStats.totalActiveClients || 0;
+      // Ticket médio baseado em clientes que realmente pagaram no mês vigente
+      const clientesComPagamentoMes = clientesStats.clientesPagantesDoMes || 0;
       const ticketMedio = clientesComPagamentoMes > 0 ? 
         receitaTotal / clientesComPagamentoMes : 0;
 
