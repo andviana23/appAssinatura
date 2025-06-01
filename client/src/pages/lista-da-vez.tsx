@@ -191,32 +191,37 @@ export default function ListaDaVez() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
+              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg hover:shadow-xl"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-semibold">Voltar</span>
             </button>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
-              <p className="text-gray-600 mt-1">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">Lista da Vez - Atendimento Mensal</h1>
+                <p className="text-gray-600 mt-1 text-lg">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">{dayjs().format("MMMM [de] YYYY")}</span>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+            <div className="flex items-center space-x-4 text-sm bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+              <Calendar className="h-4 w-4 text-[#365e78]" />
+              <span className="font-medium text-[#365e78]">{dayjs().format("MMMM [de] YYYY")}</span>
             </div>
             {(isAdmin || isRecepcionista) && (
               <div className="flex flex-col lg:flex-row gap-3">
                 <Button
-                  className="bg-green-600 hover:bg-green-700 font-semibold px-6 py-2"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                   onClick={() => adicionarCliente.mutate()}
                   disabled={adicionarCliente.isPending}
                 >
@@ -226,7 +231,7 @@ export default function ListaDaVez() {
                 
                 <div className="flex gap-2">
                   <Select value={barbeiroSelecionado} onValueChange={setBarbeiroSelecionado}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-48 bg-white/90 backdrop-blur-sm border-2 border-[#365e78]/20 shadow-lg">
                       <SelectValue placeholder="Escolher barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
@@ -239,7 +244,7 @@ export default function ListaDaVez() {
                   </Select>
                   
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                     onClick={() => {
                       if (barbeiroSelecionado) {
                         adicionarClienteEspecifico.mutate(parseInt(barbeiroSelecionado));
@@ -255,7 +260,7 @@ export default function ListaDaVez() {
                 {isAdmin && (
                   <Button
                     variant="destructive"
-                    className="bg-red-600 hover:bg-red-700"
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                     onClick={() => {
                       if (confirm('Tem certeza que deseja zerar todos os atendimentos do mês?')) {
                         zerarAtendimentos.mutate();
@@ -273,8 +278,8 @@ export default function ListaDaVez() {
         </div>
 
         {/* Tabela de Atendimento Mensal */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-lg">
             <CardTitle className="text-xl">Tabela de Atendimento Mensal</CardTitle>
             <CardDescription className="text-blue-100">
               Controle mensal de atendimentos por barbeiro (reseta automaticamente no dia 1º)
@@ -322,12 +327,12 @@ export default function ListaDaVez() {
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center justify-center space-x-1">
+                    <div className="flex items-center justify-center space-x-2">
                       {(isAdmin || isRecepcionista) && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white text-xs px-3 py-1 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
                             onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                             disabled={adicionarAtendimento.isPending}
                           >
@@ -337,7 +342,7 @@ export default function ListaDaVez() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-orange-300 text-orange-600 hover:bg-orange-50 text-xs px-2 py-1"
+                            className="border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 text-xs px-3 py-1 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
                             onClick={() => passarVez.mutate(item.barbeiro.id)}
                             disabled={passarVez.isPending}
                           >
