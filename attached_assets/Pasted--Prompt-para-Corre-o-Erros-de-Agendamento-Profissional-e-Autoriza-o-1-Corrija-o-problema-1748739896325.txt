@@ -1,0 +1,54 @@
+# Prompt para Correção — Erros de Agendamento, Profissional e Autorização
+
+### 1. Corrija o problema de autenticação (erro 401 Unauthorized)
+
+- Verifique por que a API `/api/auth/me` está respondendo 401 (não autorizado).
+- Certifique-se de que, ao acessar qualquer tela protegida (dashboard, agendamento, cadastro de profissionais), o sistema sempre:
+    - Faz o login corretamente e mantém o token de autenticação (JWT ou equivalente) salvo.
+    - Envia esse token corretamente nos headers de todas as requisições para endpoints protegidos.
+    - Renova a sessão ou força o logout automático se o token expirar.
+- Faça o frontend mostrar um alerta claro se a sessão expirar ou o token não for aceito ("Sua sessão expirou, faça login novamente").
+- Teste todos os fluxos: login, acesso ao dashboard, criação de agendamento, cadastro/listagem de profissionais.
+- Não permita que nenhuma requisição crítica seja feita sem autenticação válida.
+
+---
+
+### 2. Profissionais: a recepcionista não aparece na lista
+
+- Ajuste a tela de cadastro e a tela de listagem de profissionais para exibir **todos os profissionais ativos**, incluindo barbeiros e recepcionistas.
+- O filtro padrão não deve mostrar só barbeiros — deve mostrar todos os tipos (com opção de filtro por função se necessário: "todos", "barbeiro", "recepcionista").
+- Se o cadastro de recepcionista está salvando no banco, certifique-se que está com os campos corretos: `ativo = true`, `tipo = 'recepcionista'`, e que não está sendo filtrado no frontend/backend.
+- Garanta que ao criar um profissional novo (seja barbeiro ou recepcionista), ele apareça na listagem geral imediatamente, sem precisar atualizar manualmente.
+
+---
+
+### 3. Erro ao agendar serviço
+
+- Certifique-se que ao criar um novo agendamento, todos os campos obrigatórios estão sendo enviados:
+    - Data/hora do serviço
+    - Barbeiro selecionado (id)
+    - Cliente selecionado (id)
+    - Serviço selecionado (id)
+- O backend deve validar e retornar erro claro se algum campo estiver faltando ou inválido, e o frontend deve exibir a mensagem detalhada.
+- Se o usuário não está autenticado ou com token inválido, deve exibir mensagem de "Sessão expirada", **não** "Erro nos dados selecionados".
+- No cadastro do agendamento, não permitir criar para recepcionista, somente para barbeiros.
+    - O campo de barbeiro no agendamento deve filtrar apenas profissionais do tipo "barbeiro".
+- Se o erro continuar, implemente logs detalhados no backend para retornar o motivo real do erro no frontend.
+
+---
+
+### 4. Checagem extra: tratamento de sessão
+
+- Toda vez que uma ação for executada, valide no frontend se ainda existe token/sessão antes de chamar a API.
+- Se a API retornar 401 em qualquer endpoint, **faça logout automático** e redirecione para o login.
+
+---
+
+## **Resumo**
+
+1. Corrija o fluxo de autenticação/token.
+2. Ajuste a tela/listagem de profissionais para mostrar TODOS os ativos (barbeiro e recepcionista).
+3. No cadastro de agendamento, só deixe selecionar barbeiros no campo "barbeiro", e envie sempre todos os campos obrigatórios.
+4. Mostre mensagens de erro claras vindas do backend, e nunca deixe o usuário "travado" sem saber o que aconteceu.
+
+**Implemente essas correções sem alterar o que já está funcionando corretamente nas outras telas. Se houver dúvida, pergunte antes de alterar outros pontos do código.**

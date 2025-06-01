@@ -59,10 +59,7 @@ export default function ListaDaVezRecepcionista() {
   // Mutation para salvar dados
   const salvarMutation = useMutation({
     mutationFn: async (dados: { data: string; atendimentos: any[] }) => {
-      return await apiRequest('/api/lista-da-vez/salvar', {
-        method: 'POST',
-        body: JSON.stringify(dados),
-      });
+      return await apiRequest('/api/lista-da-vez/salvar', 'POST', dados);
     },
     onSuccess: () => {
       toast({

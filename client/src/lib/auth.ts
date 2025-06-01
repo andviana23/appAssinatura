@@ -3,7 +3,7 @@ import { apiRequest } from "./queryClient";
 export interface User {
   id: number;
   email: string;
-  role: "admin" | "barbeiro";
+  role: "admin" | "barbeiro" | "recepcionista";
   barbeiroId?: number;
 }
 
@@ -24,10 +24,16 @@ export async function logout(): Promise<void> {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const response = await apiRequest("/api/auth/me", "GET");
+    if (!response.ok) {
+      throw new Error('Unauthorized');
+    }
     return response.json();
-  } catch (error) {
+  } catch (error: any) {
     // Se não estiver autenticado, retorna null
-    return null;
+    if (error.message === 'Unauthorized' || error.status === 401) {
+      return null;
+    }
+    throw error;
   }
 }
 
