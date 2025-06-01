@@ -20,31 +20,25 @@ import { useLocation } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ClienteUnificado {
-  id: string;
+  id: number;
   nome: string;
   email: string;
-  telefone?: string;
-  cpf?: string;
-  planoNome: string;
-  planoValor: number;
-  formaPagamento: string;
-  dataInicio: string;
-  dataValidade: string;
-  status: 'ATIVO' | 'INATIVO' | 'VENCIDO';
+  telefone: string | null;
+  cpf: string | null;
+  planoNome: string | null;
+  planoValor: string | null;
+  formaPagamento: string | null;
+  statusAssinatura: string | null;
+  dataInicioAssinatura: Date | null;
+  dataVencimentoAssinatura: Date | null;
   origem: 'ASAAS' | 'EXTERNO';
-  billingType?: string;
-  daysRemaining?: number;
+  createdAt: Date;
 }
 
 interface ClientesStats {
   totalActiveClients: number;
-  totalInactiveClients: number;
-  totalClients: number;
-  monthlyPaidServicesRevenue: number; // Receita APENAS de serviços PAGOS no mês atual
-  newClientsThisMonth: number;
-  overdueClients: number;
-  totalExternalClients: number;
-  totalAsaasClients: number;
+  totalSubscriptionRevenue: number;
+  totalExpiringSubscriptions: number;
 }
 
 export default function Clientes() {
@@ -55,18 +49,19 @@ export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/clientes/unified-stats'],
+    queryKey: ['/api/clientes-unified/stats'],
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
   const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
-    queryKey: ['/api/clientes/all'], // Buscar TODOS os clientes
+    queryKey: ['/api/clientes-unified'], // Buscar TODOS os clientes unificados
     refetchInterval: 300000, // Atualiza a cada 5 minutos
   });
 
   // Filtrar clientes localmente baseado nos filtros
   const clientesFiltrados = clientes.filter(cliente => {
-    const matchStatus = filtroStatus === 'todos' || cliente.status.toLowerCase() === filtroStatus;
+    const status = cliente.statusAssinatura || 'INATIVO';
+    const matchStatus = filtroStatus === 'todos' || status.toLowerCase() === filtroStatus;
     const matchOrigem = filtroOrigem === 'todos' || cliente.origem.toLowerCase() === filtroOrigem;
     const matchSearch = searchTerm === '' || 
       cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -121,10 +116,17 @@ export default function Clientes() {
     return `Externo - ${formaPagamento}`;
   };
 
-  const getDaysRemainingBadge = (daysRemaining?: number) => {
-    if (!daysRemaining) return null;
+  const getDaysRemainingBadge = (dataVencimento: Date | null) => {
+    if (!dataVencimento) return null;
     
-    if (daysRemaining <= 7) {
+    const today = new Date();
+    const vencimento = new Date(dataVencimento);
+    const diffTime = vencimento.getTime() - today.getTime();
+    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (daysRemaining < 0) {
+      return <Badge className="bg-red-100 text-red-700 border-red-200 border">Vencido</Badge>;
+    } else if (daysRemaining <= 7) {
       return <Badge className="bg-red-100 text-red-700 border-red-200 border">Vence em {daysRemaining}d</Badge>;
     } else if (daysRemaining <= 15) {
       return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 border">Vence em {daysRemaining}d</Badge>;
@@ -196,7 +198,7 @@ export default function Clientes() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-gray-900">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalClients || clientes.length)}
+                {statsLoading ? <Skeleton className="h-6 w-16" /> : clientes.length}
               </div>
               <p className="text-xs text-gray-500 mt-1">Todos os clientes cadastrados</p>
             </CardContent>
@@ -209,7 +211,7 @@ export default function Clientes() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalActiveClients || clientes.filter(c => c.status === 'ATIVO').length)}
+                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalActiveClients || clientes.filter(c => c.statusAssinatura === 'ATIVO').length)}
               </div>
               <p className="text-xs text-gray-500 mt-1">Com assinaturas válidas</p>
             </CardContent>
@@ -217,27 +219,27 @@ export default function Clientes() {
 
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Clientes Inativos</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Expirando em Breve</CardTitle>
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-500">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalInactiveClients || clientes.filter(c => c.status !== 'ATIVO').length)}
+                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalExpiringSubscriptions || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Assinaturas vencidas</p>
+              <p className="text-xs text-gray-500 mt-1">Próximos 7 dias</p>
             </CardContent>
           </Card>
 
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Receitas de Assinatura</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Receita de Assinaturas</CardTitle>
               <TrendingUp className="h-4 w-4 text-[#365e78]" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-[#365e78]">
-                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.monthlyPaidServicesRevenue || 0)}
+                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.totalSubscriptionRevenue || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Assinaturas pagas no mês</p>
+              <p className="text-xs text-gray-500 mt-1">Assinaturas ativas</p>
             </CardContent>
           </Card>
         </div>
@@ -333,25 +335,25 @@ export default function Clientes() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(cliente.status)}
-                          {getDaysRemainingBadge(cliente.daysRemaining)}
+                          {getStatusBadge(cliente.statusAssinatura || 'INATIVO')}
+                          {getDaysRemainingBadge(cliente.dataVencimentoAssinatura)}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getOrigemIcon(cliente.origem)}
-                          <span className="text-sm">{getOrigemLabel(cliente.origem, cliente.formaPagamento)}</span>
+                          <span className="text-sm">{getOrigemLabel(cliente.origem, cliente.formaPagamento || '')}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{formatDate(cliente.dataValidade)}</span>
+                          <span className="text-sm">{cliente.dataVencimentoAssinatura ? formatDate(cliente.dataVencimentoAssinatura.toString()) : 'N/A'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-[#365e78]">
-                          {formatCurrency(cliente.planoValor)}
+                          {cliente.planoValor ? formatCurrency(parseFloat(cliente.planoValor)) : 'N/A'}
                         </div>
                       </TableCell>
                     </TableRow>
