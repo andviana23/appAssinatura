@@ -389,50 +389,60 @@ export default function Profissionais() {
 
   // Renderizar listagem de profissionais
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Botão Voltar */}
-      <button
-        onClick={() => setLocation("/")}
-        className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
-        style={{
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          fontSize: "16px",
-        }}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </button>
-
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Profissionais</h1>
-        <p className="text-gray-600">
-          Gerencie barbeiros e recepcionistas da barbearia
-        </p>
-      </div>
-
-      {/* Botões de Ação */}
-      <div className="flex gap-3 mb-6">
-        <Button
-          onClick={() => setLocation("/profissionais/novo?tipo=barbeiro")}
-          className="bg-[#365e78] hover:bg-[#2a4a5e] text-white"
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="p-6 max-w-6xl mx-auto">
+        {/* Botão Voltar */}
+        <button
+          onClick={() => setLocation("/")}
+          className="flex items-center gap-2 mb-6 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105"
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Cadastrar Barbeiro
-        </Button>
-        <Button
-          onClick={() => setLocation("/profissionais/novo?tipo=recepcionista")}
-          variant="outline"
-          className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Cadastrar Recepcionista
-        </Button>
-      </div>
+          <ArrowLeft className="h-5 w-5" />
+          Voltar
+        </button>
 
-      {/* Lista de Profissionais */}
-      <div className="grid gap-4">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
+              <UserCheck className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
+                Profissionais
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Gerencie barbeiros e recepcionistas da barbearia
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Botões de Ação */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Button
+            onClick={() => setLocation("/profissionais/novo?tipo=barbeiro")}
+            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Cadastrar Barbeiro
+          </Button>
+          <Button
+            onClick={() => setLocation("/profissionais/novo?tipo=recepcionista")}
+            variant="outline"
+            className="border-2 border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Cadastrar Recepcionista
+          </Button>
+        </div>
+
+        {/* Lista de Profissionais */}
+        <div className="grid gap-4">
         {Array.isArray(barbeiros) && barbeiros.length > 0 ? (
           barbeiros.map((profissional: Profissional) => (
             <Card key={profissional.id} className="shadow-sm">
@@ -502,6 +512,7 @@ export default function Profissionais() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   );

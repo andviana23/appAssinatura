@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Login from "@/pages/login-aprimorado";
 import AdminDashboard from "@/pages/dashboard-melhorado";
 import Barbeiros from "@/pages/barbeiros";
-import Profissionais from "@/pages/profissionais";
+import Profissionais from "@/pages/profissionais-novo";
 import Clientes from "@/pages/clientes";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
