@@ -12,8 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserCheck, Calendar, DollarSign, RefreshCw, ExternalLink, CreditCard, Filter } from "lucide-react";
+import { UserCheck, Calendar, DollarSign, RefreshCw, ExternalLink, CreditCard, Filter, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ClienteUnificado {
@@ -44,6 +45,7 @@ interface ClientesStats {
 
 export default function Clientes() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [filtroOrigem, setFiltroOrigem] = useState<'todos' | 'asaas' | 'externo'>('todos');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
@@ -152,6 +154,15 @@ export default function Clientes() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-semibold">Voltar</span>
+          </button>
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Clientes Ativos</h2>
