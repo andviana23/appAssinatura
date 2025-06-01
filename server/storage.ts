@@ -10,6 +10,7 @@ import {
   servicos,
   planosAssinatura,
   clientes,
+  clientesExternos,
   distribuicoes,
   distribuicaoItens,
   comissoes,
@@ -27,6 +28,8 @@ import {
   type InsertPlanoAssinatura,
   type Cliente,
   type InsertCliente,
+  type ClienteExterno,
+  type InsertClienteExterno,
   type Distribuicao,
   type InsertDistribuicao,
   type DistribuicaoItem,
@@ -93,16 +96,40 @@ export interface IStorage {
   updatePlano(id: number, plano: Partial<InsertPlanoAssinatura>): Promise<PlanoAssinatura>;
   deletePlano(id: number): Promise<void>;
 
-  // Clientes
+  // Clientes Asaas
   getAllClientes(): Promise<Cliente[]>;
   getClienteById(id: number): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: Partial<InsertCliente>): Promise<Cliente>;
+  
+  // Clientes Externos
+  getAllClientesExternos(): Promise<ClienteExterno[]>;
+  getClienteExternoById(id: number): Promise<ClienteExterno | undefined>;
+  createClienteExterno(cliente: InsertClienteExterno): Promise<ClienteExterno>;
+  updateClienteExterno(id: number, cliente: Partial<InsertClienteExterno>): Promise<ClienteExterno>;
+  
+  // Unificado - todos os clientes
   getClientesUnifiedStats(): Promise<{
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
   }>;
+  
+  getAllClientesUnified(): Promise<Array<{
+    id: number;
+    nome: string;
+    email: string;
+    telefone: string | null;
+    cpf: string | null;
+    planoNome: string | null;
+    planoValor: string | null;
+    formaPagamento: string | null;
+    statusAssinatura: string | null;
+    dataInicioAssinatura: Date | null;
+    dataVencimentoAssinatura: Date | null;
+    origem: 'ASAAS' | 'EXTERNO';
+    createdAt: Date;
+  }>>;
 
   // Distribuições
   getAllDistribuicoes(): Promise<Distribuicao[]>;
@@ -386,25 +413,110 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  // ===== CLIENTES EXTERNOS =====
+  async getAllClientesExternos(): Promise<ClienteExterno[]> {
+    return await db.select().from(clientesExternos).orderBy(desc(clientesExternos.createdAt));
+  }
+
+  async getClienteExternoById(id: number): Promise<ClienteExterno | undefined> {
+    const [cliente] = await db.select().from(clientesExternos).where(eq(clientesExternos.id, id));
+    return cliente;
+  }
+
+  async createClienteExterno(cliente: InsertClienteExterno): Promise<ClienteExterno> {
+    const [created] = await db.insert(clientesExternos).values(cliente).returning();
+    return created;
+  }
+
+  async updateClienteExterno(id: number, cliente: Partial<InsertClienteExterno>): Promise<ClienteExterno> {
+    const [updated] = await db
+      .update(clientesExternos)
+      .set(cliente)
+      .where(eq(clientesExternos.id, id))
+      .returning();
+    return updated;
+  }
+
+  // ===== CLIENTES UNIFICADOS =====
+  async getAllClientesUnified(): Promise<Array<{
+    id: number;
+    nome: string;
+    email: string;
+    telefone: string | null;
+    cpf: string | null;
+    planoNome: string | null;
+    planoValor: string | null;
+    formaPagamento: string | null;
+    statusAssinatura: string | null;
+    dataInicioAssinatura: Date | null;
+    dataVencimentoAssinatura: Date | null;
+    origem: 'ASAAS' | 'EXTERNO';
+    createdAt: Date;
+  }>> {
+    // Buscar clientes Asaas
+    const clientesAsaas = await this.getAllClientes();
+    
+    // Buscar clientes externos
+    const clientesExternosData = await this.getAllClientesExternos();
+    
+    // Unificar os dados
+    const clientesUnificados = [
+      ...clientesAsaas.map(cliente => ({
+        id: cliente.id,
+        nome: cliente.nome,
+        email: cliente.email,
+        telefone: cliente.telefone,
+        cpf: cliente.cpf,
+        planoNome: cliente.planoNome,
+        planoValor: cliente.planoValor,
+        formaPagamento: cliente.formaPagamento,
+        statusAssinatura: cliente.statusAssinatura,
+        dataInicioAssinatura: cliente.dataInicioAssinatura,
+        dataVencimentoAssinatura: cliente.dataVencimentoAssinatura,
+        origem: 'ASAAS' as const,
+        createdAt: cliente.createdAt,
+      })),
+      ...clientesExternosData.map(cliente => ({
+        id: cliente.id,
+        nome: cliente.nome,
+        email: cliente.email,
+        telefone: cliente.telefone,
+        cpf: cliente.cpf,
+        planoNome: cliente.planoNome,
+        planoValor: cliente.planoValor,
+        formaPagamento: cliente.formaPagamento,
+        statusAssinatura: cliente.statusAssinatura,
+        dataInicioAssinatura: cliente.dataInicioAssinatura,
+        dataVencimentoAssinatura: cliente.dataVencimentoAssinatura,
+        origem: 'EXTERNO' as const,
+        createdAt: cliente.createdAt,
+      }))
+    ];
+
+    // Ordenar por data de criação (mais recentes primeiro)
+    return clientesUnificados.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async getClientesUnifiedStats(): Promise<{
     totalActiveClients: number;
     totalSubscriptionRevenue: number;
     totalExpiringSubscriptions: number;
   }> {
-    const allClientes = await this.getAllClientes();
+    // Usar o método unificado para pegar todos os clientes
+    const allClientes = await this.getAllClientesUnified();
     
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
     
-    // Clientes ativos (que pagaram no mês atual)
+    // Clientes ativos = status ATIVO e dentro da validade
     const activeClientes = allClientes.filter(cliente => {
-      if (!cliente.dataInicioAssinatura) return false;
-      const dataPagamento = new Date(cliente.dataInicioAssinatura);
-      const paymentMonth = dataPagamento.toISOString().slice(0, 7);
-      return paymentMonth === currentMonth && cliente.statusAssinatura === 'ATIVA';
+      if (cliente.statusAssinatura !== 'ATIVO') return false;
+      if (!cliente.dataVencimentoAssinatura) return false;
+      
+      const vencimento = new Date(cliente.dataVencimentoAssinatura);
+      return vencimento >= now; // Ainda não venceu
     });
     
-    // Receita total de assinatura
+    // Receita total de assinatura (apenas clientes ativos)
     const totalSubscriptionRevenue = activeClientes.reduce((total, cliente) => {
       if (!cliente.planoValor) return total;
       return total + parseFloat(cliente.planoValor.toString());
@@ -414,7 +526,7 @@ export class DatabaseStorage implements IStorage {
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
     
-    const expiringClientes = allClientes.filter(cliente => {
+    const expiringClientes = activeClientes.filter(cliente => {
       if (!cliente.dataVencimentoAssinatura) return false;
       const validadeDate = new Date(cliente.dataVencimentoAssinatura);
       return validadeDate >= now && validadeDate <= nextWeek;

@@ -594,6 +594,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== ROTAS DE CLIENTES UNIFICADOS =====
+  // Lista todos os clientes (Asaas + Externos) de forma unificada
+  app.get("/api/clientes-unified", requireAuth, async (req, res) => {
+    try {
+      const clientesUnificados = await storage.getAllClientesUnified();
+      res.json(clientesUnificados);
+    } catch (error) {
+      console.error("Erro ao buscar clientes unificados:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Stats unificados (para Dashboard)
+  app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = await storage.getClientesUnifiedStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas de clientes:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ===== ROTAS ESPECÍFICAS PARA CLIENTES EXTERNOS =====
+  // Lista apenas clientes externos
+  app.get("/api/clientes-externos", requireAuth, async (req, res) => {
+    try {
+      const clientesExternos = await storage.getAllClientesExternos();
+      res.json(clientesExternos);
+    } catch (error) {
+      console.error("Erro ao buscar clientes externos:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Buscar cliente externo por ID
+  app.get("/api/clientes-externos/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const cliente = await storage.getClienteExternoById(id);
+      
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente externo não encontrado" });
+      }
+      
+      res.json(cliente);
+    } catch (error) {
+      console.error("Erro ao buscar cliente externo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Atualizar cliente externo
+  app.put("/api/clientes-externos/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const cliente = await storage.updateClienteExterno(id, req.body);
+      res.json(cliente);
+    } catch (error) {
+      console.error("Erro ao atualizar cliente externo:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   // Total de Serviços routes (Controle Admin)
   app.get("/api/total-servicos/:mes", requireAdmin, async (req, res) => {
     try {
