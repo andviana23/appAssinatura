@@ -59,7 +59,7 @@ function AuthenticatedRoutes() {
         <Switch>
           <Route path="/" component={BarbeiroDashboard} />
           <Route path="/barbeiro" component={BarbeiroDashboard} />
-          <Route path="/lista-da-vez" component={ListaDaVezBarbeiro} />
+          <Route path="/lista-da-vez" component={ListaDaVez} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
@@ -79,7 +79,7 @@ function AuthenticatedRoutes() {
           <Route path="/agendamento" component={Agendamento} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/planos" component={Planos} />
-          <Route path="/lista-da-vez" component={ListaDaVezRecepcionista} />
+          <Route path="/lista-da-vez" component={ListaDaVez} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route>
             <Redirect to="/" />
