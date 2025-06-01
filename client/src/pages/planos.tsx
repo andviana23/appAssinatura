@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube, Banknote, QrCode } from "lucide-react";
+import { ExternalLink, CreditCard, Sparkles, RefreshCw, TestTube, Banknote, QrCode, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { useState } from "react";
 
 interface PlanoAsaas {
@@ -25,6 +26,7 @@ interface PlanoAsaas {
 
 export default function Planos() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showExternalPaymentModal, setShowExternalPaymentModal] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
@@ -208,6 +210,15 @@ export default function Planos() {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-semibold">Voltar</span>
+          </button>
+        </div>
         <h2 className="text-3xl font-bold text-foreground">Planos de Assinatura</h2>
         <p className="text-muted-foreground mt-2">
           Escolha o plano ideal para suas necessidades. Todos os planos incluem agendamento prioritário.

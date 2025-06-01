@@ -365,34 +365,11 @@ export default function Agendamento() {
             </button>
           </div>
           
-          {/* Agenda por Categorias - Como na imagem */}
+          {/* Informações da Data Selecionada */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-bold text-gray-700 mb-2">Agenda por Categorias</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-2">Data Selecionada</h3>
             <div className="text-xs text-center text-gray-500 mb-3">
-              {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
-            </div>
-            
-            {/* Mini calendário adicional */}
-            <div className="grid grid-cols-7 gap-1 text-xs mb-3">
-              {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map(day => (
-                <div key={day} className="p-1 text-center font-medium text-gray-400">{day}</div>
-              ))}
-            </div>
-            
-            <div className="grid grid-cols-7 gap-1 mb-4">
-              {daysInMonth.map(date => (
-                <button
-                  key={date.toISOString()}
-                  onClick={() => selectCalendarDate(date)}
-                  className={`
-                    p-1 text-xs rounded text-center
-                    ${isSameDay(date, selectedDate) ? 'bg-[#1e3a8a] text-white' : 'hover:bg-gray-100'}
-                    ${isToday(date) ? 'font-bold' : ''}
-                  `}
-                >
-                  {format(date, "d")}
-                </button>
-              ))}
+              {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
             </div>
             
             <div className="space-y-2">

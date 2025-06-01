@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, RotateCcw, UserPlus, Trash2 } from "lucide-react";
+import { Calendar, Plus, RotateCcw, UserPlus, Trash2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import dayjs from "dayjs";
 
 export default function ListaDaVez() {
   const { toast } = useToast();
   const { isAdmin, isRecepcionista } = useAuth();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [mesAtual] = useState(dayjs().format("YYYY-MM"));
   const [barbeiroSelecionado, setBarbeiroSelecionado] = useState<string>("");
 
@@ -193,9 +195,18 @@ export default function ListaDaVez() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
-            <p className="text-gray-600 mt-1">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-colors bg-[#365e78]/10 rounded-xl px-4 py-2 hover:bg-[#365e78]/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-semibold">Voltar</span>
+            </button>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Lista da Vez - Atendimento Mensal</h1>
+              <p className="text-gray-600 mt-1">Controle de atendimentos mensais para organizar a ordem de atendimento</p>
+            </div>
           </div>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
             <div className="flex items-center space-x-4 text-sm text-gray-500">
