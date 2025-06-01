@@ -859,8 +859,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const dataValidade = new Date(dataPagamento);
                   dataValidade.setDate(dataValidade.getDate() + 30);
                   
+                  // Verificar se o cliente já existe no banco local
+                  let clienteLocal = null;
+                  try {
+                    const clientesExistentes = await storage.getAllClientes();
+                    clienteLocal = clientesExistentes.find(c => c.asaasCustomerId === payment.customer);
+                    
+                    if (!clienteLocal) {
+                      // Criar cliente no banco local
+                      clienteLocal = await storage.createCliente({
+                        nome: customer.name,
+                        email: customer.email,
+                        telefone: customer.phone,
+                        cpf: customer.cpfCnpj,
+                        asaasCustomerId: payment.customer,
+                        planoNome: payment.description || 'Cobrança Asaas',
+                        planoValor: payment.value.toString(),
+                        formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                       payment.billingType === 'PIX' ? 'PIX' : 
+                                       payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                        statusAssinatura: 'ATIVO',
+                        dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
+                        dataVencimentoAssinatura: dataValidade
+                      });
+                    } else {
+                      // Atualizar data de vencimento se necessário
+                      if (!clienteLocal.dataVencimentoAssinatura || new Date(clienteLocal.dataVencimentoAssinatura) < dataValidade) {
+                        await storage.updateCliente(clienteLocal.id, {
+                          dataVencimentoAssinatura: dataValidade,
+                          statusAssinatura: 'ATIVO'
+                        });
+                        clienteLocal.dataVencimentoAssinatura = dataValidade;
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Erro ao sincronizar cliente:', error);
+                  }
+                  
                   clientesUnicos.set(payment.customer, {
-                    id: `asaas_${payment.customer}`,
+                    id: clienteLocal ? clienteLocal.id : `asaas_${payment.customer}`,
                     nome: customer.name,
                     email: customer.email,
                     telefone: customer.phone,
@@ -874,7 +911,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     dataValidade: dataValidade.toISOString(),
                     status: 'ATIVO',
                     origem: 'ASAAS',
-                    billingType: payment.billingType
+                    billingType: payment.billingType,
+                    clienteLocalId: clienteLocal ? clienteLocal.id : null
                   });
                 }
               }
