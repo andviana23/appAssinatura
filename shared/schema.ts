@@ -31,21 +31,37 @@ export const planosAssinatura = pgTable("planos_assinatura", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Cliente table
+// Cliente ASAAS table (apenas clientes vindos do Asaas)
 export const clientes = pgTable("clientes", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   email: text("email").notNull(),
   telefone: text("telefone"),
   cpf: text("cpf"),
-  asaasCustomerId: text("asaas_customer_id"),
+  asaasCustomerId: text("asaas_customer_id").notNull(), // Obrigatório para clientes Asaas
   // Campos para controle de assinaturas
   planoNome: text("plano_nome"),
   planoValor: decimal("plano_valor", { precision: 10, scale: 2 }),
-  formaPagamento: text("forma_pagamento"), // PIX, Débito, CREDIT_CARD
-  statusAssinatura: text("status_assinatura").default("INATIVO"), // ATIVO, INATIVO
+  formaPagamento: text("forma_pagamento"), // CREDIT_CARD, BOLETO, PIX
+  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO
   dataInicioAssinatura: timestamp("data_inicio_assinatura"),
   dataVencimentoAssinatura: timestamp("data_vencimento_assinatura"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Cliente EXTERNO table (pagamentos PIX/Cartão no próprio sistema)
+export const clientesExternos = pgTable("clientes_externos", {
+  id: serial("id").primaryKey(),
+  nome: text("nome").notNull(),
+  email: text("email").notNull(),
+  telefone: text("telefone"),
+  cpf: text("cpf"),
+  planoNome: text("plano_nome").notNull(),
+  planoValor: decimal("plano_valor", { precision: 10, scale: 2 }).notNull(),
+  formaPagamento: text("forma_pagamento").notNull(), // PIX, Cartão Débito, Dinheiro
+  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO
+  dataInicioAssinatura: timestamp("data_inicio_assinatura").notNull(),
+  dataVencimentoAssinatura: timestamp("data_vencimento_assinatura").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -170,6 +186,11 @@ export const insertClienteSchema = createInsertSchema(clientes).omit({
   createdAt: true,
 });
 
+export const insertClienteExternoSchema = createInsertSchema(clientesExternos).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertDistribuicaoSchema = createInsertSchema(distribuicoes).omit({
   id: true,
   createdAt: true,
@@ -242,6 +263,9 @@ export type InsertPlanoAssinatura = z.infer<typeof insertPlanoAssinaturaSchema>;
 
 export type Cliente = typeof clientes.$inferSelect;
 export type InsertCliente = z.infer<typeof insertClienteSchema>;
+
+export type ClienteExterno = typeof clientesExternos.$inferSelect;
+export type InsertClienteExterno = z.infer<typeof insertClienteExternoSchema>;
 
 export type Distribuicao = typeof distribuicoes.$inferSelect;
 export type InsertDistribuicao = z.infer<typeof insertDistribuicaoSchema>;

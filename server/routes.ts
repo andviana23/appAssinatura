@@ -1483,7 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dataVencimento = new Date();
       dataVencimento.setDate(dataVencimento.getDate() + 30);
 
-      const cliente = await storage.createCliente({
+      const cliente = await storage.createClienteExterno({
         nome,
         email,
         cpf: cpf || null,
