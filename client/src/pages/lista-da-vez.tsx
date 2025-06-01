@@ -277,6 +277,51 @@ export default function ListaDaVez() {
           </div>
         </div>
 
+        {/* Estatísticas Resumidas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-lg">
+                  <UserCheck className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total de Barbeiros</p>
+                  <p className="text-2xl font-bold text-[#365e78]">{totalBarbeiros}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total de Atendimentos</p>
+                  <p className="text-2xl font-bold text-green-600">{totalAtendimentos}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <RotateCcw className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Média por Barbeiro</p>
+                  <p className="text-2xl font-bold text-orange-600">{mediaAtendimentos}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Tabela de Atendimento Mensal */}
         <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-lg">
@@ -288,29 +333,37 @@ export default function ListaDaVez() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               {/* Header da tabela */}
-              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gray-50 border-b font-semibold text-gray-700 text-sm">
-                <div>Barbeiro</div>
-                <div className="text-center">Ranking</div>
-                <div className="text-center">Total de Atendimentos</div>
-                <div className="text-center">Vezes que Passou</div>
+              <div className="hidden lg:grid lg:grid-cols-5 gap-6 p-6 bg-gradient-to-r from-[#365e78]/5 to-[#2a4a5e]/5 border-b-2 border-[#365e78]/10 font-bold text-[#365e78] text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Barbeiro
+                </div>
+                <div className="text-center">Posição</div>
+                <div className="text-center">Atendimentos</div>
+                <div className="text-center">Passou a Vez</div>
                 <div className="text-center">Ações</div>
               </div>
 
               {/* Linhas da tabela - Desktop */}
               <div className="hidden lg:block divide-y divide-gray-100">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-gray-50 transition-colors items-center">
+                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-6 p-6 hover:bg-[#365e78]/5 transition-all duration-200 items-center group">
                     {/* Barbeiro */}
-                    <div>
-                      <div className="font-semibold text-gray-900 text-sm">{item.barbeiro.nome}</div>
-                      <div className="text-xs text-gray-500 truncate">{item.barbeiro.email}</div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-md">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900 text-sm">{item.barbeiro.nome}</div>
+                        <div className="text-xs text-gray-500 truncate">{item.barbeiro.email}</div>
+                      </div>
                     </div>
 
                     {/* Ranking */}
                     <div className="text-center">
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs`}
+                        className={`${getPositionBadge(item.posicaoMensal)} px-3 py-1 font-bold text-sm shadow-lg`}
                       >
                         {item.posicaoMensal}º
                       </Badge>
@@ -318,35 +371,41 @@ export default function ListaDaVez() {
 
                     {/* Total de Atendimentos */}
                     <div className="text-center">
-                      <span className="text-lg font-bold text-gray-900">{item.totalAtendimentosMes}</span>
+                      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
+                        <span className="text-2xl font-bold text-[#365e78]">{item.totalAtendimentosMes}</span>
+                        <div className="text-xs text-gray-500 mt-1">total</div>
+                      </div>
                     </div>
 
                     {/* Vezes que Passou */}
                     <div className="text-center">
-                      <span className="text-lg font-bold text-gray-600">{item.diasPassouAVez}</span>
+                      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
+                        <span className="text-2xl font-bold text-orange-600">{item.diasPassouAVez}</span>
+                        <div className="text-xs text-gray-500 mt-1">vezes</div>
+                      </div>
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-3">
                       {(isAdmin || isRecepcionista) && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white text-xs px-3 py-1 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+                            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                             onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                             disabled={adicionarAtendimento.isPending}
                           >
-                            <Plus className="h-3 w-3 mr-1" />
+                            <Plus className="h-4 w-4 mr-2" />
                             Cliente
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 text-xs px-3 py-1 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+                            className="border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                             onClick={() => passarVez.mutate(item.barbeiro.id)}
                             disabled={passarVez.isPending}
                           >
-                            <RotateCcw className="h-3 w-3 mr-1" />
+                            <RotateCcw className="h-4 w-4 mr-2" />
                             Passar
                           </Button>
                         </>
@@ -357,52 +416,57 @@ export default function ListaDaVez() {
               </div>
 
               {/* Versão Mobile - Cards */}
-              <div className="lg:hidden space-y-4 p-4">
+              <div className="lg:hidden space-y-6 p-6">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900">{item.barbeiro.nome}</div>
-                        <div className="text-sm text-gray-500 truncate">{item.barbeiro.email}</div>
+                  <div key={item.barbeiro.id} className="bg-white/90 backdrop-blur-sm border-0 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-lg">
+                          <User className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 text-lg">{item.barbeiro.nome}</div>
+                          <div className="text-sm text-gray-500 truncate">{item.barbeiro.email}</div>
+                        </div>
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs ml-2`}
+                        className={`${getPositionBadge(item.posicaoMensal)} px-3 py-2 font-bold shadow-lg`}
                       >
-                        {item.posicaoMensal}º lugar
+                        {item.posicaoMensal}º
                       </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-gray-900">{item.totalAtendimentosMes}</div>
-                        <div className="text-xs text-gray-500">Atendimentos</div>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="text-center bg-gradient-to-br from-[#365e78]/5 to-[#2a4a5e]/5 rounded-xl p-4 border border-[#365e78]/10">
+                        <div className="text-2xl font-bold text-[#365e78]">{item.totalAtendimentosMes}</div>
+                        <div className="text-xs text-gray-500 mt-1">Atendimentos</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-gray-600">{item.diasPassouAVez}</div>
-                        <div className="text-xs text-gray-500">Passou a Vez</div>
+                      <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+                        <div className="text-2xl font-bold text-orange-600">{item.diasPassouAVez}</div>
+                        <div className="text-xs text-gray-500 mt-1">Passou a Vez</div>
                       </div>
                     </div>
 
                     {(isAdmin || isRecepcionista) && (
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-3">
                         <Button
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 flex-1"
+                          className="flex-1 bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white py-3 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                           onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                           disabled={adicionarAtendimento.isPending}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
+                          <Plus className="h-4 w-4 mr-2" />
                           Adicionar Cliente
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-orange-300 text-orange-600 hover:bg-orange-50 flex-1"
+                          className="flex-1 border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 py-3 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                           onClick={() => passarVez.mutate(item.barbeiro.id)}
                           disabled={passarVez.isPending}
                         >
-                          <RotateCcw className="h-4 w-4 mr-1" />
+                          <RotateCcw className="h-4 w-4 mr-2" />
                           Passar Vez
                         </Button>
                       </div>
