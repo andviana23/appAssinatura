@@ -2455,10 +2455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { mes, dia } = req.query;
       const mesAtual = mes || format(new Date(), 'yyyy-MM');
       
-      // Buscar agendamentos do período
+      // Buscar agendamentos finalizados do período
       const agendamentos = await storage.getAllAgendamentos();
       let agendamentosFiltrados = agendamentos.filter(a => 
-        a.status === 'finalizado' && 
+        a.status === 'FINALIZADO' && 
         format(new Date(a.dataHora), 'yyyy-MM') === mesAtual
       );
 
@@ -2469,25 +2469,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Calcular KPIs
+      console.log(`Agendamentos filtrados para KPIs: ${agendamentosFiltrados.length} encontrados`);
+
+      // Buscar estatísticas de clientes unificadas para receita real
+      const clientesStats = await storage.getClientesUnifiedStats();
+      
+      // Calcular KPIs com dados reais
       const totalAtendimentos = agendamentosFiltrados.length;
+      
+      // Receita real das assinaturas (dados reais)
+      const receitaTotal = clientesStats.totalSubscriptionRevenue || 0;
+      
+      // Ticket médio baseado em receita real
+      const ticketMedio = clientesStats.totalActiveClients > 0 ? 
+        receitaTotal / clientesStats.totalActiveClients : 0;
+
+      // Tempo médio por atendimento
       const tempoTotalMinutos = agendamentosFiltrados.reduce((sum, a) => {
         return sum + (a.servico?.tempoMinutos || 30);
       }, 0);
+      
       const tempoMedioPorAtendimento = totalAtendimentos > 0 ? 
         Math.round(tempoTotalMinutos / totalAtendimentos) : 0;
 
-      // Receita estimada baseada no tempo de serviço (R$ 2,00 por minuto como base)
-      const receitaTotal = tempoTotalMinutos * 2;
+      // Buscar assinaturas vencidas
+      const assinaturasVencidas = clientesStats.totalExpiringSubscriptions || 0;
 
-      const ticketMedio = totalAtendimentos > 0 ? receitaTotal / totalAtendimentos : 0;
+      console.log(`KPIs calculados: totalAtendimentos=${totalAtendimentos}, receitaTotal=${receitaTotal}, ticketMedio=${ticketMedio}`);
 
       res.json({
         totalAtendimentos,
         receitaTotal,
         ticketMedio,
         tempoMedioPorAtendimento,
-        tempoTotalMinutos
+        tempoTotalMinutos,
+        assinaturasVencidas
       });
     } catch (error: any) {
       console.error('Erro ao buscar KPIs do dashboard:', error);
@@ -2597,52 +2613,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/clientes/unified-stats - Estatísticas unificadas de clientes
   app.get('/api/clientes/unified-stats', requireAuth, async (req, res) => {
     try {
-      // Buscar todos os clientes
-      const clientesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/clientes/all`, {
-        headers: {
-          'Cookie': req.headers.cookie || ''
-        }
-      });
+      let totalActiveClients = 0;
+      let totalSubscriptionRevenue = 0;
+      let newClientsThisMonth = 0;
+      let totalExternalClients = 0;
+      let totalAsaasClients = 0;
+      let overdueClients = 0;
+      
+      const hoje = new Date();
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const currentMonth = hoje.toISOString().slice(0, 7);
 
-      let clientes = [];
-      if (clientesResponse.ok) {
-        clientes = await clientesResponse.json();
+      // Buscar todos os clientes locais (inclui sincronizados do Asaas)
+      const clientesLocais = await storage.getAllClientes();
+      
+      // Set para evitar duplicação de clientes Asaas já sincronizados
+      const clientesAsaasProcessados = new Set();
+
+      // Processar clientes locais
+      for (const cliente of clientesLocais) {
+        // Se tem asaasCustomerId, marcar como processado
+        if (cliente.asaasCustomerId) {
+          clientesAsaasProcessados.add(cliente.asaasCustomerId);
+        }
+
+        // Verificar se está ativo
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const isActive = validade >= hoje;
+          const isOverdue = validade < hoje;
+          
+          if (isActive) {
+            totalActiveClients++;
+            totalSubscriptionRevenue += parseFloat(cliente.planoValor?.toString() || '0');
+            
+            // Classificar origem
+            if (cliente.asaasCustomerId) {
+              totalAsaasClients++;
+            } else {
+              totalExternalClients++;
+            }
+          } else if (isOverdue) {
+            overdueClients++;
+          }
+          
+          // Verificar se é cliente novo do mês
+          const dataInicio = new Date(cliente.dataInicioAssinatura || cliente.createdAt);
+          if (dataInicio >= inicioMes) {
+            newClientsThisMonth++;
+          }
+        }
       }
 
-      // Calcular estatísticas
-      const totalClients = clientes.length;
-      const totalActiveClients = clientes.filter((c: any) => c.status === 'ATIVO').length;
-      const totalInactiveClients = clientes.filter((c: any) => c.status !== 'ATIVO').length;
-      const totalAsaasClients = clientes.filter((c: any) => c.origem === 'ASAAS').length;
-      const totalExternalClients = clientes.filter((c: any) => c.origem === 'EXTERNO').length;
-      const overdueClients = clientes.filter((c: any) => c.status === 'VENCIDO').length;
+      // Buscar dados adicionais do Asaas para pagamentos do mês atual
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      if (asaasApiKey) {
+        try {
+          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://api.asaas.com/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
 
-      // Calcular receita APENAS de serviços PAGOS no mês atual
-      const agendamentos = await storage.getAllAgendamentos();
-      const mesAtual = new Date().toISOString().slice(0, 7);
-      const agendamentosFinalizados = agendamentos.filter(a => 
-        a.status === 'finalizado' && 
-        a.dataHora.toISOString().slice(0, 7) === mesAtual
-      );
+          // Buscar pagamentos confirmados do mês atual
+          const inicioMesStr = inicioMes.toISOString().split('T')[0];
+          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+          const fimMesStr = fimMes.toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(
+            `${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMesStr}&receivedInCashDate[le]=${fimMesStr}&limit=100`, 
+            {
+              headers: {
+                'access_token': asaasApiKey,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
 
-      // Receita baseada nos serviços realmente finalizados
-      const monthlyPaidServicesRevenue = agendamentosFinalizados.reduce((total, agendamento) => {
-        // Assumindo valor médio de R$ 60 por serviço finalizado
-        return total + 60;
-      }, 0);
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            
+            // Processar pagamentos que não foram sincronizados ainda
+            for (const payment of paymentsData.data || []) {
+              if (payment.subscription && !clientesAsaasProcessados.has(payment.customer)) {
+                totalAsaasClients++;
+                totalActiveClients++;
+                totalSubscriptionRevenue += parseFloat(payment.value || '0');
+                clientesAsaasProcessados.add(payment.customer);
+              }
+            }
+          }
+        } catch (asaasError) {
+          console.error("Erro ao conectar com Asaas:", asaasError);
+        }
+      }
 
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const newClientsThisMonth = clientes.filter((c: any) => {
-        const dataInicio = new Date(c.dataInicio);
-        return dataInicio.getMonth() === currentMonth && dataInicio.getFullYear() === currentYear;
-      }).length;
+      console.log(`Estatísticas calculadas: totalActiveClients=${totalActiveClients}, totalSubscriptionRevenue=${totalSubscriptionRevenue}`);
 
       res.json({
-        totalClients,
         totalActiveClients,
-        totalInactiveClients,
-        monthlyPaidServicesRevenue,
+        totalInactiveClients: overdueClients,
+        totalClients: totalActiveClients + overdueClients,
+        totalSubscriptionRevenue,
+        totalMonthlyRevenue: totalSubscriptionRevenue, // Alias para compatibilidade
         newClientsThisMonth,
         overdueClients,
         totalExternalClients,
