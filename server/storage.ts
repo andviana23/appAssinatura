@@ -854,38 +854,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrUpdateAtendimentoDiario(atendimento: InsertAtendimentoDiario): Promise<AtendimentoDiario> {
-    // Verifica se já existe registro para o barbeiro na data
-    const existing = await db
-      .select()
-      .from(atendimentosDiarios)
-      .where(
-        and(
-          eq(atendimentosDiarios.barbeiroId, atendimento.barbeiroId),
-          eq(atendimentosDiarios.data, atendimento.data),
-          eq(atendimentosDiarios.mesAno, atendimento.mesAno)
-        )
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      // Atualiza o registro existente
-      const [updated] = await db
-        .update(atendimentosDiarios)
-        .set({
-          tipoAtendimento: atendimento.tipoAtendimento,
-          updatedAt: new Date()
-        })
-        .where(eq(atendimentosDiarios.id, existing[0].id))
-        .returning();
-      return updated;
-    } else {
-      // Cria novo registro
-      const [created] = await db
-        .insert(atendimentosDiarios)
-        .values(atendimento)
-        .returning();
-      return created;
-    }
+    // Sempre criar novo registro para permitir múltiplos atendimentos por barbeiro por dia
+    const [created] = await db
+      .insert(atendimentosDiarios)
+      .values(atendimento)
+      .returning();
+    return created;
   }
 
   async getFilaMensal(mesAno: string): Promise<Array<{
