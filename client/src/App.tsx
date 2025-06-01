@@ -72,20 +72,18 @@ function AuthenticatedRoutes() {
   // Verificar se é recepcionista
   if (isRecepcionista) {
     return (
-      <Layout>
-        <Switch>
-          <Route path="/" component={RecepcionistaDashboard} />
-          <Route path="/recepcionista" component={RecepcionistaDashboard} />
-          <Route path="/agendamento" component={Agendamento} />
-          <Route path="/clientes" component={Clientes} />
-          <Route path="/planos" component={Planos} />
-          <Route path="/lista-da-vez" component={ListaDaVez} />
-          <Route path="/configuracoes" component={Configuracoes} />
-          <Route>
-            <Redirect to="/" />
-          </Route>
-        </Switch>
-      </Layout>
+      <Switch>
+        <Route path="/" component={RecepcionistaDashboard} />
+        <Route path="/recepcionista-dashboard" component={RecepcionistaDashboard} />
+        <Route path="/agendamento" component={Agendamento} />
+        <Route path="/clientes" component={Clientes} />
+        <Route path="/planos" component={Planos} />
+        <Route path="/lista-da-vez" component={ListaDaVez} />
+        <Route path="/configuracoes" component={Configuracoes} />
+        <Route>
+          <Redirect to="/" />
+        </Route>
+      </Switch>
     );
   }
 
