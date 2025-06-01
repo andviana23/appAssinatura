@@ -1469,6 +1469,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
       }
 
+      // Validação crítica: valor do plano nunca pode ser zero ou negativo
+      const valorNumerico = parseFloat(valorMensal);
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        return res.status(400).json({ 
+          message: `Valor do plano inválido: ${valorMensal}. Deve ser um número maior que zero.` 
+        });
+      }
+
       // Data de início: agora
       const dataInicio = new Date();
       // Data de vencimento: 30 dias corridos
@@ -1481,14 +1489,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cpf: cpf || null,
         telefone: telefone || null,
         planoNome,
-        planoValor: valorMensal.toString(),
+        planoValor: valorNumerico.toFixed(2), // Garantir formato correto
         formaPagamento,
         statusAssinatura: 'ATIVO',
         dataInicioAssinatura: dataInicio,
         dataVencimentoAssinatura: dataVencimento,
       });
 
-      console.log(`Cliente externo criado: ${nome}, valor: ${valorMensal}, plano: ${planoNome}`);
+      console.log(`Cliente externo criado: ${nome}, valor: R$ ${valorNumerico.toFixed(2)}, plano: ${planoNome}, pagamento: ${formaPagamento}`);
 
       res.json({
         success: true,

@@ -196,6 +196,17 @@ export default function Planos() {
 
   const createExternalClientMutation = useMutation({
     mutationFn: async (paymentMethod: string) => {
+      // Buscar o valor correto do plano selecionado
+      const planoSelecionado = getFilteredPlanos().find(p => p.nome === checkoutData.planoSelecionado);
+      const valorPlano = planoSelecionado?.valor;
+      
+      // Validação crítica: nunca permitir valor zero
+      if (!valorPlano || valorPlano <= 0) {
+        throw new Error(`Erro: Valor do plano "${checkoutData.planoSelecionado}" não encontrado ou inválido`);
+      }
+      
+      console.log(`Criando cliente externo: ${checkoutData.nome}, plano: ${checkoutData.planoSelecionado}, valor: ${valorPlano}`);
+      
       const response = await apiRequest("/api/clientes/external", "POST", {
         nome: checkoutData.nome,
         email: checkoutData.email,
@@ -203,7 +214,7 @@ export default function Planos() {
         cpf: checkoutData.cpf,
         planoNome: checkoutData.planoSelecionado,
         formaPagamento: paymentMethod,
-        valorMensal: getFilteredPlanos().find(p => p.nome === checkoutData.planoSelecionado)?.valor || 0
+        valorMensal: valorPlano
       });
       return response.json();
     },
