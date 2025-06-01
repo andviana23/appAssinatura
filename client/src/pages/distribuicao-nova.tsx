@@ -65,6 +65,17 @@ export default function DistribuicaoNova() {
     }
   });
 
+  // Buscar receita de assinaturas da mesma fonte que a página de clientes
+  const [ano, mes] = mesSelecionado.split('-');
+  const { data: receitaAssinaturas } = useQuery({
+    queryKey: ['/api/clientes-unified/stats', mes, ano],
+    queryFn: async () => {
+      const response = await fetch(`/api/clientes-unified/stats?mes=${mes}&ano=${ano}`);
+      if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+      return response.json();
+    }
+  });
+
   const formatHours = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -200,9 +211,9 @@ export default function DistribuicaoNova() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-[#365e78]">
-                {formatCurrency(servicosData?.receitaTotalServicos || 0)}
+                {formatCurrency(receitaAssinaturas?.totalSubscriptionRevenue || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Receita dos serviços finalizados</p>
+              <p className="text-xs text-gray-500 mt-1">Receita de assinaturas do mês</p>
             </CardContent>
           </Card>
 
