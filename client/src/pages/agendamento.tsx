@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import AgendaLateral from "@/components/agenda-lateral";
 import { useLocation } from "wouter";
 
 interface Agendamento {
@@ -670,17 +669,7 @@ export default function Agendamento() {
         </DialogContent>
       </Dialog>
       
-      {/* Agenda Lateral */}
-      <div className="w-80">
-        <AgendaLateral
-          agendamentos={Array.isArray(agendamentos) ? agendamentos.map((agendamento: Agendamento) => ({
-            data: format(new Date(agendamento.dataHora), "yyyy-MM-dd")
-          })) : []}
-          onDataSelecionada={(data) => {
-            setSelectedDate(data);
-          }}
-        />
-      </div>
+
 
       {/* Modal da Comanda */}
       <Dialog open={isComandaOpen} onOpenChange={setIsComandaOpen}>
