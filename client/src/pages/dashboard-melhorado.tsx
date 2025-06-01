@@ -132,7 +132,7 @@ export default function DashboardMelhorado() {
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto">
       {/* Header com Filtros */}
-      <div className="bg-gradient-to-r from-[#8B4513] to-[#A0522D] rounded-2xl p-6 shadow-xl">
+      <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl p-6 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Dashboard Executivo</h1>
@@ -181,7 +181,7 @@ export default function DashboardMelhorado() {
                 setSelectedMonth(format(new Date(), "yyyy-MM"));
                 setSelectedDay("");
               }}
-              className="bg-yellow-500 hover:bg-yellow-600 text-[#8B4513] font-bold"
+              className="bg-slate-600 hover:bg-slate-700 text-white font-bold"
             >
               Mês Atual
             </Button>
@@ -320,7 +320,7 @@ export default function DashboardMelhorado() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-[#8B4513]" />
+              <Clock className="h-5 w-5 text-[#1e3a8a]" />
               Dias de Maior Movimento
             </CardTitle>
           </CardHeader>
@@ -340,7 +340,7 @@ export default function DashboardMelhorado() {
                       <p className="text-sm text-gray-600">{item.atendimentos} atendimentos</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-[#8B4513]">{item.tempoTotal} min</p>
+                      <p className="font-bold text-[#1e3a8a]">{item.tempoTotal} min</p>
                       <p className="text-xs text-gray-500">Tempo total</p>
                     </div>
                   </div>
@@ -358,7 +358,7 @@ export default function DashboardMelhorado() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-[#8B4513]" />
+              <Star className="h-5 w-5 text-[#1e3a8a]" />
               Top 5 Serviços
             </CardTitle>
           </CardHeader>
@@ -378,7 +378,7 @@ export default function DashboardMelhorado() {
                       <p className="text-sm text-gray-600">{item.quantidade} realizados</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-[#8B4513]">{item.tempoTotal} min</p>
+                      <p className="font-bold text-[#1e3a8a]">{item.tempoTotal} min</p>
                       <p className="text-xs text-gray-500">Tempo total</p>
                     </div>
                   </div>

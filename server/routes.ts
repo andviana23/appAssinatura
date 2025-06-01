@@ -2495,6 +2495,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/admin/reset-passwords - Resetar senhas de todos os profissionais (apenas admin)
+  app.post('/api/admin/reset-passwords', requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'admin') {
+        return res.status(403).json({ message: 'Acesso negado. Apenas administradores podem resetar senhas.' });
+      }
+
+      const bcrypt = require('bcrypt');
+      const newPassword = '12345678';
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Buscar todos os usuários que não são admin
+      const { db } = await import('../shared/db');
+      const { users } = await import('../shared/schema');
+      const { ne } = await import('drizzle-orm');
+
+      const result = await db.update(users)
+        .set({ password: hashedPassword })
+        .where(ne(users.role, 'admin'));
+
+      res.json({ 
+        message: 'Senhas de todos os profissionais atualizadas para 12345678',
+        affectedUsers: result.rowCount || 0
+      });
+    } catch (error: any) {
+      console.error('Erro ao resetar senhas:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
