@@ -196,23 +196,7 @@ export default function LoginAprimorado() {
           </CardContent>
         </Card>
 
-        {/* Credenciais de Teste */}
-        <Card className="mt-6 bg-gray-50 border-gray-200">
-          <CardContent className="pt-4">
-            <h3 className="font-semibold text-gray-700 mb-3">Contas de Teste:</h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <strong>Admin:</strong> admin@tratodebarbados.com / password
-              </div>
-              <div>
-                <strong>Barbeiro:</strong> barbeiro@tratodebarbados.com / password
-              </div>
-              <div>
-                <strong>Recepcionista:</strong> recepcionista@tratodebarbados.com / password
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Modal Esqueci a Senha */}
