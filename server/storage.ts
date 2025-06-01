@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, like } from "drizzle-orm";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -17,6 +17,7 @@ import {
   atendimentos,
   totalServicos,
   agendamentos,
+  atendimentosDiarios,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -37,6 +38,8 @@ import {
   type InsertAtendimento,
   type TotalServico,
   type InsertTotalServico,
+  type AtendimentoDiario,
+  type InsertAtendimentoDiario,
 } from "@shared/schema";
 
 // Debug da conexão
@@ -844,7 +847,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(atendimentosDiarios)
-      .where(like(atendimentosDiarios.data, mesPattern))
+      .where(sql`${atendimentosDiarios.mesAno} = ${mesAno}`)
       .orderBy(atendimentosDiarios.data, atendimentosDiarios.barbeiroId);
   }
 
