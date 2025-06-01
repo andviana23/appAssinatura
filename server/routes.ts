@@ -2576,7 +2576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar assinaturas vencidas
       const assinaturasVencidas = clientesStats.totalExpiringSubscriptions || 0;
 
-      console.log(`KPIs calculados: totalAtendimentos=${totalAtendimentos}, receitaTotal=${receitaTotal}, ticketMedio=${ticketMedio}`);
+      console.log(`KPIs calculados: totalAtendimentos=${totalAtendimentos}, receitaTotal=${receitaTotal}, clientesPagantes=${clientesComPagamentoMes}, ticketMedio=${ticketMedio}`);
 
       res.json({
         totalAtendimentos,
