@@ -1463,9 +1463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para cadastrar cliente com pagamento externo
   app.post('/api/clientes/external', async (req, res) => {
     try {
-      const { nome, email, cpf, paymentMethod, planoNome, planoValor } = req.body;
+      const { nome, email, cpf, telefone, planoNome, formaPagamento, valorMensal } = req.body;
 
-      if (!nome || !email || !paymentMethod || !planoNome) {
+      if (!nome || !email || !formaPagamento || !planoNome || !valorMensal) {
         return res.status(400).json({ message: 'Dados obrigatórios não fornecidos' });
       }
 
@@ -1479,13 +1479,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nome,
         email,
         cpf: cpf || null,
+        telefone: telefone || null,
         planoNome,
-        planoValor: planoValor.toString(),
-        formaPagamento: paymentMethod,
+        planoValor: valorMensal.toString(),
+        formaPagamento,
         statusAssinatura: 'ATIVO',
         dataInicioAssinatura: dataInicio,
         dataVencimentoAssinatura: dataVencimento,
       });
+
+      console.log(`Cliente externo criado: ${nome}, valor: ${valorMensal}, plano: ${planoNome}`);
 
       res.json({
         success: true,
@@ -2511,89 +2514,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/clientes/all - Buscar TODOS os clientes (ativos e inativos)
+  // GET /api/clientes/all - Buscar APENAS clientes com assinaturas reais pagas
   app.get('/api/clientes/all', requireAuth, async (req, res) => {
     try {
       let clientesUnificados = [];
+      const hoje = new Date();
 
-      // Buscar clientes do banco local
+      // 1. Buscar clientes locais APENAS os que têm assinatura válida paga
       const clientesLocais = await storage.getAllClientes();
       for (const cliente of clientesLocais) {
-        clientesUnificados.push({
-          id: `local_${cliente.id}`,
-          nome: cliente.nome,
-          email: cliente.email,
-          telefone: '',
-          cpf: '',
-          planoNome: 'Cliente Local',
-          planoValor: 0,
-          formaPagamento: 'Local',
-          dataInicio: cliente.createdAt.toISOString(),
-          dataValidade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'ATIVO' as const,
-          origem: 'EXTERNO' as const,
-          daysRemaining: 30
-        });
+        // Incluir APENAS clientes que têm:
+        // - planoValor > 0 (pagamento feito)
+        // - dataVencimentoAssinatura válida
+        // - formaPagamento definida (PIX, Cartão, etc.)
+        if (cliente.planoValor && 
+            cliente.dataVencimentoAssinatura && 
+            cliente.formaPagamento &&
+            cliente.formaPagamento !== 'Local') {
+          
+          const dataValidade = new Date(cliente.dataVencimentoAssinatura);
+          const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
+          if (dataValidade >= hoje) {
+            status = 'ATIVO';
+          } else {
+            status = 'VENCIDO';
+          }
+
+          clientesUnificados.push({
+            id: `local_${cliente.id}`,
+            nome: cliente.nome,
+            email: cliente.email,
+            telefone: cliente.telefone || '',
+            cpf: cliente.cpf || '',
+            planoNome: cliente.planoNome || 'Plano Local',
+            planoValor: parseFloat(cliente.planoValor.toString()),
+            formaPagamento: cliente.formaPagamento,
+            dataInicio: cliente.dataInicioAssinatura ? cliente.dataInicioAssinatura.toISOString() : cliente.createdAt.toISOString(),
+            dataValidade: cliente.dataVencimentoAssinatura.toISOString(),
+            status,
+            origem: 'EXTERNO' as const,
+            daysRemaining: Math.max(0, daysRemaining)
+          });
+        }
       }
 
-      // Tentar buscar clientes do Asaas apenas se as credenciais estiverem configuradas
+      // 2. Buscar clientes do Asaas APENAS com assinaturas ativas e pagamentos confirmados
       if (process.env.ASAAS_API_KEY && process.env.ASAAS_ENVIRONMENT) {
         try {
           const asaasUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
             ? 'https://api.asaas.com/v3' 
             : 'https://sandbox.asaas.com/api/v3';
           
-          const asaasClientes = await fetch(`${asaasUrl}/customers`, {
-            headers: {
-              'access_token': process.env.ASAAS_API_KEY,
-              'Content-Type': 'application/json'
+          // Buscar pagamentos confirmados do mês atual
+          const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(
+            `${asaasUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`, 
+            {
+              headers: {
+                'access_token': process.env.ASAAS_API_KEY,
+                'Content-Type': 'application/json'
+              }
             }
-          });
+          );
 
-          if (asaasClientes.ok) {
-            const asaasData = await asaasClientes.json();
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            const clientesAsaasProcessados = new Set();
             
-            for (const cliente of asaasData.data || []) {
-              const subscriptionsResponse = await fetch(`${asaasUrl}/subscriptions?customer=${cliente.id}`, {
-                headers: {
-                  'access_token': process.env.ASAAS_API_KEY,
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              if (subscriptionsResponse.ok) {
-                const subscriptionsData = await subscriptionsResponse.json();
-                
-                for (const subscription of subscriptionsData.data || []) {
-                  const dataValidade = new Date(subscription.nextDueDate);
-                  const hoje = new Date();
-                  const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-                  
-                  let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
-                  if (subscription.status === 'ACTIVE' && daysRemaining > 0) {
-                    status = 'ATIVO';
-                  } else if (daysRemaining < 0) {
-                    status = 'VENCIDO';
-                  }
-
-                  clientesUnificados.push({
-                    id: cliente.id,
-                    nome: cliente.name,
-                    email: cliente.email,
-                    telefone: cliente.mobilePhone || cliente.phone,
-                    cpf: cliente.cpfCnpj,
-                    planoNome: subscription.description || 'Plano Asaas',
-                    planoValor: parseFloat(subscription.value),
-                    formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
-                                   subscription.billingType === 'BOLETO' ? 'Boleto' : 
-                                   subscription.billingType === 'PIX' ? 'PIX' : 'Outros',
-                    dataInicio: subscription.dateCreated,
-                    dataValidade: subscription.nextDueDate,
-                    status,
-                    origem: 'ASAAS' as const,
-                    billingType: subscription.billingType,
-                    daysRemaining
+            // Processar APENAS pagamentos confirmados de assinaturas
+            for (const payment of paymentsData.data || []) {
+              if (payment.subscription && payment.status === 'CONFIRMED' && !clientesAsaasProcessados.has(payment.customer)) {
+                try {
+                  // Buscar dados do cliente
+                  const customerResponse = await fetch(`${asaasUrl}/customers/${payment.customer}`, {
+                    headers: {
+                      'access_token': process.env.ASAAS_API_KEY,
+                      'Content-Type': 'application/json'
+                    }
                   });
+
+                  if (customerResponse.ok) {
+                    const customerData = await customerResponse.json();
+                    
+                    // Buscar assinatura ativa
+                    const subscriptionResponse = await fetch(`${asaasUrl}/subscriptions/${payment.subscription}`, {
+                      headers: {
+                        'access_token': process.env.ASAAS_API_KEY,
+                        'Content-Type': 'application/json'
+                      }
+                    });
+
+                    if (subscriptionResponse.ok) {
+                      const subscriptionData = await subscriptionResponse.json();
+                      
+                      const dataValidade = new Date(subscriptionData.nextDueDate);
+                      const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                      
+                      let status: 'ATIVO' | 'INATIVO' | 'VENCIDO' = 'INATIVO';
+                      if (subscriptionData.status === 'ACTIVE' && daysRemaining > 0) {
+                        status = 'ATIVO';
+                      } else if (daysRemaining < 0) {
+                        status = 'VENCIDO';
+                      }
+
+                      clientesUnificados.push({
+                        id: customerData.id,
+                        nome: customerData.name,
+                        email: customerData.email,
+                        telefone: customerData.mobilePhone || customerData.phone || '',
+                        cpf: customerData.cpfCnpj || '',
+                        planoNome: subscriptionData.description || 'Plano Asaas',
+                        planoValor: parseFloat(payment.value),
+                        formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                       payment.billingType === 'BOLETO' ? 'Boleto' : 
+                                       payment.billingType === 'PIX' ? 'PIX' : 'Outros',
+                        dataInicio: payment.paymentDate || payment.dateCreated,
+                        dataValidade: subscriptionData.nextDueDate,
+                        status,
+                        origem: 'ASAAS' as const,
+                        billingType: payment.billingType,
+                        daysRemaining: Math.max(0, daysRemaining)
+                      });
+
+                      clientesAsaasProcessados.add(payment.customer);
+                    }
+                  }
+                } catch (customerError) {
+                  console.warn(`Erro ao buscar detalhes do cliente ${payment.customer}:`, customerError);
                 }
               }
             }
@@ -2603,6 +2654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`Clientes válidos encontrados: ${clientesUnificados.length}`);
       res.json(clientesUnificados);
     } catch (error: any) {
       console.error('Erro ao buscar todos os clientes:', error);
