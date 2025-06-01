@@ -58,6 +58,11 @@ export default function Agendamento() {
   // Queries
   const { data: agendamentos = [] } = useQuery({
     queryKey: ["/api/agendamentos", dateString],
+    queryFn: async () => {
+      const response = await fetch(`/api/agendamentos?date=${dateString}`);
+      if (!response.ok) throw new Error('Erro ao carregar agendamentos');
+      return response.json();
+    }
   });
 
   const { data: barbeiros = [] } = useQuery({

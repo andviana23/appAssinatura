@@ -1,0 +1,86 @@
+Problema Atual
+BUG CRÍTICO: Quando faço um agendamento (exemplo: segunda-feira), ele está se repetindo TODOS OS DIAS DO MÊS automaticamente. Isso está causando confusão total na agenda.
+Funcionalidades Necessárias
+1. CORREÇÃO URGENTE do Agendamento
+
+Problema específico: Agendamento feito na segunda-feira aparece todos os dias do mês
+Solução necessária: Agendamento deve ficar APENAS no dia específico que foi marcado
+Exemplo: Se agendo cliente João na segunda-feira dia 15, ele deve aparecer SOMENTE no dia 15, não nos outros dias
+Comportamento correto: Um agendamento = Uma data específica única
+
+2. Sistema de Comanda ao Clicar no Agendamento
+IMPORTANTE: Quando eu clico em um agendamento na agenda, deve abrir automaticamente uma comanda para aquele cliente.
+Funcionamento Desejado:
+
+Clique no agendamento → Abre comanda do cliente
+Tela da Comanda deve ter:
+
+Nome do cliente e horário do agendamento
+Opção para adicionar mais serviços
+Opção para adicionar produtos
+Botão "Finalizar Atendimento" (sem adicionar nada)
+Cálculo automático do total
+
+
+
+Opções na Comanda:
+
+Adicionar Serviços: Lista de serviços da barbearia (corte, barba, etc.)
+Adicionar Produtos: Lista de produtos (pomada, shampoo, etc.)
+Finalizar Atendimento: Fecha a comanda e marca atendimento como concluído
+Cancelar: Volta para agenda sem salvar
+
+3. Estrutura de Dados Sugerida
+javascript// Agendamento
+{
+  id: string,
+  cliente: string,
+  data: Date,
+  hora: string,
+  servico: string,
+  status: 'agendado' | 'em_atendimento' | 'finalizado',
+  comanda_id: string | null
+}
+
+// Comanda
+{
+  id: string,
+  agendamento_id: string,
+  cliente: string,
+  data_abertura: Date,
+  produtos: [
+    {
+      nome: string,
+      quantidade: number,
+      preco_unitario: number,
+      subtotal: number
+    }
+  ],
+  total: number,
+  status: 'aberta' | 'finalizada'
+}
+Requisitos Técnicos
+
+Interface intuitiva e responsiva
+Validação de dados
+Persistência das informações
+Integração fluida entre agenda e sistema de comanda
+
+Exemplo de Fluxo Correto
+
+Agendar: Cliente João marcado para segunda-feira 15/06 às 14h
+Resultado: João aparece APENAS no dia 15/06, não em outros dias
+Atendimento: Clico no agendamento do João no dia 15/06
+Comanda abre: Tela com nome "João - 15/06 14h"
+Adiciono serviços: Corte + Barba
+Adiciono produtos: Pomada (opcional)
+Finalizo: Clico "Finalizar Atendimento"
+Resultado: Atendimento concluído, comanda salva
+
+CORREÇÕES PRIORITÁRIAS
+
+PARAR a repetição diária dos agendamentos
+Implementar clique no agendamento = abrir comanda
+Sistema de comanda funcional
+
+Por favor, corrija PRIMEIRO o bug de repetição dos agendamentos (isso é crítico!), depois implemente o sistema de comanda conforme descrito. O código deve ser limpo e bem organizado.
