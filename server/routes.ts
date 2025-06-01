@@ -154,6 +154,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const { nome, email, senha, role, telefone, endereco, comissao } = req.body;
+      
+      if (!nome || !email || !senha || !role) {
+        return res.status(400).json({ message: "Nome, email, senha e role são obrigatórios" });
+      }
+
+      // Hash da senha
+      const hashedPassword = await bcrypt.hash(senha, 10);
+      
+      if (role === 'recepcionista') {
+        // Criar usuário recepcionista
+        const userData = {
+          email,
+          password: hashedPassword,
+          role: 'recepcionista',
+          nome
+        };
+        
+        const user = await storage.createUser(userData);
+        res.status(201).json({
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          role: user.role,
+          tipo: 'recepcionista',
+          ativo: true
+        });
+      } else if (role === 'barbeiro') {
+        // Criar barbeiro e usuário associado
+        const barbeiroData = {
+          nome,
+          email,
+          ativo: true
+        };
+        
+        const barbeiro = await storage.createBarbeiro(barbeiroData);
+        
+        const userData = {
+          email,
+          password: hashedPassword,
+          role: 'barbeiro',
+          nome,
+          barbeiroId: barbeiro.id
+        };
+        
+        const user = await storage.createUser(userData);
+        res.status(201).json({
+          id: barbeiro.id,
+          nome: barbeiro.nome,
+          email: barbeiro.email,
+          ativo: barbeiro.ativo,
+          tipo: 'barbeiro',
+          userId: user.id
+        });
+      } else {
+        return res.status(400).json({ message: "Role deve ser 'barbeiro' ou 'recepcionista'" });
+      }
+    } catch (error) {
+      console.error("Erro ao criar usuário:", error);
+      if (error.code === '23505') { // Unique constraint violation
+        res.status(400).json({ message: "Email já está em uso" });
+      } else {
+        res.status(500).json({ message: "Erro ao criar usuário" });
+      }
+    }
+  });
+
   // Dashboard routes
   app.get("/api/dashboard/metrics", requireAuth, async (req, res) => {
     try {

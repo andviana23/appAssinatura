@@ -195,6 +195,15 @@ export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   createdAt: true,
   status: true,
 }).extend({
+  clienteId: z.union([z.string(), z.number()]).transform(val => 
+    typeof val === 'string' ? parseInt(val) : val
+  ),
+  barbeiroId: z.union([z.string(), z.number()]).transform(val => 
+    typeof val === 'string' ? parseInt(val) : val
+  ),
+  servicoId: z.union([z.string(), z.number()]).transform(val => 
+    typeof val === 'string' ? parseInt(val) : val
+  ),
   dataHora: z.union([z.string(), z.date()]).transform(val => 
     typeof val === 'string' ? new Date(val) : val
   )
