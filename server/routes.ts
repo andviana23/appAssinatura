@@ -619,22 +619,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== ROTAS DE CLIENTES UNIFICADOS =====
-  // Lista todos os clientes da tabela central unificada
+  // Lista todos os clientes da tabela central unificada (OTIMIZADO)
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
     try {
+      // Buscar apenas dados locais para performance
       const clientesUnificados = await storage.getAllClientes();
-      res.json(clientesUnificados);
+      
+      res.json({
+        success: true,
+        total: clientesUnificados.length,
+        clientes: clientesUnificados
+      });
     } catch (error) {
       console.error("Erro ao buscar clientes unificados:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
-  // Stats unificados (para Dashboard)
+  // Stats unificados (para Dashboard) - OTIMIZADO
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
-      const { mes, ano } = req.query;
-      
       // Usar métodos do sistema central unificado
       const totalClientes = await storage.getTotalClientes();
       const clientesPorOrigem = await storage.getClientesPorOrigem();
@@ -642,6 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Resposta consolidada do sistema central unificado
       res.json({
+        success: true,
         total: totalClientes,
         origem: clientesPorOrigem,
         valorTotalAssinaturas: valorTotalAssinaturas,
