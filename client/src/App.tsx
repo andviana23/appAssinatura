@@ -4,8 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { useIdleTimer } from "@/hooks/use-idle-timer";
-import { IdleWarningModal } from "@/components/idle-warning-modal";
+import { IdleLogoutManager } from "@/components/IdleLogoutManager";
 import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -106,13 +105,7 @@ function AuthenticatedRoutes() {
 }
 
 function AppContent() {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  
-  // Timer de inatividade - 10 minutos com aviso 1 minuto antes
-  const { showWarning, timeLeft, dismissWarning } = useIdleTimer({
-    timeout: 10 * 60 * 1000, // 10 minutos
-    warningTime: 1 * 60 * 1000, // 1 minuto de aviso
-  });
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
 
   if (isLoading) {
     return (
@@ -139,11 +132,10 @@ function AppContent() {
     <>
       <AuthenticatedRoutes />
       
-      {/* Modal de aviso de inatividade */}
-      <IdleWarningModal
-        isOpen={showWarning}
-        timeLeft={timeLeft}
-        onStayActive={dismissWarning}
+      {/* Gerenciador de logout automático por inatividade */}
+      <IdleLogoutManager 
+        isAuthenticated={isAuthenticated}
+        onLogout={logout}
       />
     </>
   );
