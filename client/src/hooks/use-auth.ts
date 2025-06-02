@@ -30,13 +30,7 @@ export function useAuth() {
         description: `Bem-vindo, ${user.email}!`,
       });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Erro no login",
-        description: error.message || "Credenciais inválidas",
-        variant: "destructive",
-      });
-    },
+    // Removido o onError para permitir tratamento manual do erro
   });
 
   const logoutMutation = useMutation({

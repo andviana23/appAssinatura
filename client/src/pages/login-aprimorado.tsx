@@ -32,7 +32,7 @@ export default function LoginAprimorado() {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   
-  const { login } = useAuth();
+  const { login, isLoggingIn } = useAuth();
   const { toast } = useToast();
 
   const {
@@ -53,12 +53,13 @@ export default function LoginAprimorado() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      setLoginError("");
-      await login({ email: data.email, password: data.password });
-    } catch (error) {
-      setLoginError("Email ou senha incorretos.");
-    }
+    setLoginError("");
+    
+    login({ email: data.email, password: data.password }, {
+      onError: (error: any) => {
+        setLoginError("Email ou senha incorretos.");
+      }
+    });
   };
 
   const onForgotPassword = async (data: ForgotPasswordFormData) => {
@@ -179,9 +180,9 @@ export default function LoginAprimorado() {
               <Button
                 type="submit"
                 className="w-full h-11 bg-[#365e78] hover:bg-[#d3b791] text-white font-semibold transition-all duration-200 hover:scale-105"
-                disabled={isSubmitting}
+                disabled={isLoggingIn}
               >
-                {isSubmitting ? "Entrando..." : "Entrar"}
+                {isLoggingIn ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
