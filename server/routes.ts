@@ -2421,125 +2421,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             let clientesProcessados = new Set();
 
-          console.log(`📱 Status da resposta ${account.name}:`, subscriptionsResponse.status);
-          console.log(`📱 Response OK ${account.name}:`, subscriptionsResponse.ok);
-          
-          if (subscriptionsResponse.ok) {
-            const subscriptionsData = await subscriptionsResponse.json();
-            console.log(`📊 Resposta da API ${account.name}:`, JSON.stringify(subscriptionsData, null, 2));
-            console.log(`${account.name}: Total de assinaturas encontradas:`, subscriptionsData.totalCount);
-            console.log(`${account.name}: Assinaturas retornadas:`, subscriptionsData.data?.length || 0);
+            console.log(`📱 Status da resposta ${account.name}:`, subscriptionsResponse.status);
+            console.log(`📱 Response OK ${account.name}:`, subscriptionsResponse.ok);
+            
+              if (subscriptionsResponse.ok) {
+                const subscriptionsData = await subscriptionsResponse.json();
+                console.log(`📊 Resposta da API ${account.name}:`, JSON.stringify(subscriptionsData, null, 2));
+                console.log(`${account.name}: Total de assinaturas encontradas:`, subscriptionsData.totalCount);
+                console.log(`${account.name}: Assinaturas retornadas:`, subscriptionsData.data?.length || 0);
 
-            for (const subscription of subscriptionsData.data || []) {
-              if (!clientesProcessados.has(subscription.customer)) {
-                try {
-                  const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
-                    headers: {
-                      'access_token': account.apiKey,
-                      'Content-Type': 'application/json'
+                for (const subscription of subscriptionsData.data || []) {
+                  if (!clientesProcessados.has(subscription.customer)) {
+                    try {
+                      const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+                        headers: {
+                          'access_token': account.apiKey,
+                          'Content-Type': 'application/json'
+                        }
+                      });
+
+                      if (customerResponse.ok) {
+                        const customer = await customerResponse.json();
+                        
+                        // Calcular próxima data de vencimento
+                        const proximaCobranca = new Date(subscription.nextDueDate);
+                        const daysRemaining = Math.ceil((proximaCobranca.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                        const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+
+                        clientesUnificados.push({
+                          id: `asaas_${account.name}_${subscription.customer}`,
+                          nome: customer.name,
+                          email: customer.email,
+                          telefone: customer.phone || customer.mobilePhone,
+                          cpf: customer.cpfCnpj,
+                          planoNome: subscription.description || 'Assinatura Asaas',
+                          planoValor: subscription.value,
+                          formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                                         subscription.billingType === 'PIX' ? 'PIX' :
+                                         subscription.billingType === 'BOLETO' ? 'Boleto' : subscription.billingType,
+                          statusAssinatura: status,
+                          dataInicioAssinatura: new Date(subscription.dateCreated),
+                          dataVencimentoAssinatura: proximaCobranca,
+                          origem: `ASAAS_${account.name}`,
+                          createdAt: new Date(subscription.dateCreated)
+                        });
+
+                        clientesProcessados.add(subscription.customer);
+                      }
+                    } catch (customerError) {
+                      console.warn(`Erro ao buscar cliente ${subscription.customer} da conta ${account.name}:`, customerError);
                     }
-                  });
-
-                  if (customerResponse.ok) {
-                    const customer = await customerResponse.json();
-                    
-                    // Calcular próxima data de vencimento
-                    const proximaCobranca = new Date(subscription.nextDueDate);
-                    const daysRemaining = Math.ceil((proximaCobranca.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-                    const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
-
-                    clientesUnificados.push({
-                      id: `asaas_${account.name}_${subscription.customer}`,
-                      nome: customer.name,
-                      email: customer.email,
-                      telefone: customer.phone || customer.mobilePhone,
-                      cpf: customer.cpfCnpj,
-                      planoNome: subscription.description || 'Assinatura Asaas',
-                      planoValor: subscription.value,
-                      formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
-                                     subscription.billingType === 'PIX' ? 'PIX' :
-                                     subscription.billingType === 'BOLETO' ? 'Boleto' : subscription.billingType,
-                      statusAssinatura: status,
-                      dataInicioAssinatura: new Date(subscription.dateCreated),
-                      dataVencimentoAssinatura: proximaCobranca,
-                      origem: `ASAAS_${account.name}`,
-                      createdAt: new Date(subscription.dateCreated)
-                    });
-
-                    clientesProcessados.add(subscription.customer);
                   }
-                } catch (customerError) {
-                  console.warn(`Erro ao buscar cliente ${subscription.customer} da conta ${account.name}:`, customerError);
+                }
+              }
+
+              // Buscar também pagamentos confirmados do mês atual (caso não tenham assinatura)
+              const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+              const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+              
+              const paymentsResponse = await fetch(
+                `${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`,
+                {
+                  headers: {
+                    'access_token': account.apiKey,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+
+              if (paymentsResponse.ok) {
+                const paymentsData = await paymentsResponse.json();
+                // Reutilizar o Set já existente para evitar duplicatas
+
+                for (const payment of paymentsData.data || []) {
+                  if (!clientesProcessados.has(payment.customer)) {
+                    try {
+                      const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+                        headers: {
+                          'access_token': account.apiKey,
+                          'Content-Type': 'application/json'
+                        }
+                      });
+
+                      if (customerResponse.ok) {
+                        const customer = await customerResponse.json();
+                        
+                        // Calcular data de validade: data do pagamento + 30 dias
+                        const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
+                        const dataValidade = new Date(dataPagamento);
+                        dataValidade.setDate(dataValidade.getDate() + 30);
+                        
+                        const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                        const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+
+                        clientesUnificados.push({
+                          id: `asaas_${account.name}_${payment.customer}`,
+                          nome: customer.name,
+                          email: customer.email,
+                          telefone: customer.phone || customer.mobilePhone,
+                          cpf: customer.cpfCnpj,
+                          planoNome: payment.description || 'Cobrança Asaas',
+                          planoValor: payment.value,
+                          formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                                         payment.billingType === 'PIX' ? 'PIX' :
+                                         payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                          statusAssinatura: status,
+                          dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
+                          dataVencimentoAssinatura: dataValidade,
+                          origem: `ASAAS_${account.name}`,
+                          createdAt: new Date(payment.dateCreated)
+                        });
+
+                        clientesProcessados.add(payment.customer);
+                      }
+                    } catch (customerError) {
+                      console.warn(`Erro ao buscar cliente ${payment.customer} da conta ${account.name}:`, customerError);
+                    }
+                  }
                 }
               }
             }
-          }
-
-          // Buscar também pagamentos confirmados do mês atual (caso não tenham assinatura)
-          const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
-          
-          const paymentsResponse = await fetch(
-            `${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`,
-            {
-              headers: {
-                'access_token': account.apiKey,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-
-          if (paymentsResponse.ok) {
-            const paymentsData = await paymentsResponse.json();
-            // Reutilizar o Set já existente para evitar duplicatas
-
-            for (const payment of paymentsData.data || []) {
-              if (!clientesProcessados.has(payment.customer)) {
-                try {
-                  const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
-                    headers: {
-                      'access_token': account.apiKey,
-                      'Content-Type': 'application/json'
-                    }
-                  });
-
-                  if (customerResponse.ok) {
-                    const customer = await customerResponse.json();
-                    
-                    // Calcular data de validade: data do pagamento + 30 dias
-                    const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
-                    const dataValidade = new Date(dataPagamento);
-                    dataValidade.setDate(dataValidade.getDate() + 30);
-                    
-                    const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-                    const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
-
-                    clientesUnificados.push({
-                      id: `asaas_${account.name}_${payment.customer}`,
-                      nome: customer.name,
-                      email: customer.email,
-                      telefone: customer.phone || customer.mobilePhone,
-                      cpf: customer.cpfCnpj,
-                      planoNome: payment.description || 'Cobrança Asaas',
-                      planoValor: payment.value,
-                      formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
-                                     payment.billingType === 'PIX' ? 'PIX' :
-                                     payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
-                      statusAssinatura: status,
-                      dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
-                      dataVencimentoAssinatura: dataValidade,
-                      origem: `ASAAS_${account.name}`,
-                      createdAt: new Date(payment.dateCreated)
-                    });
-
-                    clientesProcessados.add(payment.customer);
-                  }
-                } catch (customerError) {
-                  console.warn(`Erro ao buscar cliente ${payment.customer} da conta ${account.name}:`, customerError);
-                }
-              }
-            }
-          }
         } catch (accountError) {
           console.warn(`Erro ao conectar com conta Asaas ${account.name}:`, accountError);
         }
