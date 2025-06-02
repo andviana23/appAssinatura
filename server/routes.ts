@@ -860,6 +860,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API para Lista da Vez específica do barbeiro
+  app.get("/api/lista-vez/barbeiro", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'barbeiro' || !req.session.barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      // Buscar clientes na lista da vez do barbeiro
+      const listaVez = await storage.getAllListaVez();
+      const clientesBarbeiro = listaVez.filter(item => item.barbeiroId === req.session.barbeiroId);
+
+      // Buscar dados dos clientes
+      const clientes = await storage.getAllClientes();
+      const clientesMap = new Map(clientes.map(c => [c.id, c]));
+
+      const clientesComDetalhes = clientesBarbeiro.map(item => {
+        const cliente = clientesMap.get(item.clienteId);
+        return {
+          id: item.id,
+          posicao: item.posicao,
+          cliente: cliente ? {
+            id: cliente.id,
+            nome: cliente.nome,
+            telefone: cliente.telefone
+          } : null,
+          criadoEm: item.criadoEm
+        };
+      }).filter(item => item.cliente !== null);
+
+      res.json({
+        clientes: clientesComDetalhes,
+        total: clientesComDetalhes.length
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar lista da vez:", error);
+      res.status(500).json({ message: "Erro ao buscar lista da vez" });
+    }
+  });
+
   app.get("/api/comissoes/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
     try {
       const barbeiroId = parseInt(req.params.barbeiroId);
