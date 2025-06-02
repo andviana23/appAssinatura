@@ -57,10 +57,14 @@ export default function BarbeiroDashboardFinal() {
     confirmarSenha: ''
   });
 
-  // Buscar dados de comissão do barbeiro baseado na página de distribuição
-  const { data: comissaoData, isLoading: comissaoLoading } = useQuery({
-    queryKey: ["/api/barbeiro/comissao-dados", filtroMes],
-    queryFn: () => apiRequest(`/api/barbeiro/comissao-dados?mes=${filtroMes}`),
+  // Buscar dados usando EXATAMENTE a mesma API da página de distribuição que funciona
+  const { data: servicosData, isLoading: comissaoLoading } = useQuery({
+    queryKey: ['/api/comissao/services-finished', filtroMes],
+    queryFn: async () => {
+      const response = await fetch(`/api/comissao/services-finished?mes=${filtroMes}`);
+      if (!response.ok) throw new Error('Erro ao carregar serviços finalizados');
+      return response.json();
+    }
   });
 
   // Remover busca da Lista da Vez (não será mais usado)
@@ -170,10 +174,13 @@ export default function BarbeiroDashboardFinal() {
     updateSenhaMutation.mutate(senhaForm);
   };
 
+  // Encontrar dados do barbeiro logado usando a mesma estrutura da página de distribuição
+  const barbeiroLogado = servicosData?.barbeiros?.find(b => b.barbeiro.email === user?.email);
+  
   // Calcular estatísticas baseadas na mesma fonte da página de distribuição
-  const servicosFinalizados = (comissaoData as any)?.totalServicos || 0;
-  const tempoTotal = (comissaoData as any)?.tempoTotalMinutos || 0;
-  const comissaoTotal = (comissaoData as any)?.comissaoTotal || 0;
+  const servicosFinalizados = barbeiroLogado?.totalServicos || 0;
+  const tempoTotal = barbeiroLogado?.tempoTotalMinutos || 0;
+  const comissaoTotal = barbeiroLogado?.comissaoTotal || 0;
 
   const tempoFormatado = `${Math.floor(tempoTotal / 60)}h ${tempoTotal % 60}min`;
 
