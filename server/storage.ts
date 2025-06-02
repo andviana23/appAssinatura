@@ -1205,6 +1205,132 @@ export class DatabaseStorage implements IStorage {
 
     return [...clientesAsaasCancelados, ...clientesExternosCancelados];
   }
+
+  // === MÉTODOS PARA GERENCIAMENTO DE ORDEM DA FILA ===
+
+  async getOrdemFila(): Promise<any[]> {
+    const resultado = await this.db
+      .select({
+        id: ordemFila.id,
+        barbeiroId: ordemFila.barbeiroId,
+        ordemCustomizada: ordemFila.ordemCustomizada,
+        ativo: ordemFila.ativo,
+        barbeiro: {
+          id: barbeiros.id,
+          nome: barbeiros.nome,
+          email: barbeiros.email,
+          ativo: barbeiros.ativo
+        }
+      })
+      .from(ordemFila)
+      .leftJoin(barbeiros, eq(ordemFila.barbeiroId, barbeiros.id))
+      .orderBy(ordemFila.ordemCustomizada);
+    
+    return resultado;
+  }
+
+  async reordenarFila(novaOrdem: { barbeiroId: number; ordemCustomizada: number }[]): Promise<any[]> {
+    // Atualizar ordem personalizada de cada barbeiro
+    for (const item of novaOrdem) {
+      await this.db
+        .update(ordemFila)
+        .set({ 
+          ordemCustomizada: item.ordemCustomizada,
+          updatedAt: new Date()
+        })
+        .where(eq(ordemFila.barbeiroId, item.barbeiroId));
+    }
+
+    // Retornar ordem atualizada
+    return this.getOrdemFila();
+  }
+
+  async toggleBarbeiroFila(barbeiroId: number, ativo: boolean): Promise<any> {
+    const [resultado] = await this.db
+      .update(ordemFila)
+      .set({ 
+        ativo,
+        updatedAt: new Date()
+      })
+      .where(eq(ordemFila.barbeiroId, barbeiroId))
+      .returning();
+
+    return resultado;
+  }
+
+  async inicializarOrdemFila(): Promise<any[]> {
+    // Buscar todos os barbeiros ativos
+    const barbeirosAtivos = await this.db
+      .select()
+      .from(barbeiros)
+      .where(eq(barbeiros.ativo, true))
+      .orderBy(barbeiros.id);
+
+    // Para cada barbeiro, criar ou atualizar entrada na ordem da fila
+    for (let i = 0; i < barbeirosAtivos.length; i++) {
+      const barbeiro = barbeirosAtivos[i];
+      
+      // Verificar se já existe entrada para este barbeiro
+      const existeOrdem = await this.db
+        .select()
+        .from(ordemFila)
+        .where(eq(ordemFila.barbeiroId, barbeiro.id))
+        .limit(1);
+
+      if (existeOrdem.length === 0) {
+        // Criar nova entrada
+        await this.db
+          .insert(ordemFila)
+          .values({
+            barbeiroId: barbeiro.id,
+            ordemCustomizada: i + 1,
+            ativo: true
+          });
+      }
+    }
+
+    return this.getOrdemFila();
+  }
+
+  async getFilaMensalComOrdem(mes: string): Promise<any[]> {
+    // Buscar fila mensal atual
+    const filaMensalOriginal = await this.getFilaMensal(mes);
+    
+    // Buscar ordem personalizada
+    const ordemPersonalizada = await this.getOrdemFila();
+    
+    // Se não há ordem personalizada, retornar fila original
+    if (ordemPersonalizada.length === 0) {
+      return filaMensalOriginal;
+    }
+
+    // Aplicar ordem personalizada
+    const filaOrdenada = [];
+    
+    // Primeiro, adicionar barbeiros ativos na ordem personalizada
+    for (const item of ordemPersonalizada) {
+      if (item.ativo) {
+        const barbeiroNaFila = filaMensalOriginal.find(
+          (fila: any) => fila.barbeiro.id === item.barbeiroId
+        );
+        if (barbeiroNaFila) {
+          filaOrdenada.push(barbeiroNaFila);
+        }
+      }
+    }
+
+    // Depois, adicionar barbeiros que não estão na ordem personalizada
+    for (const fila of filaMensalOriginal) {
+      const jaAdicionado = filaOrdenada.some(
+        (item: any) => item.barbeiro.id === fila.barbeiro.id
+      );
+      if (!jaAdicionado) {
+        filaOrdenada.push(fila);
+      }
+    }
+
+    return filaOrdenada;
+  }
 }
 
 export const storage = new DatabaseStorage();

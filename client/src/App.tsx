@@ -24,6 +24,7 @@ import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
 import ListaDaVez from "@/pages/lista-da-vez";
+import GerenciarFila from "@/pages/gerenciar-fila";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -48,6 +49,7 @@ function AuthenticatedRoutes() {
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />
           <Route path="/lista-da-vez" component={ListaDaVez} />
+          <Route path="/gerenciar-fila" component={GerenciarFila} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>
