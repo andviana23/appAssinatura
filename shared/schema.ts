@@ -7,6 +7,9 @@ export const barbeiros = pgTable("barbeiros", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   email: text("email").notNull().unique(),
+  telefone: text("telefone"),
+  endereco: text("endereco"),
+  comissao: integer("comissao").default(50), // Percentual de comissão
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
