@@ -52,9 +52,10 @@ export default function Profissionais() {
   });
 
   // Carregar dados do profissional para edição
-  const { data: profissionalData } = useQuery({
+  const { data: profissionalData, isLoading: loadingProfissional } = useQuery({
     queryKey: ["/api/barbeiros", profissionalId],
     enabled: isEdicao && !!profissionalId,
+    refetchOnWindowFocus: false,
   });
 
   // Limpar formulário ao navegar ou carregar dados para edição
@@ -71,20 +72,25 @@ export default function Profissionais() {
         ativo: true,
         role: tipoProfissional === 'recepcionista' ? 'recepcionista' : 'barbeiro'
       });
-    } else if (profissionalData && isEdicao) {
-      // Preencher formulário para edição
+    }
+  }, [isNovo, tipoProfissional]);
+
+  // Efeito separado para carregar dados na edição
+  useEffect(() => {
+    if (isEdicao && profissionalData && !loadingProfissional) {
+      console.log('Carregando dados para edição:', profissionalData);
       setFormData({
         nome: profissionalData.nome || '',
         email: profissionalData.email || '',
         senha: '',
         telefone: profissionalData.telefone || '',
         endereco: profissionalData.endereco || '',
-        comissao: profissionalData.comissao || 50,
-        ativo: profissionalData.ativo ?? true,
+        comissao: Number(profissionalData.comissao) || 50,
+        ativo: profissionalData.ativo !== false,
         role: profissionalData.role || 'barbeiro'
       });
     }
-  }, [profissionalData, isEdicao, isNovo, tipoProfissional]);
+  }, [profissionalData, isEdicao, loadingProfissional]);
 
   const criarProfissional = useMutation({
     mutationFn: async (data: any) => {
