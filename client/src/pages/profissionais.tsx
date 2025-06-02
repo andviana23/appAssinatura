@@ -53,7 +53,7 @@ export default function Profissionais() {
 
   // Carregar dados do profissional para edição
   const { data: profissionalData, isLoading: loadingProfissional, error: errorProfissional } = useQuery({
-    queryKey: ["/api/barbeiros", profissionalId],
+    queryKey: [`/api/barbeiros/${profissionalId}`],
     enabled: isEdicao && !!profissionalId,
     refetchOnWindowFocus: false,
   });
