@@ -30,7 +30,10 @@ export default function GerenciarFila() {
   // Buscar configuração atual da ordem da fila
   const { data: ordemFila, isLoading } = useQuery({
     queryKey: ["/api/ordem-fila"],
-    queryFn: () => apiRequest("/api/ordem-fila"),
+    queryFn: async () => {
+      const response = await apiRequest("/api/ordem-fila", "GET");
+      return await response.json();
+    },
     enabled: isAdmin
   });
 
