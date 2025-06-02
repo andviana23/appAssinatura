@@ -1583,7 +1583,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/agendamentos', requireAuth, async (req, res) => {
     try {
-      const validatedData = insertAgendamentoSchema.parse(req.body);
+      let { clienteId, barbeiroId, servicoId, dataHora } = req.body;
+      
+      // Processar ID do cliente (pode ser "ext_1" para clientes externos)
+      let finalClienteId: number;
+      
+      if (typeof clienteId === 'string' && clienteId.startsWith('ext_')) {
+        // Cliente externo - extrair o ID numérico e criar uma referência especial
+        const externoId = parseInt(clienteId.replace('ext_', ''));
+        
+        // Buscar o cliente externo para garantir que existe
+        const clienteExterno = await storage.getClienteExternoById(externoId);
+        if (!clienteExterno) {
+          return res.status(400).json({ message: 'Cliente externo não encontrado' });
+        }
+        
+        // Criar ou buscar cliente na tabela principal para compatibilidade
+        let clientePrincipal = await storage.getClienteByEmail(clienteExterno.email);
+        if (!clientePrincipal) {
+          clientePrincipal = await storage.createCliente({
+            nome: clienteExterno.nome,
+            email: clienteExterno.email,
+            asaasCustomerId: `ext_${externoId}`, // ID especial para clientes externos
+            telefone: clienteExterno.telefone,
+            cpf: clienteExterno.cpf,
+            planoNome: clienteExterno.planoNome,
+            planoValor: clienteExterno.planoValor?.toString() || '0',
+            formaPagamento: clienteExterno.formaPagamento || 'PIX',
+            dataInicioAssinatura: clienteExterno.dataInicioAssinatura,
+            dataVencimentoAssinatura: clienteExterno.dataVencimentoAssinatura
+          });
+        }
+        finalClienteId = clientePrincipal.id;
+      } else {
+        finalClienteId = parseInt(clienteId);
+      }
+      
+      const agendamentoData = {
+        clienteId: finalClienteId,
+        barbeiroId: parseInt(barbeiroId),
+        servicoId: parseInt(servicoId),
+        dataHora: new Date(dataHora)
+      };
+      
+      const validatedData = insertAgendamentoSchema.parse(agendamentoData);
       const agendamento = await storage.createAgendamento(validatedData);
       res.json(agendamento);
     } catch (error) {

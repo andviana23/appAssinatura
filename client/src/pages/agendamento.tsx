@@ -238,11 +238,10 @@ export default function Agendamento() {
     }
 
     // Validação adicional para garantir que os IDs são válidos
-    const clienteId = parseInt(selectedCliente);
     const barbeiroId = parseInt(selectedBarbeiro);
     const servicoId = parseInt(selectedServico);
 
-    if (isNaN(clienteId) || isNaN(barbeiroId) || isNaN(servicoId)) {
+    if (isNaN(barbeiroId) || isNaN(servicoId)) {
       toast({ title: "Erro nos dados selecionados. Tente novamente.", variant: "destructive" });
       return;
     }
@@ -252,7 +251,7 @@ export default function Agendamento() {
     dataHora.setHours(parseInt(hour), parseInt(minute), 0, 0);
 
     createAgendamento.mutate({
-      clienteId: clienteId,
+      clienteId: selectedCliente, // Manter como string para permitir "ext_1"
       barbeiroId: barbeiroId,
       servicoId: servicoId,
       dataHora: dataHora.toISOString(),

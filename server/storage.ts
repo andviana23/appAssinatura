@@ -106,6 +106,7 @@ export interface IStorage {
   getAllClientes(): Promise<Cliente[]>;
   getAllClientesExternos(): Promise<ClienteExterno[]>;
   getClienteById(id: number): Promise<Cliente | undefined>;
+  getClienteByEmail(email: string): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: Partial<InsertCliente>): Promise<Cliente>;
   
@@ -403,6 +404,16 @@ export class DatabaseStorage implements IStorage {
 
   async getAllClientesExternos(): Promise<ClienteExterno[]> {
     return await db.select().from(clientesExternos).orderBy(clientesExternos.nome);
+  }
+
+  async getClienteExternoById(id: number): Promise<ClienteExterno | undefined> {
+    const [cliente] = await db.select().from(clientesExternos).where(eq(clientesExternos.id, id));
+    return cliente;
+  }
+
+  async getClienteByEmail(email: string): Promise<Cliente | undefined> {
+    const [cliente] = await db.select().from(clientes).where(eq(clientes.email, email));
+    return cliente;
   }
 
   async getClienteById(id: number): Promise<Cliente | undefined> {
