@@ -3130,7 +3130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesAtivos = [];
       const clientesAsaasProcessados = new Set<string>();
 
-      // Buscar clientes do banco local primeiro
+      // Buscar clientes da tabela 'clientes'
       const clientesLocais = await storage.getAllClientes();
       
       for (const cliente of clientesLocais) {
@@ -3149,6 +3149,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (cliente.asaasCustomerId) {
               clientesAsaasProcessados.add(cliente.asaasCustomerId);
             }
+          }
+        }
+      }
+
+      // Buscar clientes da tabela 'clientes_externos'
+      const clientesExternos = await storage.getAllClientesExternos();
+      
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          if (validade >= hoje) {
+            clientesAtivos.push({
+              id: `ext_${cliente.id}`, // Prefixo para evitar conflito de IDs
+              nome: cliente.nome,
+              email: cliente.email,
+              telefone: cliente.telefone,
+              origem: 'EXTERNO'
+            });
           }
         }
       }
