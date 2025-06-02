@@ -107,6 +107,9 @@ export default function Clientes() {
   const handleRefresh = async () => {
     try {
       await refetch();
+      await refetchAndrey();
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-asaas-andrey'] });
       toast({
         title: "Dados atualizados",
         description: "Informações dos clientes foram sincronizadas",
