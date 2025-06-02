@@ -9,6 +9,7 @@ import {
   barbeiros,
   servicos,
   planosAssinatura,
+  planosPersonalizados,
   clientes,
   clientesExternos,
   distribuicoes,
@@ -27,6 +28,8 @@ import {
   type InsertServico,
   type PlanoAssinatura,
   type InsertPlanoAssinatura,
+  type PlanoPersonalizado,
+  type InsertPlanoPersonalizado,
   type Cliente,
   type InsertCliente,
   type ClienteExterno,
@@ -1243,6 +1246,48 @@ export class DatabaseStorage implements IStorage {
 
     // Retornar ordem atualizada
     return this.getOrdemFila();
+  }
+
+  // === MÉTODOS PARA PLANOS PERSONALIZADOS ===
+
+  async getAllPlanos(): Promise<PlanoPersonalizado[]> {
+    return await db
+      .select()
+      .from(planosPersonalizados)
+      .where(eq(planosPersonalizados.ativo, true))
+      .orderBy(planosPersonalizados.categoria, planosPersonalizados.nome);
+  }
+
+  async createPlano(data: InsertPlanoPersonalizado): Promise<PlanoPersonalizado> {
+    const [created] = await db
+      .insert(planosPersonalizados)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async updatePlano(id: number, data: Partial<InsertPlanoPersonalizado>): Promise<PlanoPersonalizado> {
+    const [updated] = await db
+      .update(planosPersonalizados)
+      .set(data)
+      .where(eq(planosPersonalizados.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePlano(id: number): Promise<void> {
+    await db
+      .update(planosPersonalizados)
+      .set({ ativo: false })
+      .where(eq(planosPersonalizados.id, id));
+  }
+
+  async getPlanoById(id: number): Promise<PlanoPersonalizado | undefined> {
+    const [plano] = await db
+      .select()
+      .from(planosPersonalizados)
+      .where(and(eq(planosPersonalizados.id, id), eq(planosPersonalizados.ativo, true)));
+    return plano;
   }
 
   async toggleBarbeiroFila(barbeiroId: number, ativo: boolean): Promise<any> {
