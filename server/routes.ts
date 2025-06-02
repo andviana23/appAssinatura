@@ -1086,17 +1086,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/planos-assinatura/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { nome, descricao, valor, categoria, billingType, cycle, limitesServicos, beneficios } = req.body;
+      const { nome, descricao, valorMensal, categoria } = req.body;
       
+      // Usar updatePlano para a tabela correta
       const planoAtualizado = await storage.updatePlano(id, {
         nome,
         descricao,
-        valor,
-        categoria,
-        billingType,
-        cycle,
-        limitesServicos,
-        beneficios
+        valorMensal,
+        categoria
       });
 
       res.json(planoAtualizado);
