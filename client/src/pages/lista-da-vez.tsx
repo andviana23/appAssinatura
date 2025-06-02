@@ -349,9 +349,9 @@ export default function ListaDaVez() {
                     <div className="text-center">
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-medium text-xs`}
+                        className={`${getPositionBadge(index + 1)} px-2 py-1 font-medium text-xs`}
                       >
-                        {item.posicaoMensal}º
+                        {index + 1}º
                       </Badge>
                     </div>
 
@@ -417,9 +417,9 @@ export default function ListaDaVez() {
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-bold text-xs shadow-md`}
+                        className={`${getPositionBadge(index + 1)} px-2 py-1 font-bold text-xs shadow-md`}
                       >
-                        {item.posicaoMensal}º
+                        {index + 1}º
                       </Badge>
                     </div>
                     
