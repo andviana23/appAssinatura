@@ -177,18 +177,28 @@ export default function Planos() {
   };
 
   // Converter planos personalizados para o formato esperado
-  const planosPersonalizadosFormatados = planosPersonalizados.map((plano: any) => ({
-    id: `custom_${plano.id}`,
-    nome: plano.nome,
-    categoria: plano.categoria,
-    valor: typeof plano.valorMensal === 'number' ? plano.valorMensal : parseFloat(plano.valorMensal || '0'),
-    descricao: plano.descricao || '',
-    detalhes: plano.beneficios || [],
-    popular: false,
-    urlCheckout: '',
-    ativo: plano.ativo !== false,
-    criadoEm: plano.createdAt || new Date().toISOString()
-  }));
+  const planosPersonalizadosFormatados = planosPersonalizados.map((plano: any) => {
+    // Converter valor decimal string para number
+    let valor = 0;
+    if (plano.valor) {
+      valor = typeof plano.valor === 'number' ? plano.valor : parseFloat(plano.valor);
+    } else if (plano.valorMensal) {
+      valor = typeof plano.valorMensal === 'number' ? plano.valorMensal : parseFloat(plano.valorMensal);
+    }
+    
+    return {
+      id: `custom_${plano.id}`,
+      nome: plano.nome,
+      categoria: plano.categoria,
+      valor: valor,
+      descricao: plano.descricao || '',
+      detalhes: plano.beneficios || [],
+      popular: false,
+      urlCheckout: '',
+      ativo: plano.ativo !== false,
+      criadoEm: plano.createdAt || new Date().toISOString()
+    };
+  });
 
   // Organizar planos personalizados por categoria
   const planosPersonalizadosPorCategoria = {
