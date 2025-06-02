@@ -1299,37 +1299,28 @@ export class DatabaseStorage implements IStorage {
     // Buscar ordem personalizada
     const ordemPersonalizada = await this.getOrdemFila();
     
-    // Se não há ordem personalizada, retornar fila original
+    // Se não há ordem personalizada, retornar fila original ordenada por atendimentos
     if (ordemPersonalizada.length === 0) {
-      return filaMensalOriginal;
+      return filaMensalOriginal.sort((a: any, b: any) => a.totalAtendimentos - b.totalAtendimentos);
     }
 
-    // Aplicar ordem personalizada
-    const filaOrdenada = [];
+    // Filtrar apenas barbeiros ativos da ordem personalizada
+    const barbeirosAtivos = ordemPersonalizada.filter(item => item.ativo);
     
-    // Primeiro, adicionar barbeiros ativos na ordem personalizada
-    for (const item of ordemPersonalizada) {
-      if (item.ativo) {
-        const barbeiroNaFila = filaMensalOriginal.find(
-          (fila: any) => fila.barbeiro.id === item.barbeiroId
-        );
-        if (barbeiroNaFila) {
-          filaOrdenada.push(barbeiroNaFila);
-        }
-      }
+    // Se não há barbeiros ativos, retornar array vazio
+    if (barbeirosAtivos.length === 0) {
+      return [];
     }
 
-    // Depois, adicionar barbeiros que não estão na ordem personalizada
-    for (const fila of filaMensalOriginal) {
-      const jaAdicionado = filaOrdenada.some(
-        (item: any) => item.barbeiro.id === fila.barbeiro.id
-      );
-      if (!jaAdicionado) {
-        filaOrdenada.push(fila);
-      }
-    }
+    // Buscar apenas barbeiros ativos da fila mensal
+    const filaFiltrada = filaMensalOriginal.filter((fila: any) => {
+      return barbeirosAtivos.some(item => item.barbeiroId === fila.barbeiro.id);
+    });
 
-    return filaOrdenada;
+    // Ordenar por número de atendimentos (quem atendeu menos fica primeiro)
+    filaFiltrada.sort((a: any, b: any) => a.totalAtendimentos - b.totalAtendimentos);
+
+    return filaFiltrada;
   }
 }
 

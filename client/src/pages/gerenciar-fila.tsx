@@ -39,10 +39,7 @@ export default function GerenciarFila() {
 
   // Sincronizar dados quando carregados
   React.useEffect(() => {
-    console.log("DADOS RECEBIDOS:", ordemFila);
-    console.log("ESTADO ATUAL ordemModificada:", ordemModificada);
     if (ordemFila && Array.isArray(ordemFila)) {
-      console.log("EXECUTANDO setOrdemModificada com:", ordemFila);
       setOrdemModificada([...ordemFila]);
     }
   }, [ordemFila]);
