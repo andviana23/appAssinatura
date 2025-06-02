@@ -2315,9 +2315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
 
-      console.log('Verificando variáveis de ambiente:');
+      console.log('=== INÍCIO BUSCA CLIENTES UNIFICADOS ===');
       console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
       console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
+      console.log('Clientes externos encontrados:', clientesExternos.length);
 
       // Buscar clientes de ambas as contas Asaas
       for (const account of asaasAccounts) {
@@ -2342,6 +2343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (subscriptionsResponse.ok) {
             const subscriptionsData = await subscriptionsResponse.json();
+            console.log(`${account.name}: Total de assinaturas encontradas:`, subscriptionsData.totalCount);
+            console.log(`${account.name}: Assinaturas retornadas:`, subscriptionsData.data?.length || 0);
 
             for (const subscription of subscriptionsData.data || []) {
               if (!clientesProcessados.has(subscription.customer)) {
