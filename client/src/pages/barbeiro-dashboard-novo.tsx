@@ -64,7 +64,7 @@ export default function BarbeiroDashboardNovo() {
     : [];
 
   const totalComissaoMes = comissaoMesFiltrado.reduce((total, comissao) => {
-    return total + (comissao.valorComissao || 0);
+    return total + parseFloat(comissao.valor || '0');
   }, 0);
 
   // Dados da fila mensal
@@ -286,10 +286,10 @@ export default function BarbeiroDashboardNovo() {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-green-600">
-                        R$ {(comissao.valorComissao || 0).toFixed(2)}
+                        R$ {parseFloat(comissao.valor || '0').toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {comissao.percentual || 0}% de comissão
+                        Comissão registrada
                       </p>
                     </div>
                   </div>
