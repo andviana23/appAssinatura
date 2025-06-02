@@ -54,6 +54,7 @@ export default function Agendamento() {
   const [comandaItems, setComandaItems] = useState<{ [key: string]: { quantidade: number; preco: number; nome: string } }>({});
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [agendamentoToCancel, setAgendamentoToCancel] = useState<Agendamento | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; agendamento: Agendamento | null }>({ x: 0, y: 0, agendamento: null });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -159,6 +160,21 @@ export default function Agendamento() {
 
   const timeSlots = generateTimeSlots();
   const activeBarbeiros = Array.isArray(barbeiros) ? barbeiros.filter((b: Barbeiro) => b.ativo) : [];
+
+  // Handler para fechar menu de contexto ao clicar fora
+  const handleClickOutside = () => {
+    setContextMenu({ x: 0, y: 0, agendamento: null });
+  };
+
+  // Handler para clique direito no agendamento
+  const handleContextMenu = (e: React.MouseEvent, agendamento: Agendamento) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      agendamento: agendamento
+    });
+  };
 
   // Agrupar agendamentos por barbeiro e horário
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
@@ -525,38 +541,27 @@ export default function Agendamento() {
                     <div key={barbeiro.id} className="border-r border-gray-200 p-1 relative">
                       {agendamento ? (
                         <div 
-                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full transition-all duration-200 group relative`}
+                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full transition-all duration-200 group relative cursor-pointer`}
+                          onClick={() => abrirComanda(agendamento)}
+                          onContextMenu={(e) => handleContextMenu(e, agendamento)}
                         >
-                          <div 
-                            className="cursor-pointer"
-                            onClick={() => abrirComanda(agendamento)}
-                          >
-                            <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
-                              {agendamento.cliente?.nome}
-                            </div>
-                            <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
-                              {agendamento.servico?.nome}
-                            </div>
-                            
-                            {agendamento.status === "FINALIZADO" && (
-                              <div className="text-xs font-bold opacity-80">
-                                ✅
-                              </div>
-                            )}
+                          <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                            {agendamento.cliente?.nome}
+                          </div>
+                          <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                            {agendamento.servico?.nome}
                           </div>
                           
-                          {agendamento.status !== "FINALIZADO" && agendamento.status !== "CANCELADO" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAgendamentoToCancel(agendamento);
-                                setCancelDialogOpen(true);
-                              }}
-                              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                              title="Cancelar agendamento"
-                            >
-                              <X className="w-2 h-2" />
-                            </button>
+                          {agendamento.status === "FINALIZADO" && (
+                            <div className="text-xs font-bold opacity-80">
+                              ✅
+                            </div>
+                          )}
+                          
+                          {agendamento.status === "CANCELADO" && (
+                            <div className="text-xs font-bold opacity-80 text-red-500">
+                              ❌ CANCELADO
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -901,6 +906,55 @@ export default function Agendamento() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Menu de Contexto (Clique Direito) */}
+      {contextMenu.agendamento && (
+        <div
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-[200px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-4 py-2 border-b border-gray-100">
+            <div className="font-semibold text-sm text-gray-800">
+              {contextMenu.agendamento.cliente?.nome}
+            </div>
+            <div className="text-xs text-gray-500">
+              {contextMenu.agendamento.servico?.nome}
+            </div>
+            <div className="text-xs text-gray-500">
+              {format(new Date(contextMenu.agendamento.dataHora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+            </div>
+          </div>
+          
+          <div className="py-1">
+            <button
+              onClick={() => {
+                abrirComanda(contextMenu.agendamento);
+                setContextMenu({ x: 0, y: 0, agendamento: null });
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+            >
+              <span>📋</span>
+              Abrir Comanda
+            </button>
+            
+            <button
+              onClick={() => {
+                setAgendamentoToCancel(contextMenu.agendamento);
+                setCancelDialogOpen(true);
+                setContextMenu({ x: 0, y: 0, agendamento: null });
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Cancelar Agendamento
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

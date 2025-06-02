@@ -1,0 +1,188 @@
+Prompt para Melhorias no Sistema de Agendamentos - Replit
+🎯 Objetivo Principal
+Implementar funcionalidade de cancelamento de agendamentos via menu de contexto (botão direito) e melhorar a interface da comanda com integração automática dos serviços agendados.
+📋 Funcionalidades Solicitadas
+1. Cancelamento de Agendamentos via Menu de Contexto
+Comportamento Esperado:
+
+Localização: Página de agendamentos, na visualização da agenda
+Ação Trigger: Clique com botão direito do mouse sobre um cliente agendado
+Menu Contextual: Deve aparecer um menu flutuante com a opção "Cancelar Agendamento"
+Disponibilidade: A opção deve estar disponível para TODOS os agendamentos, independente do status (agendado, em andamento, finalizado)
+
+Funcionalidade do Cancelamento:
+
+Confirmação: Antes de cancelar, exibir modal/popup de confirmação com:
+
+Nome do cliente
+Data e horário do agendamento
+Serviço(s) agendado(s)
+Barbeiro responsável
+Botões: "Confirmar Cancelamento" e "Cancelar"
+
+
+Ações ao Confirmar o Cancelamento:
+
+Na Agenda: Remover o agendamento da visualização da agenda
+Na Comissão: Reverter/ajustar a comissão do barbeiro relacionada a este agendamento
+No Banco de Dados: Atualizar status do agendamento para "cancelado" (não deletar o registro)
+Feedback: Exibir notificação de sucesso "Agendamento cancelado com sucesso"
+
+
+
+2. Melhorias na UX/UI da Comanda
+Problemas Atuais Identificados:
+
+Interface visualmente pobre
+Falta de organização visual
+Dificuldade de navegação
+Layout confuso
+
+Melhorias Solicitadas:
+Visual e Layout:
+
+Design Moderno: Aplicar design system consistente com cores, tipografia e espaçamentos padronizados
+Cards Organizados: Cada item da comanda deve ser um card bem estruturado
+Hierarquia Visual: Títulos, subtítulos e informações claramente diferenciados
+Responsividade: Interface adaptável para diferentes tamanhos de tela
+
+Organização da Informação:
+
+Cabeçalho da Comanda:
+
+Nome do cliente em destaque
+Data e horário
+Status do atendimento
+
+
+Lista de Serviços:
+
+Nome do serviço
+Preço individual
+Barbeiro responsável
+Status (pendente/concluído)
+
+
+Resumo Financeiro:
+
+Subtotal
+Descontos (se houver)
+Total final
+
+
+
+Interatividade:
+
+Botões Claros: Ações principais bem destacadas
+Estados Visuais: Hover, active, disabled bem definidos
+Loading States: Indicadores durante processamento
+Animações Sutis: Transições suaves para melhor experiência
+
+3. Integração Automática: Agendamento → Comanda
+Funcionalidade:
+
+Quando: No momento que um agendamento é criado ou quando o cliente chega para o atendimento
+O que acontece: Os serviços agendados devem aparecer automaticamente na comanda
+Status Inicial: Serviços devem aparecer com status "Agendado" ou "Pendente"
+
+Especificações:
+
+Cada serviço agendado deve aparecer na comanda com:
+
+Nome do serviço
+Preço do serviço
+Nome do barbeiro responsável
+Status atual (agendado, em andamento, concluído)
+Data e horário do agendamento
+
+
+
+Fluxo de Status:
+
+Agendado: Serviço aparece na comanda mas ainda não iniciado
+Em Andamento: Quando barbeiro inicia o atendimento
+Concluído: Quando barbeiro finaliza o serviço
+Cancelado: Se o agendamento for cancelado via menu contextual
+
+🔧 Requisitos Técnicos
+Banco de Dados:
+
+Tabela de Agendamentos: Adicionar campo de status para controlar estados (agendado, em_andamento, finalizado, cancelado)
+Tabela de Comissões: Implementar lógica de reversão quando agendamento for cancelado
+Logs de Ações: Registrar todos os cancelamentos para auditoria e controle
+
+Interface:
+
+Estilos: Criar estilos específicos para a comanda melhorada
+Funcionalidades: Implementar menu contextual e integração automática
+Componentes: Criar componentes reutilizáveis para cards da comanda
+
+Responsividade:
+
+Mobile First: Garantir funcionamento perfeito em dispositivos móveis
+Touch Events: Menu contextual deve funcionar com toque longo em dispositivos mobile
+Adaptabilidade: Layout deve se adaptar automaticamente a diferentes resoluções
+
+📱 Considerações para Mobile
+Menu Contextual em Mobile:
+
+Toque Longo: Substituir clique direito por toque longo (long press) em dispositivos móveis
+Vibração: Adicionar feedback tátil quando menu aparecer
+Tamanho dos Botões: Garantir área tocável adequada para facilitar uso
+
+Comanda Mobile:
+
+Scroll Otimizado: Lista de serviços com rolagem suave e intuitiva
+Botões Grandes: Ações principais facilmente acessíveis
+Informações Compactas: Layout condensado mas ainda legível
+
+✅ Critérios de Aceite
+Funcionalidade de Cancelamento:
+
+ Menu contextual aparece ao clicar com botão direito no agendamento
+ Opção "Cancelar Agendamento" está presente e funcional
+ Modal de confirmação exibe todas as informações necessárias
+ Agendamento é removido da agenda após confirmação
+ Comissão do barbeiro é ajustada automaticamente
+ Notificação de sucesso é exibida ao usuário
+ Funciona para agendamentos em qualquer status (inclusive finalizados)
+
+Melhorias na Comanda:
+
+ Interface visualmente atrativa e moderna
+ Informações bem organizadas e com hierarquia clara
+ Totalmente responsiva em diferentes dispositivos
+ Interações fluidas e intuitivas
+ Estados de carregamento implementados
+
+Integração Automática:
+
+ Serviços agendados aparecem automaticamente na comanda
+ Status dos serviços são atualizados corretamente conforme progresso
+ Sincronização perfeita entre agenda e comanda
+ Todos os dados são salvos corretamente no banco de dados
+
+🚨 Pontos de Atenção Importantes
+
+Validações: Implementar todas as validações necessárias antes de permitir cancelamento
+Permissões: Verificar se usuário logado tem permissão para cancelar agendamentos
+Integridade de Dados: Garantir que cancelamentos não quebrem relatórios financeiros ou comissões
+Performance: Otimizar todas as consultas ao banco para não impactar performance da agenda
+Histórico: Manter histórico completo de agendamentos cancelados para auditoria
+
+💡 Funcionalidades Extras Recomendadas
+
+Motivo do Cancelamento: Campo opcional para o usuário registrar motivo do cancelamento
+Notificação do Cliente: Possível integração futura com WhatsApp/SMS para avisar cliente sobre cancelamento
+Relatório de Cancelamentos: Dashboard com métricas e estatísticas de cancelamentos
+Reagendamento Rápido: Opção para reagendar imediatamente após cancelar um agendamento
+
+📋 Resumo das Principais Alterações
+
+Menu de Contexto: Clique direito em agendamento → opção cancelar → confirmação → ações automáticas
+Comanda Renovada: Interface moderna, organizada, responsiva e funcional
+Integração Automática: Agendamentos aparecem automaticamente na comanda com status atualizados
+Controle Total: Sistema permite cancelar mesmo agendamentos já finalizados
+Experiência Mobile: Tudo funciona perfeitamente em dispositivos móveis
+
+O resultado final deve ser um sistema mais intuitivo, visualmente atrativo e funcionalmente completo, proporcionando uma experiência muito melhor tanto para os usuários do sistema quanto para o gerenciamento da barbearia.
