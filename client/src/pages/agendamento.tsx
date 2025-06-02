@@ -731,103 +731,92 @@ export default function Agendamento() {
             </div>
           </DialogHeader>
 
+          {/* Serviço Agendado */}
+          {selectedAgendamento?.servico && (
+            <div className="mb-8 bg-blue-50/80 backdrop-blur-sm rounded-3xl shadow-lg border border-blue-200/50 p-8">
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-blue-200 pb-4">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
+                  <span className="text-white text-sm">📋</span>
+                </div>
+                Serviço Agendado
+              </h3>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-bold text-slate-800 text-xl mb-2">{selectedAgendamento.servico.nome}</div>
+                    <div className="text-sm text-slate-500 bg-blue-100/60 rounded-lg px-3 py-1 inline-block mb-2">
+                      {selectedAgendamento.servico.tempoMinutos} min
+                    </div>
+                    <div className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
+                      Incluído no agendamento
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-12 w-12 p-0 rounded-xl border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
+                    onClick={() => {
+                      if (confirm('Deseja realmente remover este serviço do agendamento?')) {
+                        // Aqui você pode implementar a lógica para remover o serviço do agendamento
+                        toast({ title: "Funcionalidade em desenvolvimento", description: "Remoção de serviços agendados será implementada em breve." });
+                      }
+                    }}
+                  >
+                    <span className="text-lg">🗑️</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Seção Serviços */}
+            {/* Botão Adicionar Serviços */}
             <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-200/50 p-8">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
                   <span className="text-white text-sm">✂️</span>
                 </div>
-                Serviços Disponíveis
+                Serviços Adicionais
               </h3>
-              <div className="space-y-4">
-                {Array.isArray(todosServicos) && todosServicos.map((servico) => (
-                  <div key={servico.id} className="group bg-slate-50/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200/60 hover:border-[#365e78]/30 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-bold text-slate-800 text-lg mb-1">{servico.nome}</div>
-                        <div className="text-sm text-slate-500 bg-white/60 rounded-lg px-3 py-1 inline-block mb-2">
-                          {servico.tempoMinutos} min
-                        </div>
-                        <div className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                          R$ {servico.preco?.toFixed(2) || '0,00'}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-12 w-12 p-0 rounded-xl border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
-                          onClick={() => removerItemComanda(servico.id.toString())}
-                          disabled={!comandaItems[servico.id.toString()]?.quantidade}
-                        >
-                          <span className="text-lg">−</span>
-                        </Button>
-                        <div className="w-16 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center">
-                          <span className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                            {comandaItems[servico.id.toString()]?.quantidade || 0}
-                          </span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-12 w-12 p-0 rounded-xl border-green-200 text-green-500 hover:bg-green-50 hover:border-green-300 hover:text-green-600 transition-all duration-200"
-                          onClick={() => adicionarItemComanda(servico.id.toString(), servico.nome, servico.preco || 0)}
-                        >
-                          <span className="text-lg">+</span>
-                        </Button>
-                      </div>
+              <div className="text-center py-8">
+                <Button 
+                  className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white py-6 px-8 text-lg font-bold shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl"
+                  onClick={() => {
+                    toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de serviços adicionais será implementada em breve." });
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                      <span className="text-lg">➕</span>
                     </div>
+                    Adicionar Serviço
                   </div>
-                ))}
+                </Button>
               </div>
             </div>
 
-            {/* Seção Produtos */}
+            {/* Botão Adicionar Produtos */}
             <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-200/50 p-8">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
                   <span className="text-white text-sm">🧴</span>
                 </div>
-                Produtos Disponíveis
+                Produtos Adicionais
               </h3>
-              <div className="space-y-4">
-                {produtosComanda.map((produto) => (
-                  <div key={produto.id} className="group bg-slate-50/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200/60 hover:border-[#365e78]/30 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-bold text-slate-800 text-lg mb-2">{produto.nome}</div>
-                        <div className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                          R$ {produto.preco.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-12 w-12 p-0 rounded-xl border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
-                          onClick={() => removerItemComanda(produto.id)}
-                          disabled={!comandaItems[produto.id]?.quantidade}
-                        >
-                          <span className="text-lg">−</span>
-                        </Button>
-                        <div className="w-16 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center">
-                          <span className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                            {comandaItems[produto.id]?.quantidade || 0}
-                          </span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-12 w-12 p-0 rounded-xl border-green-200 text-green-500 hover:bg-green-50 hover:border-green-300 hover:text-green-600 transition-all duration-200"
-                          onClick={() => adicionarItemComanda(produto.id, produto.nome, produto.preco)}
-                        >
-                          <span className="text-lg">+</span>
-                        </Button>
-                      </div>
+              <div className="text-center py-8">
+                <Button 
+                  className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white py-6 px-8 text-lg font-bold shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl"
+                  onClick={() => {
+                    toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de produtos será implementada em breve." });
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                      <span className="text-lg">➕</span>
                     </div>
+                    Adicionar Produto
                   </div>
-                ))}
+                </Button>
               </div>
             </div>
           </div>
