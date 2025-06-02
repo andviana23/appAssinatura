@@ -278,21 +278,7 @@ export default function ListaDaVez() {
         </div>
 
         {/* Estatísticas Resumidas - Compactas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center">
-                  <UserCheck className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Barbeiros</p>
-                  <p className="text-lg font-bold text-[#365e78]">{totalBarbeiros}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
@@ -300,7 +286,7 @@ export default function ListaDaVez() {
                   <Plus className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Atendimentos</p>
+                  <p className="text-xs text-gray-500">Total de Atendimentos no Mês</p>
                   <p className="text-lg font-bold text-green-600">{totalAtendimentos}</p>
                 </div>
               </div>
@@ -314,7 +300,7 @@ export default function ListaDaVez() {
                   <RotateCcw className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Média</p>
+                  <p className="text-xs text-gray-500">Média de Atendimentos</p>
                   <p className="text-lg font-bold text-orange-600">{mediaAtendimentos}</p>
                 </div>
               </div>
