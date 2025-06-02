@@ -82,48 +82,9 @@ export default function Planos() {
   // Organizar todos os planos reais por categoria
   const organizarPlanosPorCategoria = () => {
     const categorias = {
-      one: [
-        {
-          id: 'one-basico',
-          nome: 'One - Básico',
-          categoria: 'One',
-          valor: 89.90,
-          descricao: 'Ideal para quem quer começar',
-          detalhes: ['1 Corte por mês', 'Agendamento prioritário', 'Suporte via WhatsApp'],
-          popular: true,
-          urlCheckout: '',
-          ativo: true,
-          criadoEm: new Date().toISOString()
-        }
-      ] as any[],
-      gold: [
-        {
-          id: 'gold-premium',
-          nome: 'Gold - Premium',
-          categoria: 'Gold',
-          valor: 149.90,
-          descricao: 'O mais completo e popular',
-          detalhes: ['Corte ilimitado', 'Barba ilimitada', 'Hidratação', 'Agendamento prioritário'],
-          popular: true,
-          urlCheckout: '',
-          ativo: true,
-          criadoEm: new Date().toISOString()
-        }
-      ] as any[],
-      multi: [
-        {
-          id: 'multi-familia',
-          nome: 'Multi - Família',
-          categoria: 'Multi',
-          valor: 199.90,
-          descricao: 'Para toda a família',
-          detalhes: ['Plano Premium completo', '2 Cortes infantis inclusos', 'Agendamento para família'],
-          popular: false,
-          urlCheckout: '',
-          ativo: true,
-          criadoEm: new Date().toISOString()
-        }
-      ] as any[],
+      one: [] as any[],
+      gold: [] as any[],
+      multi: [] as any[],
       clientesAntigos: [] as any[],
       outros: [] as any[]
     };
@@ -171,14 +132,18 @@ export default function Planos() {
 
       // Categorizar baseado no nome do plano
       const nomeLower = plano.nome.toLowerCase();
-      if (nomeLower.includes('básico') || nomeLower.includes('one') || nomeLower.includes('simples')) {
+      const descricaoLower = (plano.descricao || '').toLowerCase();
+      
+      if (nomeLower.includes('one') || nomeLower.includes('básico') || nomeLower.includes('simples')) {
         categorias.one.push(planoFormatado);
-      } else if (nomeLower.includes('premium') || nomeLower.includes('gold') || nomeLower.includes('avançado')) {
+      } else if (nomeLower.includes('gold') || nomeLower.includes('premium') || nomeLower.includes('avançado')) {
         categorias.gold.push(planoFormatado);
-      } else if (nomeLower.includes('família') || nomeLower.includes('multi') || nomeLower.includes('completo')) {
+      } else if (nomeLower.includes('multi') || nomeLower.includes('família') || nomeLower.includes('completo')) {
         categorias.multi.push(planoFormatado);
-      } else {
+      } else if (nomeLower.includes('exclusiv') || nomeLower.includes('antigo') || descricaoLower.includes('exclusiv') || descricaoLower.includes('antigo')) {
         categorias.clientesAntigos.push(planoFormatado);
+      } else {
+        categorias.outros.push(planoFormatado);
       }
     });
 
