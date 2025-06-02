@@ -1312,15 +1312,30 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
 
-    // Buscar apenas barbeiros ativos da fila mensal
-    const filaFiltrada = filaMensalOriginal.filter((fila: any) => {
-      return barbeirosAtivos.some(item => item.barbeiroId === fila.barbeiro.id);
+    // Buscar apenas barbeiros ativos da fila mensal e adicionar ordem configurada
+    const filaComOrdem = filaMensalOriginal
+      .filter((fila: any) => {
+        return barbeirosAtivos.some(item => item.barbeiroId === fila.barbeiro.id);
+      })
+      .map((fila: any) => {
+        const ordemItem = barbeirosAtivos.find(item => item.barbeiroId === fila.barbeiro.id);
+        return {
+          ...fila,
+          ordemCustomizada: ordemItem?.ordemCustomizada || 999
+        };
+      });
+
+    // Ordenar primeiro pela ordem configurada, depois por atendimentos
+    filaComOrdem.sort((a: any, b: any) => {
+      // Primeiro critério: número de atendimentos (quem atendeu menos fica primeiro)
+      if (a.totalAtendimentos !== b.totalAtendimentos) {
+        return a.totalAtendimentos - b.totalAtendimentos;
+      }
+      // Segundo critério: ordem configurada no gerenciamento
+      return a.ordemCustomizada - b.ordemCustomizada;
     });
 
-    // Ordenar por número de atendimentos (quem atendeu menos fica primeiro)
-    filaFiltrada.sort((a: any, b: any) => a.totalAtendimentos - b.totalAtendimentos);
-
-    return filaFiltrada;
+    return filaComOrdem;
   }
 }
 
