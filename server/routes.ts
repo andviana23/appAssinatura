@@ -2231,6 +2231,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para buscar clientes da segunda conta Asaas (Andrey)
+  app.get("/api/clientes-asaas-andrey", requireAuth, async (req, res) => {
+    try {
+      console.log('🔍 Buscando clientes da conta Asaas Andrey');
+      
+      const token = process.env.ASAAS_API_KEY_ANDREY;
+      if (!token) {
+        return res.status(400).json({ success: false, error: 'Token da segunda API não encontrado' });
+      }
+      
+      const response = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        headers: {
+          'access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`📋 Encontrados ${data.totalCount} clientes da conta Andrey`);
+        
+        const clientesFormatados = data.data?.map((customer: any) => ({
+          id: customer.id,
+          nome: customer.name,
+          email: customer.email,
+          telefone: customer.phone || customer.mobilePhone,
+          cpf: customer.cpfCnpj,
+          endereco: customer.address,
+          cidade: customer.cityName,
+          estado: customer.state,
+          dataCadastro: customer.dateCreated,
+          origem: 'ASAAS_ANDREY'
+        })) || [];
+        
+        return res.json({
+          success: true,
+          total: data.totalCount,
+          clientes: clientesFormatados
+        });
+      } else {
+        const errorText = await response.text();
+        console.log('❌ Erro na segunda API:', errorText);
+        return res.status(response.status).json({ success: false, error: `Erro da API: ${errorText}` });
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar clientes Asaas Andrey:', error);
+      return res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Endpoint para cadastrar cliente da segunda conta no banco local
+  app.post("/api/clientes-asaas-andrey/cadastrar", requireAuth, async (req, res) => {
+    try {
+      const { clienteId, planoId, formaPagamento } = req.body;
+      
+      if (!clienteId || !planoId) {
+        return res.status(400).json({ error: 'Cliente ID e Plano ID são obrigatórios' });
+      }
+
+      // Buscar dados do cliente na API Andrey
+      const token = process.env.ASAAS_API_KEY_ANDREY;
+      const customerResponse = await fetch(`https://api.asaas.com/v3/customers/${clienteId}`, {
+        headers: {
+          'access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!customerResponse.ok) {
+        return res.status(400).json({ error: 'Cliente não encontrado na API Andrey' });
+      }
+
+      const customer = await customerResponse.json();
+      
+      // Buscar dados do plano
+      const plano = await storage.getPlano(planoId);
+      if (!plano) {
+        return res.status(400).json({ error: 'Plano não encontrado' });
+      }
+
+      // Criar cliente externo no banco local
+      const novoCliente = {
+        nome: customer.name,
+        email: customer.email,
+        telefone: customer.phone || customer.mobilePhone,
+        cpf: customer.cpfCnpj,
+        planoNome: plano.nome,
+        planoValor: parseFloat(plano.valorMensal),
+        formaPagamento: formaPagamento || 'PIX',
+        dataInicioAssinatura: new Date(),
+        dataVencimentoAssinatura: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
+        observacoes: `Importado da conta Asaas Andrey - ID original: ${clienteId}`
+      };
+
+      const clienteCriado = await storage.createClienteExterno(novoCliente);
+      
+      console.log(`✅ Cliente ${customer.name} cadastrado no banco local`);
+      
+      res.json({
+        success: true,
+        cliente: clienteCriado,
+        message: 'Cliente cadastrado com sucesso no sistema local'
+      });
+    } catch (error) {
+      console.error('❌ Erro ao cadastrar cliente:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint de teste isolado para verificar segunda integração
   app.get("/api/teste-isolado-segunda-api", requireAuth, async (req, res) => {
     try {

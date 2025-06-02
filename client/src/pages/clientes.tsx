@@ -6,13 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft, MoreVertical, Ban, Trash2 } from "lucide-react";
+import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft, MoreVertical, Ban, Trash2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ClienteUnificado {
   id: number;
@@ -36,6 +37,19 @@ interface ClientesStats {
   totalExpiringSubscriptions: number;
 }
 
+interface ClienteAsaasAndrey {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string | null;
+  cpf: string | null;
+  endereco: string | null;
+  cidade: string | null;
+  estado: string | null;
+  dataCadastro: string;
+  origem: 'ASAAS_ANDREY';
+}
+
 export default function Clientes() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -47,6 +61,7 @@ export default function Clientes() {
   const [filtroAno, setFiltroAno] = useState<string>(currentDate.getFullYear().toString());
   const [filtroOrigem, setFiltroOrigem] = useState<string>('todos');
   const [buscaNome, setBuscaNome] = useState<string>('');
+  const [abaAtiva, setAbaAtiva] = useState<string>('principal');
 
   const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
     queryKey: ['/api/clientes-unified/stats', filtroMes, filtroAno],
@@ -56,6 +71,13 @@ export default function Clientes() {
   const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
     queryKey: ['/api/clientes-unified'],
     refetchInterval: 300000,
+  });
+
+  // Hook para buscar clientes da segunda conta Asaas (Andrey)
+  const { data: clientesAndrey, isLoading: clientesAndreyLoading, refetch: refetchAndrey } = useQuery<{success: boolean, total: number, clientes: ClienteAsaasAndrey[]}>({
+    queryKey: ['/api/clientes-asaas-andrey'],
+    refetchInterval: 300000,
+    enabled: abaAtiva === 'andrey',
   });
 
   // Filtrar clientes baseado nos filtros selecionados
@@ -294,14 +316,23 @@ export default function Clientes() {
           </Card>
         </div>
 
-        {/* Filtros */}
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
+        {/* Abas para separar os clientes */}
+        <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="principal">Clientes Principal</TabsTrigger>
+            <TabsTrigger value="andrey">Clientes Asaas Andrey</TabsTrigger>
+          </TabsList>
+
+          {/* Aba Principal - Clientes existentes */}
+          <TabsContent value="principal" className="space-y-6">
+            {/* Filtros */}
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filtros
+                </CardTitle>
+              </CardHeader>
           <CardContent>
             {/* Barra de Busca */}
             <div className="mb-6">
@@ -517,6 +548,86 @@ export default function Clientes() {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          {/* Aba Clientes Asaas Andrey */}
+          <TabsContent value="andrey" className="space-y-6">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  Clientes Asaas Andrey
+                  <Badge variant="secondary" className="ml-2">
+                    {clientesAndrey?.total || 0} clientes
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {clientesAndreyLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <Skeleton className="h-4 w-48 mb-2" />
+                        <Skeleton className="h-3 w-64 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    ))}
+                  </div>
+                ) : clientesAndrey?.success && clientesAndrey.clientes.length > 0 ? (
+                  <div className="space-y-4">
+                    {clientesAndrey.clientes.map((cliente) => (
+                      <div key={cliente.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
+                            <p className="text-sm text-gray-600">{cliente.email}</p>
+                            {cliente.telefone && (
+                              <p className="text-sm text-gray-500">Telefone: {cliente.telefone}</p>
+                            )}
+                            {cliente.cpf && (
+                              <p className="text-sm text-gray-500">CPF: {cliente.cpf}</p>
+                            )}
+                            <div className="flex items-center gap-4 mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                Cadastrado: {new Date(cliente.dataCadastro).toLocaleDateString()}
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                Asaas Andrey
+                              </Badge>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Download className="mr-2 h-4 w-4" />
+                                Exportar dados
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <UserCheck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Nenhum cliente encontrado
+                    </h3>
+                    <p className="text-gray-500">
+                      Não há clientes cadastrados na conta Asaas Andrey
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
