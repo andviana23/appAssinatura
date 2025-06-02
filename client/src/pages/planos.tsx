@@ -119,28 +119,27 @@ export default function Planos() {
       const planoFormatado = {
         id: `custom_${plano.id}`,
         nome: plano.nome,
-        categoria: plano.categoria || 'Personalizado',
+        categoria: 'Personalizado',
         valor: parseFloat(plano.valorMensal || plano.valor || 0),
         descricao: plano.descricao || '',
         detalhes: plano.descricao ? [plano.descricao] : ['Plano personalizado'],
-        popular: false,
+        popular: plano.nome.toLowerCase().includes('premium'),
         urlCheckout: '',
         ativo: true,
         criadoEm: plano.createdAt,
         isPersonalizado: true
       };
 
-      // Categorizar baseado na categoria salva no banco
-      if (plano.categoria === '⭐One') {
+      // Categorizar baseado no nome do plano
+      const nomeLower = plano.nome.toLowerCase();
+      if (nomeLower.includes('básico') || nomeLower.includes('one') || nomeLower.includes('simples')) {
         categorias.one.push(planoFormatado);
-      } else if (plano.categoria === '👑Gold') {
+      } else if (nomeLower.includes('premium') || nomeLower.includes('gold') || nomeLower.includes('avançado')) {
         categorias.gold.push(planoFormatado);
-      } else if (plano.categoria === '🚀Multi') {
+      } else if (nomeLower.includes('família') || nomeLower.includes('multi') || nomeLower.includes('completo')) {
         categorias.multi.push(planoFormatado);
-      } else if (plano.categoria === 'Exclusiva clientes antigo') {
-        categorias.clientesAntigos.push(planoFormatado);
       } else {
-        categorias.outros.push(planoFormatado);
+        categorias.clientesAntigos.push(planoFormatado);
       }
     });
 
