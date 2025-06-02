@@ -6,10 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft } from "lucide-react";
+import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft, MoreVertical, Ban, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ClienteUnificado {
   id: number;
@@ -36,6 +39,7 @@ interface ClientesStats {
 export default function Clientes() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   
   // Estados para filtros de data
   const currentDate = new Date();
@@ -92,6 +96,91 @@ export default function Clientes() {
         variant: "destructive",
       });
     }
+  };
+
+  // Mutations para cancelar e excluir assinaturas
+  const cancelarAssinaturaMutation = useMutation({
+    mutationFn: async ({ clienteId, origem }: { clienteId: number; origem: 'ASAAS' | 'EXTERNO' }) => {
+      const endpoint = origem === 'EXTERNO' 
+        ? `/api/assinaturas-externas/${clienteId}/cancelar`
+        : `/api/assinaturas-asaas/${clienteId}/cancelar`;
+      
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao cancelar assinatura');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
+      toast({
+        title: "Assinatura cancelada",
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao cancelar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const excluirAssinaturaMutation = useMutation({
+    mutationFn: async ({ clienteId, origem }: { clienteId: number; origem: 'ASAAS' | 'EXTERNO' }) => {
+      const endpoint = origem === 'EXTERNO' 
+        ? `/api/assinaturas-externas/${clienteId}/excluir`
+        : `/api/assinaturas-asaas/${clienteId}/excluir`;
+      
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao excluir assinatura');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
+      toast({
+        title: "Assinatura excluída",
+        description: data.message,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCancelarAssinatura = (cliente: ClienteUnificado) => {
+    cancelarAssinaturaMutation.mutate({
+      clienteId: cliente.id,
+      origem: cliente.origem,
+    });
+  };
+
+  const handleExcluirAssinatura = (cliente: ClienteUnificado) => {
+    excluirAssinaturaMutation.mutate({
+      clienteId: cliente.id,
+      origem: cliente.origem,
+    });
   };
 
   if (statsLoading && clientesLoading) {
@@ -307,27 +396,100 @@ export default function Clientes() {
                 clientesFiltrados.map((cliente) => (
                   <div key={cliente.id} className="border rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{cliente.nome}</h3>
                         <p className="text-sm text-gray-600">{cliente.email}</p>
                         {cliente.telefone && (
                           <p className="text-sm text-gray-500">{cliente.telefone}</p>
                         )}
                       </div>
-                      <div className="text-right">
-                        <Badge 
-                          className={
-                            cliente.statusAssinatura === 'ATIVO' 
-                              ? "bg-green-100 text-green-700 border-green-200" 
-                              : "bg-gray-100 text-gray-700 border-gray-200"
-                          }
-                        >
-                          {cliente.statusAssinatura || 'INATIVO'}
-                        </Badge>
-                        <p className="text-sm text-gray-500 mt-1">{cliente.origem}</p>
-                        <p className="text-sm font-medium text-[#365e78]">
-                          {cliente.planoValor ? formatCurrency(parseFloat(cliente.planoValor)) : 'N/A'}
-                        </p>
+                      <div className="flex items-start gap-3">
+                        <div className="text-right">
+                          <Badge 
+                            className={
+                              cliente.statusAssinatura === 'ATIVO' 
+                                ? "bg-green-100 text-green-700 border-green-200" 
+                                : cliente.statusAssinatura === 'CANCELADO'
+                                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                : "bg-gray-100 text-gray-700 border-gray-200"
+                            }
+                          >
+                            {cliente.statusAssinatura || 'INATIVO'}
+                          </Badge>
+                          <p className="text-sm text-gray-500 mt-1">{cliente.origem}</p>
+                          <p className="text-sm font-medium text-[#365e78]">
+                            {cliente.planoValor ? formatCurrency(parseFloat(cliente.planoValor)) : 'N/A'}
+                          </p>
+                        </div>
+                        
+                        {/* Menu de Ações */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {cliente.statusAssinatura === 'ATIVO' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Cancelar Assinatura
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Cancelar Assinatura</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja cancelar a assinatura de {cliente.nome}? 
+                                      A assinatura permanecerá ativa até a data de vencimento.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleCancelarAssinatura(cliente)}
+                                      disabled={cancelarAssinaturaMutation.isPending}
+                                    >
+                                      {cancelarAssinaturaMutation.isPending ? "Cancelando..." : "Confirmar"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+                                  <span className="text-red-500">Excluir Permanentemente</span>
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Assinatura</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    <strong>ATENÇÃO:</strong> Esta ação é irreversível! 
+                                    Todos os dados de {cliente.nome} serão excluídos permanentemente.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleExcluirAssinatura(cliente)}
+                                    disabled={excluirAssinaturaMutation.isPending}
+                                    className="bg-red-500 hover:bg-red-600"
+                                  >
+                                    {excluirAssinaturaMutation.isPending ? "Excluindo..." : "Excluir"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     <div className="mt-2 text-sm text-gray-600">
