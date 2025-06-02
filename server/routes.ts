@@ -1045,8 +1045,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CRUD para Planos de Assinatura
-  app.get("/api/planos-assinatura", requireAuth, requireAdmin, async (req, res) => {
+  // CRUD para Planos de Assinatura - Admins e Recepcionistas podem visualizar
+  app.get("/api/planos-assinatura", requireAuth, async (req, res) => {
     try {
       const planos = await storage.getAllPlanos();
       res.json(planos);

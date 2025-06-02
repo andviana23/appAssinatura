@@ -70,151 +70,75 @@ export default function Planos() {
     }
   });
 
-  // Planos organizados por categoria com nova estrutura
-  const planosData = {
-    one: [
-      { 
-        id: "1", 
-        nome: "Clube do Trato One", 
-        categoria: "Corte + Barba",
-        valor: 120.00, 
-        descricao: "Corte + Barba mensal", 
-        detalhes: ["1x Corte por mês", "1x Barba por mês", "Atendimento personalizado"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      },
-      { 
-        id: "2", 
-        nome: "Clube do Trato One", 
-        categoria: "Corte",
-        valor: 67.50, 
-        descricao: "Corte mensal", 
-        detalhes: ["1x Corte por mês", "Produtos premium", "Ambiente exclusivo"],
-        popular: true,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      }
-    ],
-    gold: [
-      { 
-        id: "3", 
-        nome: "Clube do Trato Gold", 
-        categoria: "Corte + Barba",
-        valor: 349.90, 
-        descricao: "Experiência premium completa", 
-        detalhes: ["Corte + Barba premium", "Produtos importados", "Atendimento VIP", "Horário exclusivo"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      },
-      { 
-        id: "4", 
-        nome: "Clube do Trato Gold", 
-        categoria: "Corte",
-        valor: 210.00, 
-        descricao: "Corte premium exclusivo", 
-        detalhes: ["Corte premium", "Produtos importados", "Atendimento VIP"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      },
-      { 
-        id: "5", 
-        nome: "Clube do Trato Gold", 
-        categoria: "Barba",
-        valor: 249.90, 
-        descricao: "Barba premium especializada", 
-        detalhes: ["Barba premium", "Produtos importados", "Técnicas exclusivas"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      }
-    ],
-    multi: [
-      { 
-        id: "6", 
-        nome: "Clube do Trato Mult - Corte e Barba 2x", 
-        categoria: "Corte e Barba 2x",
-        valor: 199.90, 
-        descricao: "Flexibilidade máxima", 
-        detalhes: ["2x Corte por mês", "2x Barba por mês", "Agendamento flexível"],
-        popular: true,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      },
-      { 
-        id: "7", 
-        nome: "Clube do Trato Mult - Corte 2x e Barba 4x", 
-        categoria: "Corte 2x + Barba 4x",
-        valor: 299.90, 
-        descricao: "Para quem cuida da barba", 
-        detalhes: ["2x Corte por mês", "4x Barba por mês", "Cuidado especializado"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      },
-      { 
-        id: "8", 
-        nome: "Clube do Trato Mult - Corte 2x", 
-        categoria: "Corte 2x",
-        valor: 114.90, 
-        descricao: "Sempre com corte em dia", 
-        detalhes: ["2x Corte por mês", "Agendamento prioritário", "Flexibilidade total"],
-        popular: false,
-        urlCheckout: "", 
-        ativo: true,
-        criadoEm: ""
-      }
-    ]
-  };
-
-  // Converter planos personalizados para o formato esperado
-  const planosPersonalizadosFormatados = planosPersonalizados.map((plano: any) => {
-    // Converter valor decimal string para number
-    let valor = 0;
-    if (plano.valor) {
-      valor = typeof plano.valor === 'number' ? plano.valor : parseFloat(plano.valor);
-    } else if (plano.valorMensal) {
-      valor = typeof plano.valorMensal === 'number' ? plano.valorMensal : parseFloat(plano.valorMensal);
+  // Buscar planos do Asaas
+  const { data: planosAsaas = [], isLoading: loadingAsaas } = useQuery({
+    queryKey: ['/api/asaas/planos'],
+    queryFn: async () => {
+      const response = await apiRequest('/api/asaas/planos');
+      return response.json();
     }
-    
-    return {
-      id: `custom_${plano.id}`,
-      nome: plano.nome,
-      categoria: plano.categoria,
-      valor: valor,
-      descricao: plano.descricao || '',
-      detalhes: plano.beneficios || [],
-      popular: false,
-      urlCheckout: '',
-      ativo: plano.ativo !== false,
-      criadoEm: plano.createdAt || new Date().toISOString()
-    };
   });
 
-  // Organizar planos personalizados por categoria
-  const planosPersonalizadosPorCategoria = {
-    one: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '⭐One'),
-    gold: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '👑Gold'),
-    multi: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '🚀Multi'),
-    exclusivo: planosPersonalizadosFormatados.filter((p: any) => p.categoria === 'Exclusiva clientes antigo')
+  // Organizar todos os planos reais por categoria
+  const organizarPlanosPorCategoria = () => {
+    const categorias = {
+      one: [] as any[],
+      gold: [] as any[],
+      multi: [] as any[],
+      clientesAntigos: [] as any[],
+      outros: [] as any[]
+    };
+
+    // Adicionar planos do Asaas
+    planosAsaas.forEach((plano: PlanoAsaas) => {
+      const planoFormatado = {
+        ...plano,
+        categoria: plano.nome.includes('Gold') ? 'Gold' : 
+                   plano.nome.includes('Multi') || plano.nome.includes('2x') || plano.nome.includes('4x') ? 'Multi' : 
+                   plano.nome.includes('One') ? 'One' :
+                   plano.nome.includes('clientes antigo') ? 'Promoção Especial' : 'Geral',
+        detalhes: plano.descricao ? [plano.descricao] : ['Assinatura mensal', 'Serviços inclusos'],
+        popular: plano.nome.includes('One - Corte') && !plano.nome.includes('Barba')
+      };
+
+      if (plano.nome.includes('One')) {
+        categorias.one.push(planoFormatado);
+      } else if (plano.nome.includes('Gold')) {
+        categorias.gold.push(planoFormatado);
+      } else if (plano.nome.includes('Multi') || plano.nome.includes('2x') || plano.nome.includes('4x')) {
+        categorias.multi.push(planoFormatado);
+      } else if (plano.nome.includes('clientes antigo')) {
+        categorias.clientesAntigos.push(planoFormatado);
+      } else {
+        categorias.outros.push(planoFormatado);
+      }
+    });
+
+    // Adicionar planos personalizados do banco de dados
+    planosPersonalizados.forEach((plano: any) => {
+      const planoFormatado = {
+        id: `custom_${plano.id}`,
+        nome: plano.nome,
+        categoria: plano.categoria || 'Personalizado',
+        valor: parseFloat(plano.valorMensal || plano.valor || 0),
+        descricao: plano.descricao || '',
+        detalhes: plano.descricao ? [plano.descricao] : ['Plano personalizado'],
+        popular: false,
+        urlCheckout: '',
+        ativo: true,
+        criadoEm: plano.createdAt,
+        isPersonalizado: true
+      };
+
+      categorias.outros.push(planoFormatado);
+    });
+
+    return categorias;
   };
 
-  // Mesclar planos fixos com personalizados
-  const planosCompletos = {
-    one: [...planosData.one, ...planosPersonalizadosPorCategoria.one],
-    gold: [...planosData.gold, ...planosPersonalizadosPorCategoria.gold],
-    multi: [...planosData.multi, ...planosPersonalizadosPorCategoria.multi],
-    exclusivo: planosPersonalizadosPorCategoria.exclusivo
-  };
+  const planosData = organizarPlanosPorCategoria();
+
+  const isLoading = loadingPersonalizados || loadingAsaas;
 
   // Flatten all plans for filtering
   const allPlanos = Object.values(planosCompletos).flat();
