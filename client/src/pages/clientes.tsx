@@ -131,31 +131,7 @@ export default function Clientes() {
     }
   };
 
-  // Mutation para sincronizar clientes da segunda conta Asaas com banco local
-  const syncMutation = useMutation({
-    mutationFn: () => apiRequest('/api/clientes-asaas-andrey/sync', {
-      method: 'POST'
-    }),
-    onSuccess: (data: any) => {
-      toast({
-        title: "Sincronização Concluída",
-        description: `${data.clientesSincronizados} novos clientes sincronizados para agendamento`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-ativos-agendamento'] });
-    },
-    onError: () => {
-      toast({
-        title: "Erro",
-        description: "Falha na sincronização dos clientes",
-        variant: "destructive",
-      });
-    }
-  });
 
-  const handleSyncClientes = () => {
-    syncMutation.mutate();
-  };
 
   // Mutations para cancelar e excluir assinaturas
   const cancelarAssinaturaMutation = useMutation({
@@ -610,24 +586,16 @@ export default function Clientes() {
           <TabsContent value="andrey" className="space-y-6">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <UserCheck className="h-5 w-5" />
-                      Clientes Asaas Andrey
-                      <Badge variant="secondary" className="ml-2">
-                        {clientesAndrey?.total || 0} clientes
-                      </Badge>
-                    </CardTitle>
-                  </div>
-                  <Button
-                    onClick={handleSyncClientes}
-                    disabled={syncMutation.isPending}
-                    className="bg-[#365e78] hover:bg-[#2a4a5f]"
-                  >
-                    {syncMutation.isPending ? "Sincronizando..." : "Sincronizar para Agendamento"}
-                  </Button>
-                </div>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  Clientes Asaas Andrey
+                  <Badge variant="secondary" className="ml-2">
+                    {clientesAndrey?.total || 0} clientes
+                  </Badge>
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    Sincronização Automática
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {clientesAndreyLoading ? (

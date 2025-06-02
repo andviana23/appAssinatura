@@ -3882,6 +3882,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesAtivos = [];
       const clientesAsaasProcessados = new Set<string>();
 
+      // SINCRONIZAÇÃO AUTOMÁTICA: Buscar e sincronizar clientes da segunda conta Asaas
+      try {
+        const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+        if (tokenAndrey) {
+          console.log('🔄 Sincronização automática: Verificando clientes da segunda conta Asaas');
+
+          // Buscar clientes da API Asaas Andrey
+          const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+            headers: {
+              'access_token': tokenAndrey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (clientesResponse.ok) {
+            const clientesData = await clientesResponse.json();
+
+            // Buscar assinaturas ativas
+            const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+              headers: {
+                'access_token': tokenAndrey,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            let assinaturasPorCliente = new Map();
+            if (assinaturasResponse.ok) {
+              const assinaturasData = await assinaturasResponse.json();
+              assinaturasData.data?.forEach((assinatura: any) => {
+                // Calcular data de vencimento (30 dias a partir da próxima cobrança)
+                const dataVencimento = new Date(assinatura.nextDueDate);
+                dataVencimento.setDate(dataVencimento.getDate() + 30);
+                
+                assinaturasPorCliente.set(assinatura.customer, {
+                  planoNome: assinatura.description || 'Assinatura Asaas',
+                  planoValor: assinatura.value.toString(),
+                  formaPagamento: assinatura.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                            assinatura.billingType === 'PIX' ? 'PIX' :
+                            assinatura.billingType === 'BOLETO' ? 'Boleto' : assinatura.billingType,
+                  statusAssinatura: 'ATIVO',
+                  dataInicioAssinatura: new Date(assinatura.dateCreated),
+                  dataVencimentoAssinatura: dataVencimento
+                });
+              });
+            }
+
+            // Verificar clientes externos existentes para evitar duplicação
+            const clientesExistentes = await storage.getAllClientesExternos();
+            const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+
+            let clientesSincronizados = 0;
+            for (const customer of clientesData.data || []) {
+              // Pular se cliente já existe no banco
+              if (emailsExistentes.has(customer.email.toLowerCase())) {
+                continue;
+              }
+
+              const assinatura = assinaturasPorCliente.get(customer.id);
+              
+              // Só cadastrar clientes com assinatura ativa
+              if (assinatura) {
+                try {
+                  await storage.createClienteExterno({
+                    nome: customer.name,
+                    email: customer.email,
+                    telefone: customer.phone || customer.mobilePhone,
+                    cpf: customer.cpfCnpj,
+                    planoNome: assinatura.planoNome,
+                    planoValor: assinatura.planoValor,
+                    formaPagamento: assinatura.formaPagamento,
+                    statusAssinatura: assinatura.statusAssinatura,
+                    dataInicioAssinatura: assinatura.dataInicioAssinatura,
+                    dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura
+                  });
+                  clientesSincronizados++;
+                } catch (error) {
+                  console.warn(`Erro ao sincronizar cliente ${customer.name}:`, error);
+                }
+              }
+            }
+
+            if (clientesSincronizados > 0) {
+              console.log(`✅ Sincronização automática: ${clientesSincronizados} novos clientes sincronizados`);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Erro na sincronização automática da segunda conta Asaas:', error);
+      }
+
       // Buscar clientes da tabela 'clientes'
       const clientesLocais = await storage.getAllClientes();
       
