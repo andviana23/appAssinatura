@@ -1209,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
   // === MÉTODOS PARA GERENCIAMENTO DE ORDEM DA FILA ===
 
   async getOrdemFila(): Promise<any[]> {
-    const resultado = await this.db
+    const resultado = await db
       .select({
         id: ordemFila.id,
         barbeiroId: ordemFila.barbeiroId,
@@ -1232,7 +1232,7 @@ export class DatabaseStorage implements IStorage {
   async reordenarFila(novaOrdem: { barbeiroId: number; ordemCustomizada: number }[]): Promise<any[]> {
     // Atualizar ordem personalizada de cada barbeiro
     for (const item of novaOrdem) {
-      await this.db
+      await db
         .update(ordemFila)
         .set({ 
           ordemCustomizada: item.ordemCustomizada,
@@ -1246,7 +1246,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async toggleBarbeiroFila(barbeiroId: number, ativo: boolean): Promise<any> {
-    const [resultado] = await this.db
+    const [resultado] = await db
       .update(ordemFila)
       .set({ 
         ativo,
@@ -1260,7 +1260,7 @@ export class DatabaseStorage implements IStorage {
 
   async inicializarOrdemFila(): Promise<any[]> {
     // Buscar todos os barbeiros ativos
-    const barbeirosAtivos = await this.db
+    const barbeirosAtivos = await db
       .select()
       .from(barbeiros)
       .where(eq(barbeiros.ativo, true))
@@ -1271,7 +1271,7 @@ export class DatabaseStorage implements IStorage {
       const barbeiro = barbeirosAtivos[i];
       
       // Verificar se já existe entrada para este barbeiro
-      const existeOrdem = await this.db
+      const existeOrdem = await db
         .select()
         .from(ordemFila)
         .where(eq(ordemFila.barbeiroId, barbeiro.id))
@@ -1279,7 +1279,7 @@ export class DatabaseStorage implements IStorage {
 
       if (existeOrdem.length === 0) {
         // Criar nova entrada
-        await this.db
+        await db
           .insert(ordemFila)
           .values({
             barbeiroId: barbeiro.id,
