@@ -3378,6 +3378,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Estatísticas específicas do barbeiro
+  app.get("/api/barbeiro/estatisticas", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      const barbeiroId = session.barbeiroId;
+
+      if (!barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado. Apenas barbeiros podem acessar." });
+      }
+
+      // Buscar total de atendimentos do barbeiro
+      const totalAtendimentos = await storage.getTotalAtendimentosBarbeiro(barbeiroId);
+      
+      // Calcular média de atendimentos (últimos 30 dias)
+      const dataInicio = new Date();
+      dataInicio.setDate(dataInicio.getDate() - 30);
+      const atendimentosUltimos30Dias = await storage.getAtendimentosBarbeiroPeriodo(barbeiroId, dataInicio, new Date());
+      const mediaAtendimentos = Math.round(atendimentosUltimos30Dias.length / 30 * 10) / 10;
+
+      // Buscar serviços por tipo no mês atual
+      const inicioMes = new Date();
+      inicioMes.setDate(1);
+      inicioMes.setHours(0, 0, 0, 0);
+      
+      const fimMes = new Date();
+      fimMes.setMonth(fimMes.getMonth() + 1);
+      fimMes.setDate(0);
+      fimMes.setHours(23, 59, 59, 999);
+
+      const servicosPorTipo = await storage.getServicosPorTipoBarbeiro(barbeiroId, inicioMes, fimMes);
+
+      res.json({
+        totalAtendimentos: totalAtendimentos || 0,
+        mediaAtendimentos,
+        servicosPorTipo: servicosPorTipo || []
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas do barbeiro:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Posição do barbeiro na fila
+  app.get("/api/barbeiro/posicao-fila", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const session = req.session as SessionData;
+      const barbeiroId = session.barbeiroId;
+
+      if (!barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado. Apenas barbeiros podem acessar." });
+      }
+
+      // Buscar dados da fila mensal atual
+      const mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const filaMensal = await storage.getFilaMensal(mesAtual);
+      
+      // Encontrar posição do barbeiro
+      const barbeiros = filaMensal || [];
+      barbeiros.sort((a, b) => a.totalAtendimentos - b.totalAtendimentos);
+      
+      const posicaoBarbeiro = barbeiros.findIndex(item => item.barbeiroId === barbeiroId);
+      let statusFila = "Você não está na fila";
+      
+      if (posicaoBarbeiro !== -1) {
+        const pessoasNaFrente = posicaoBarbeiro;
+        
+        if (pessoasNaFrente === 0) {
+          statusFila = "É SUA VEZ!";
+        } else if (pessoasNaFrente === 1) {
+          statusFila = "Você é o PRÓXIMO";
+        } else {
+          statusFila = `${pessoasNaFrente} pessoas na sua frente`;
+        }
+      }
+
+      res.json({
+        posicao: posicaoBarbeiro + 1,
+        statusFila,
+        totalBarbeiros: barbeiros.length
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar posição na fila:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

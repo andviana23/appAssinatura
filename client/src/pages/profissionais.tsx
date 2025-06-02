@@ -58,17 +58,7 @@ export default function Profissionais() {
     refetchOnWindowFocus: false,
   });
 
-  // Debug logs
-  useEffect(() => {
-    console.log('Debug - Estado atual:', {
-      isEdicao,
-      profissionalId,
-      profissionalData,
-      loadingProfissional,
-      errorProfissional,
-      formData
-    });
-  }, [isEdicao, profissionalId, profissionalData, loadingProfissional, errorProfissional, formData]);
+
 
   // Limpar formulário ao navegar ou carregar dados para edição
   useEffect(() => {

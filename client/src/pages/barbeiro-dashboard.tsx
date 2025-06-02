@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Scissors, Clock, DollarSign, Calendar, TrendingUp, Award, ArrowLeft } from "lucide-react";
+import { Scissors, Clock, DollarSign, Calendar, TrendingUp, Award, ArrowLeft, Target, BarChart3, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -11,22 +12,22 @@ export default function BarbeiroDashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   
+  // Buscar estatísticas específicas do barbeiro
+  const { data: estatisticas, isLoading: estatisticasLoading } = useQuery({
+    queryKey: ["/api/barbeiro/estatisticas"],
+    queryFn: () => apiRequest("/api/barbeiro/estatisticas"),
+  });
+
+  // Buscar posição na fila
+  const { data: posicaoFila, isLoading: filaLoading } = useQuery({
+    queryKey: ["/api/barbeiro/posicao-fila"],
+    queryFn: () => apiRequest("/api/barbeiro/posicao-fila"),
+  });
+
   // Buscar dados de comissão do barbeiro específico
   const { data: comissaoData, isLoading: comissaoLoading } = useQuery({
     queryKey: ["/api/comissoes/barbeiro"],
     queryFn: () => apiRequest("/api/comissoes/barbeiro"),
-  });
-
-  // Buscar agendamentos do barbeiro
-  const { data: agendamentos, isLoading: agendamentosLoading } = useQuery({
-    queryKey: ["/api/agendamentos"],
-    queryFn: () => apiRequest("/api/agendamentos"),
-  });
-
-  // Buscar dados da fila mensal
-  const { data: filaMensal, isLoading: filaLoading } = useQuery({
-    queryKey: ["/api/lista-da-vez/fila-mensal"],
-    queryFn: () => apiRequest("/api/lista-da-vez/fila-mensal"),
   });
 
   const hoje = new Date();

@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, desc, and, gte, lte, sql, like, lt } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, like, lt, count } from "drizzle-orm";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -1125,6 +1125,57 @@ export class DatabaseStorage implements IStorage {
   // Excluir assinatura Asaas completamente
   async excluirAssinaturaAsaas(clienteId: number): Promise<void> {
     await db.delete(clientes).where(eq(clientes.id, clienteId));
+  }
+
+  // Métodos para estatísticas do barbeiro
+  
+  async getTotalAtendimentosBarbeiro(barbeiroId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(agendamentos)
+      .where(and(
+        eq(agendamentos.barbeiroId, barbeiroId),
+        eq(agendamentos.status, 'FINALIZADO')
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async getAtendimentosBarbeiroPeriodo(barbeiroId: number, dataInicio: Date, dataFim: Date): Promise<Agendamento[]> {
+    return await db
+      .select()
+      .from(agendamentos)
+      .where(and(
+        eq(agendamentos.barbeiroId, barbeiroId),
+        eq(agendamentos.status, 'FINALIZADO'),
+        gte(agendamentos.dataHora, dataInicio),
+        lte(agendamentos.dataHora, dataFim)
+      ));
+  }
+
+  async getServicosPorTipoBarbeiro(barbeiroId: number, dataInicio: Date, dataFim: Date): Promise<Array<{
+    servicoNome: string;
+    quantidade: number;
+  }>> {
+    const result = await db
+      .select({
+        servicoNome: servicos.nome,
+        quantidade: count()
+      })
+      .from(agendamentos)
+      .leftJoin(servicos, eq(agendamentos.servicoId, servicos.id))
+      .where(and(
+        eq(agendamentos.barbeiroId, barbeiroId),
+        eq(agendamentos.status, 'FINALIZADO'),
+        gte(agendamentos.dataHora, dataInicio),
+        lte(agendamentos.dataHora, dataFim)
+      ))
+      .groupBy(servicos.id, servicos.nome)
+      .orderBy(desc(count()));
+
+    return result.map(item => ({
+      servicoNome: item.servicoNome || 'Serviço não encontrado',
+      quantidade: item.quantidade
+    }));
   }
 
   // Buscar assinaturas canceladas que expiraram (para limpeza automática)

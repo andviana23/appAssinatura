@@ -1,0 +1,118 @@
+Objetivo
+Modificar a página do usuário barbeiro para exibir informações específicas sobre seus atendimentos e posição na fila.
+Alterações a Implementar
+1. Informações do Barbeiro a Exibir
+Na página "Lista da Vez" do barbeiro, mostrar:
+A. Estatísticas de Atendimento:
+
+Total de atendimentos realizados (contador geral)
+Média de atendimentos (por dia/semana/mês - definir período)
+
+B. Posição na Fila:
+
+Status atual na fila:
+
+Se é a vez dele: "É SUA VEZ!"
+Se é o próximo: "Você é o PRÓXIMO"
+Se tem pessoas na frente: "X pessoas na sua frente"
+Se não está na fila: "Você não está na fila"
+
+
+
+C. Serviços por Tipo (Mês Atual):
+
+Quantidade de cada tipo de serviço realizado no mês vigente
+Exemplo:
+
+Corte simples: 15
+Barba: 8
+Corte + Barba: 12
+Outros serviços: 3
+
+
+
+2. Remover
+
+Total de Barbeiros Ativos (remover esta informação da página)
+
+3. Manter
+
+Todas as outras funcionalidades existentes da página
+
+Estrutura Sugerida da Interface
+=== PAINEL DO BARBEIRO ===
+
+📊 SUAS ESTATÍSTICAS
+- Total de atendimentos: [X]
+- Média de atendimentos: [X por dia/semana]
+
+🎯 SUA POSIÇÃO NA FILA
+- [Status da fila - dinâmico]
+
+📈 SERVIÇOS DO MÊS (Janeiro 2025)
+- Corte simples: [X]
+- Barba: [X] 
+- Corte + Barba: [X]
+- [Outros tipos]: [X]
+
+[Resto da interface mantida]
+Requisitos Técnicos
+Backend/Lógica:
+
+Contador de atendimentos:
+
+Incrementar a cada atendimento finalizado
+Armazenar no banco de dados
+
+
+Cálculo da média:
+
+Baseado em período definido (sugestão: últimos 30 dias)
+Fórmula: total_atendimentos / dias_ativos
+
+
+Posição na fila:
+
+Lógica para determinar posição do barbeiro na fila
+Atualização em tempo real
+
+
+Serviços por tipo:
+
+Filtrar por mês atual
+Agrupar por tipo de serviço
+Contar quantidades
+
+
+
+Frontend:
+
+Atualização dinâmica da posição na fila
+Interface responsiva para mobile
+Cores/ícones para facilitar visualização
+Atualização automática das estatísticas
+
+Banco de Dados
+Certifique-se de que as tabelas tenham:
+
+Campo para contar atendimentos por barbeiro
+Campo para tipo de serviço
+Campo para data/hora do atendimento
+Sistema de fila com posições
+
+Considerações Adicionais
+
+Performance: Cache das estatísticas se necessário
+Tempo real: WebSocket ou polling para posição na fila
+Histórico: Manter histórico de atendimentos para cálculos
+Mobile first: Interface otimizada para smartphones
+
+Teste
+Testar cenários:
+
+Barbeiro sem atendimentos
+Barbeiro fora da fila
+Barbeiro em diferentes posições da fila
+Virada de mês (zerar contadores mensais)
+
+Implemente essas modificações mantendo a funcionalidade existente e focando na experiência do usuário barbeiro.
