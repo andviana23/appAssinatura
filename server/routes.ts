@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { storage } from "./storage";
+import { syncAsaasData } from "./asaas-sync";
 import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema, insertAgendamentoSchema, insertClienteSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
@@ -658,6 +659,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Erro ao buscar estatísticas unificadas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ===== ROTA OTIMIZADA PARA SINCRONIZAÇÃO ASAAS =====
+  app.get("/api/asaas/sync", requireAuth, async (req, res) => {
+    try {
+      const result = await syncAsaasData();
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na sincronização Asaas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ===== ROTA ESPECÍFICA PARA TRATO DE BARBADOS =====
+  app.get("/api/clientes-trato-barbados", requireAuth, async (req, res) => {
+    try {
+      const tratoBarbadosApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
+      
+      console.log('🔍 Buscando clientes da conta Trato de Barbados');
+      
+      // Buscar clientes
+      const customersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        headers: {
+          'access_token': tratoBarbadosApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!customersResponse.ok) {
+        throw new Error(`Erro na API Trato de Barbados: ${customersResponse.status}`);
+      }
+
+      const customersData = await customersResponse.json();
+      console.log(`📋 Encontrados ${customersData.totalCount || 0} clientes da conta Trato de Barbados`);
+
+      // Buscar assinaturas ativas
+      const subscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+        headers: {
+          'access_token': tratoBarbadosApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const subscriptionsData = subscriptionsResponse.ok ? await subscriptionsResponse.json() : { data: [] };
+      const activeSubscriptions = new Set(subscriptionsData.data?.map((s: any) => s.customer) || []);
+
+      const clientesProcessados = [];
+      for (const customer of customersData.data || []) {
+        const hasActiveSubscription = activeSubscriptions.has(customer.id);
+        
+        clientesProcessados.push({
+          id: customer.id,
+          nome: customer.name,
+          email: customer.email,
+          telefone: customer.phone || customer.mobilePhone,
+          cpf: customer.cpfCnpj,
+          origem: 'TRATO_BARBADOS',
+          statusAssinatura: hasActiveSubscription ? 'ATIVO' : 'INATIVO',
+          planoNome: hasActiveSubscription ? 'Assinatura Ativa' : 'Cliente Cadastrado',
+          planoValor: hasActiveSubscription ? '50.00' : '0.00',
+          dataCreated: customer.dateCreated
+        });
+      }
+
+      res.json({
+        success: true,
+        total: customersData.totalCount || 0,
+        clientes: clientesProcessados,
+        assinaturasAtivas: activeSubscriptions.size
+      });
+    } catch (error) {
+      console.error("Erro ao buscar clientes Trato de Barbados:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
