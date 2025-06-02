@@ -130,7 +130,18 @@ export default function Planos() {
         isPersonalizado: true
       };
 
-      categorias.outros.push(planoFormatado);
+      // Categorizar baseado na categoria salva no banco
+      if (plano.categoria === '⭐One') {
+        categorias.one.push(planoFormatado);
+      } else if (plano.categoria === '👑Gold') {
+        categorias.gold.push(planoFormatado);
+      } else if (plano.categoria === '🚀Multi') {
+        categorias.multi.push(planoFormatado);
+      } else if (plano.categoria === 'Exclusiva clientes antigo') {
+        categorias.clientesAntigos.push(planoFormatado);
+      } else {
+        categorias.outros.push(planoFormatado);
+      }
     });
 
     return categorias;
