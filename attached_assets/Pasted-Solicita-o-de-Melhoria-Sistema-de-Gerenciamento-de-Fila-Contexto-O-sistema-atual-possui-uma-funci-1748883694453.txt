@@ -1,0 +1,54 @@
+Solicitação de Melhoria - Sistema de Gerenciamento de Fila
+Contexto
+O sistema atual possui uma funcionalidade "Lista da vez" que exibe os profissionais em ordem sequencial. Esta solicitação visa implementar melhorias na interface administrativa para otimizar o gerenciamento operacional da fila de atendimento.
+Requisitos Funcionais
+1. Reordenação Manual de Profissionais
+
+Implementar funcionalidade exclusiva para conta administrador na seção "Lista da vez"
+Permitir reorganização da ordem de exibição dos profissionais através de interface drag-and-drop ou controles de posicionamento
+Manter a integridade do número de atendimento original do profissional (não alterar numeração sequencial)
+Persistir a ordem customizada definida pelo administrador como configuração fixa do sistema
+A reordenação deve sobrescrever qualquer ordenação automática prévia
+
+2. Controle de Status de Profissionais
+
+Adicionar toggle de ativação/desativação para cada profissional na lista
+Profissionais desativados devem ser removidos da visualização da fila pública
+Manter registro do profissional desativado no sistema administrativo
+Permitir reativação posterior sem perda de dados ou posicionamento
+
+Especificações Técnicas
+Interface Administrativa
+
+Seção dedicada "Gerenciar Lista da Vez" exclusiva para administradores
+Controles visuais intuitivos para reordenação (setas up/down ou drag-and-drop)
+Indicadores visuais claros para status ativo/inativo de cada profissional
+Confirmação de ações críticas (desativação/reativação)
+
+Persistência de Dados
+
+Salvar ordem personalizada em estrutura de dados dedicada
+Implementar versionamento de configurações para auditoria
+Garantir que mudanças na ordem não afetem outros módulos do sistema
+
+Impacto na Experiência do Usuário
+
+Lista pública deve refletir imediatamente as alterações administrativas
+Manter performance otimizada mesmo com reordenações frequentes
+Implementar feedback visual durante operações de reorganização
+
+Objetivos de Negócio
+Esta implementação visa:
+
+Flexibilizar o gerenciamento operacional da fila de atendimento
+Permitir priorização estratégica de profissionais conforme demanda
+Otimizar recursos através do controle de disponibilidade
+Manter controle administrativo centralizado sobre a operação
+
+Critérios de Aceitação
+
+Administrador consegue reordenar profissionais mantendo números originais
+Ordem personalizada persiste entre sessões
+Ativação/desativação funciona corretamente
+Lista pública atualiza em tempo real
+Performance do sistema mantida

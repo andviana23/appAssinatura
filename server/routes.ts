@@ -3466,6 +3466,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === GERENCIAMENTO DE ORDEM DA FILA (ADMIN APENAS) ===
+
+  // GET /api/ordem-fila - Obter configuração atual da ordem da fila
+  app.get('/api/ordem-fila', requireAdmin, async (req, res) => {
+    try {
+      const ordemFila = await storage.getOrdemFila();
+      res.json(ordemFila);
+    } catch (error: any) {
+      console.error('Erro ao buscar ordem da fila:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/ordem-fila/reordenar - Reordenar profissionais na fila
+  app.post('/api/ordem-fila/reordenar', requireAdmin, async (req, res) => {
+    try {
+      const { novaOrdem } = req.body; // Array de { barbeiroId, ordemCustomizada }
+      
+      if (!Array.isArray(novaOrdem)) {
+        return res.status(400).json({ message: 'Nova ordem deve ser um array' });
+      }
+
+      const resultado = await storage.reordenarFila(novaOrdem);
+      res.json({ message: 'Ordem da fila atualizada com sucesso', dados: resultado });
+    } catch (error: any) {
+      console.error('Erro ao reordenar fila:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // PUT /api/ordem-fila/:barbeiroId/toggle - Ativar/desativar barbeiro na fila
+  app.put('/api/ordem-fila/:barbeiroId/toggle', requireAdmin, async (req, res) => {
+    try {
+      const barbeiroId = parseInt(req.params.barbeiroId);
+      const { ativo } = req.body;
+      
+      if (typeof ativo !== 'boolean') {
+        return res.status(400).json({ message: 'Status ativo deve ser boolean' });
+      }
+
+      const resultado = await storage.toggleBarbeiroFila(barbeiroId, ativo);
+      res.json({ 
+        message: `Barbeiro ${ativo ? 'ativado' : 'desativado'} na fila com sucesso`, 
+        dados: resultado 
+      });
+    } catch (error: any) {
+      console.error('Erro ao alterar status do barbeiro na fila:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // POST /api/ordem-fila/inicializar - Inicializar ordem da fila com todos os barbeiros
+  app.post('/api/ordem-fila/inicializar', requireAdmin, async (req, res) => {
+    try {
+      const resultado = await storage.inicializarOrdemFila();
+      res.json({ message: 'Ordem da fila inicializada com sucesso', dados: resultado });
+    } catch (error: any) {
+      console.error('Erro ao inicializar ordem da fila:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

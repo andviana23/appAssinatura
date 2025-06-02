@@ -20,6 +20,7 @@ import {
   agendamentos,
   atendimentosDiarios,
   sequenciaBarbeiros,
+  ordemFila,
   type Barbeiro,
   type InsertBarbeiro,
   type Servico,
@@ -46,6 +47,8 @@ import {
   type InsertAtendimentoDiario,
   type SequenciaBarbeiro,
   type InsertSequenciaBarbeiro,
+  type OrdemFila,
+  type InsertOrdemFila,
 } from "@shared/schema";
 
 // Debug da conexão

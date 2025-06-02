@@ -248,6 +248,29 @@ export const insertAtendimentoDiarioSchema = createInsertSchema(atendimentosDiar
   updatedAt: true,
 });
 
+// Tabela para gerenciar ordem personalizada da fila
+export const ordemFila = pgTable("ordem_fila", {
+  id: serial("id").primaryKey(),
+  barbeiroId: integer("barbeiro_id").notNull().references(() => barbeiros.id),
+  ordemCustomizada: integer("ordem_customizada").notNull(), // Posição definida pelo admin
+  ativo: boolean("ativo").notNull().default(true), // Status ativo/inativo na fila
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    uniqueBarbeiro: unique().on(table.barbeiroId),
+  };
+});
+
+export type OrdemFila = typeof ordemFila.$inferSelect;
+export type InsertOrdemFila = typeof ordemFila.$inferInsert;
+
+export const insertOrdemFilaSchema = createInsertSchema(ordemFila).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertSequenciaBarbeiroSchema = createInsertSchema(sequenciaBarbeiros).omit({
   id: true,
   createdAt: true,
