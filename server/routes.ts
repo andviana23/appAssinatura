@@ -2254,7 +2254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'PRINCIPAL'
         },
         {
-          apiKey: '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
+          apiKey: process.env.ASAAS_API_KEY_ANDREY,
           name: 'ANDREY'
         }
       ];
@@ -2275,9 +2275,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           });
 
+          let clientesProcessados = new Set();
+
           if (subscriptionsResponse.ok) {
             const subscriptionsData = await subscriptionsResponse.json();
-            const clientesProcessados = new Set();
 
             for (const subscription of subscriptionsData.data || []) {
               if (!clientesProcessados.has(subscription.customer)) {
