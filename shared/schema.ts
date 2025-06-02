@@ -50,34 +50,22 @@ export const planosPersonalizados = pgTable("planos_personalizados", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Cliente ASAAS table (apenas clientes vindos do Asaas)
+// TABELA CENTRAL ÚNICA - TODOS OS CLIENTES (Sistema Unificado)
 export const clientes = pgTable("clientes", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
   email: text("email").notNull(),
   telefone: text("telefone"),
   cpf: text("cpf"),
-  asaasCustomerId: text("asaas_customer_id").notNull(), // Obrigatório para clientes Asaas
-  // Campos para controle de assinaturas
-  planoNome: text("plano_nome"),
-  planoValor: decimal("plano_valor", { precision: 10, scale: 2 }),
-  formaPagamento: text("forma_pagamento"), // CREDIT_CARD, BOLETO, PIX
-  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO, CANCELADO
-  dataInicioAssinatura: timestamp("data_inicio_assinatura"),
-  dataVencimentoAssinatura: timestamp("data_vencimento_assinatura"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// Cliente EXTERNO table (pagamentos PIX/Cartão no próprio sistema)
-export const clientesExternos = pgTable("clientes_externos", {
-  id: serial("id").primaryKey(),
-  nome: text("nome").notNull(),
-  email: text("email").notNull(),
-  telefone: text("telefone"),
-  cpf: text("cpf"),
+  
+  // Campo para identificar origem do cliente
+  origem: text("origem").notNull(), // 'ASAAS_PRINCIPAL', 'ASAAS_ANDREY', 'EXTERNO'
+  asaasCustomerId: text("asaas_customer_id"), // Opcional - apenas para clientes Asaas
+  
+  // Campos para controle de assinaturas (obrigatórios para todos)
   planoNome: text("plano_nome").notNull(),
   planoValor: decimal("plano_valor", { precision: 10, scale: 2 }).notNull(),
-  formaPagamento: text("forma_pagamento").notNull(), // PIX, Cartão Débito, Dinheiro
+  formaPagamento: text("forma_pagamento").notNull(), // CREDIT_CARD, BOLETO, PIX, Cartão Débito, Dinheiro
   statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO, CANCELADO
   dataInicioAssinatura: timestamp("data_inicio_assinatura").notNull(),
   dataVencimentoAssinatura: timestamp("data_vencimento_assinatura").notNull(),
@@ -205,11 +193,6 @@ export const insertClienteSchema = createInsertSchema(clientes).omit({
   createdAt: true,
 });
 
-export const insertClienteExternoSchema = createInsertSchema(clientesExternos).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertDistribuicaoSchema = createInsertSchema(distribuicoes).omit({
   id: true,
   createdAt: true,
@@ -313,9 +296,6 @@ export type Cliente = typeof clientes.$inferSelect;
 export type PlanoPersonalizado = typeof planosPersonalizados.$inferSelect;
 export type InsertPlanoPersonalizado = z.infer<typeof insertPlanoPersonalizadoSchema>;
 export type InsertCliente = z.infer<typeof insertClienteSchema>;
-
-export type ClienteExterno = typeof clientesExternos.$inferSelect;
-export type InsertClienteExterno = z.infer<typeof insertClienteExternoSchema>;
 
 export type Distribuicao = typeof distribuicoes.$inferSelect;
 export type InsertDistribuicao = z.infer<typeof insertDistribuicaoSchema>;
