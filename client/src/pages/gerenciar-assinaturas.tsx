@@ -139,7 +139,7 @@ export default function GerenciarAssinaturas() {
     }
   };
 
-  const handleEdit = (plano) => {
+  const handleEdit = (plano: any) => {
     setEditingPlano(plano);
     setFormData({
       nome: plano.nome,
@@ -154,31 +154,47 @@ export default function GerenciarAssinaturas() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     if (confirm("Tem certeza que deseja excluir esta assinatura?")) {
       excluirAssinatura.mutate(id);
     }
   };
 
+  const handleGerarLinkExclusivo = async (plano: any) => {
+    try {
+      const response = await apiRequest(`/api/planos-assinatura/${plano.id}/gerar-link-exclusivo`, "POST");
+      const data = await response.json();
+      
+      if (data.checkoutUrl) {
+        // Copiar link para área de transferência
+        await navigator.clipboard.writeText(data.checkoutUrl);
+        toast({ 
+          title: "Link gerado com sucesso!", 
+          description: "Link copiado para área de transferência. Válido apenas para clientes com assinatura ativa." 
+        });
+      }
+    } catch (error) {
+      toast({ 
+        title: "Erro ao gerar link", 
+        description: "Verifique se há clientes ativos no sistema",
+        variant: "destructive" 
+      });
+    }
+  };
+
   const categorias = [
-    "Básico",
-    "Premium",
-    "VIP",
-    "Executivo",
-    "Família",
-    "Estudante",
-    "Promocional"
+    "⭐One",
+    "👑Gold", 
+    "🚀Multi",
+    "Exclusiva clientes antigo"
   ];
 
-  const getBadgeColor = (categoria) => {
+  const getBadgeColor = (categoria: string) => {
     const colors = {
-      "Básico": "bg-blue-100 text-blue-800",
-      "Premium": "bg-purple-100 text-purple-800", 
-      "VIP": "bg-yellow-100 text-yellow-800",
-      "Executivo": "bg-gray-100 text-gray-800",
-      "Família": "bg-green-100 text-green-800",
-      "Estudante": "bg-orange-100 text-orange-800",
-      "Promocional": "bg-red-100 text-red-800"
+      "⭐One": "bg-blue-100 text-blue-800",
+      "👑Gold": "bg-yellow-100 text-yellow-800", 
+      "🚀Multi": "bg-purple-100 text-purple-800",
+      "Exclusiva clientes antigo": "bg-green-100 text-green-800"
     };
     return colors[categoria] || "bg-gray-100 text-gray-800";
   };
@@ -387,6 +403,17 @@ export default function GerenciarAssinaturas() {
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
                     </Button>
+                    {plano.categoria === "Exclusiva clientes antigo" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleGerarLinkExclusivo(plano)}
+                        className="flex-1"
+                      >
+                        <DollarSign className="h-3 w-3 mr-1" />
+                        Gerar Link
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="destructive"

@@ -1117,6 +1117,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/planos-assinatura/:id/gerar-link-exclusivo - Gerar link exclusivo para clientes com assinatura
+  app.post("/api/planos-assinatura/:id/gerar-link-exclusivo", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const planoId = parseInt(req.params.id);
+      
+      // Buscar o plano
+      const planos = await storage.getAllPlanos();
+      const plano = planos.find(p => p.id === planoId);
+      
+      if (!plano) {
+        return res.status(404).json({ message: 'Plano não encontrado' });
+      }
+
+      // Verificar se é categoria "Exclusiva clientes antigo"
+      if (plano.categoria !== "Exclusiva clientes antigo") {
+        return res.status(400).json({ message: 'Este plano não é exclusivo para clientes antigos' });
+      }
+
+      // Verificar se existem clientes com assinaturas ativas via API do Asaas
+      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ message: 'Chave API do Asaas não configurada' });
+      }
+
+      const baseUrl = asaasEnvironment === 'production' 
+        ? 'https://api.asaas.com/v3' 
+        : 'https://sandbox.asaas.com/api/v3';
+
+      // Buscar assinaturas ativas
+      const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!subscriptionsResponse.ok) {
+        throw new Error('Erro ao verificar assinaturas ativas');
+      }
+
+      const subscriptionsData = await subscriptionsResponse.json();
+      const assinaturasAtivas = subscriptionsData.data || [];
+
+      if (assinaturasAtivas.length === 0) {
+        return res.status(400).json({ message: 'Nenhum cliente com assinatura ativa encontrado' });
+      }
+
+      // Gerar checkout exclusivo via Asaas
+      const checkoutData = {
+        name: plano.nome,
+        description: `${plano.descricao} - Exclusivo para clientes com assinatura ativa`,
+        chargeType: "RECURRENT",
+        billingType: plano.billingType,
+        value: plano.valor,
+        cycle: plano.cycle,
+        maxInstallmentCount: 1,
+        externalReference: `plano_exclusivo_${planoId}_${Date.now()}`
+      };
+
+      const checkoutResponse = await fetch(`${baseUrl}/subscriptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': asaasApiKey
+        },
+        body: JSON.stringify(checkoutData)
+      });
+
+      if (!checkoutResponse.ok) {
+        const errorData = await checkoutResponse.json();
+        throw new Error(`Erro ao criar checkout: ${JSON.stringify(errorData)}`);
+      }
+
+      const asaasData = await checkoutResponse.json();
+      
+      res.json({ 
+        checkoutUrl: asaasData.invoiceUrl || asaasData.bankSlipUrl || `${baseUrl}/subscriptions/${asaasData.id}/payment`,
+        message: 'Link exclusivo gerado com sucesso',
+        clientesElegiveis: assinaturasAtivas.length,
+        subscriptionId: asaasData.id
+      });
+    } catch (error) {
+      console.error('Erro ao gerar link exclusivo:', error);
+      res.status(500).json({ message: 'Erro interno do servidor', error: error.message });
+    }
+  });
+
   // Rota para clientes unificados (Asaas + Externos)
   app.get("/api/clientes/unified", requireAuth, async (req, res) => {
     try {
