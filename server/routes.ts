@@ -3128,8 +3128,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const hoje = new Date();
       const clientesAtivos = [];
+      const clientesAsaasProcessados = new Set<string>();
 
-      // Buscar clientes do banco local (incluindo sincronizados do Asaas)
+      // Buscar clientes do banco local primeiro
       const clientesLocais = await storage.getAllClientes();
       
       for (const cliente of clientesLocais) {
@@ -3143,11 +3144,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               telefone: cliente.telefone,
               origem: cliente.asaasCustomerId ? 'ASAAS' : 'EXTERNO'
             });
+            
+            // Marcar clientes Asaas já processados
+            if (cliente.asaasCustomerId) {
+              clientesAsaasProcessados.add(cliente.asaasCustomerId);
+            }
           }
         }
       }
 
-      // Buscar clientes direto da API do Asaas que ainda não foram sincronizados
+      // Buscar clientes da API do Asaas (mesma lógica do endpoint unificado)
       if (process.env.ASAAS_API_KEY) {
         try {
           const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -3155,65 +3161,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'https://www.asaas.com/api/v3' 
             : 'https://sandbox.asaas.com/api/v3';
 
-          // Buscar assinaturas ativas
-          const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+          // Buscar todos os pagamentos recentes para encontrar clientes ativos
+          const paymentsResponse = await fetch(`${baseUrl}/payments?status=RECEIVED&limit=100`, {
             headers: {
               'access_token': asaasApiKey
             }
           });
 
-          if (subscriptionsResponse.ok) {
-            const subscriptionsData = await subscriptionsResponse.json();
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
             
-            for (const subscription of subscriptionsData.data || []) {
-              // Verificar se já não foi sincronizado no banco local
-              const jaExiste = clientesLocais.find(c => c.asaasCustomerId === subscription.customer);
-              
-              if (!jaExiste) {
-                // Buscar dados do cliente no Asaas
-                const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
-                  headers: {
-                    'access_token': asaasApiKey
-                  }
-                });
+            for (const payment of paymentsData.data || []) {
+              if (!clientesAsaasProcessados.has(payment.customer)) {
+                try {
+                  // Buscar dados do cliente
+                  const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+                    headers: {
+                      'access_token': asaasApiKey
+                    }
+                  });
 
-                if (customerResponse.ok) {
-                  const customerData = await customerResponse.json();
-                  
-                  // Verificar se a assinatura ainda está válida
-                  const nextDueDate = new Date(subscription.nextDueDate);
-                  if (nextDueDate >= hoje) {
-                    // Criar cliente no banco local para evitar duplicações futuras
-                    await storage.createCliente({
-                      nome: customerData.name,
-                      email: customerData.email,
-                      telefone: customerData.mobilePhone || customerData.phone || null,
-                      cpf: customerData.cpfCnpj || null,
-                      planoNome: subscription.description || 'Plano Asaas',
-                      planoValor: subscription.value,
-                      formaPagamento: 'Asaas',
-                      dataInicioAssinatura: new Date(subscription.dateCreated),
-                      dataVencimentoAssinatura: nextDueDate,
-                      asaasCustomerId: subscription.customer
+                  if (customerResponse.ok) {
+                    const customerData = await customerResponse.json();
+                    
+                    // Buscar assinatura do cliente
+                    const subscriptionResponse = await fetch(`${baseUrl}/subscriptions?customer=${payment.customer}&status=ACTIVE`, {
+                      headers: {
+                        'access_token': asaasApiKey
+                      }
                     });
 
-                    clientesAtivos.push({
-                      id: subscription.customer,
-                      nome: customerData.name,
-                      email: customerData.email,
-                      telefone: customerData.mobilePhone || customerData.phone || '',
-                      origem: 'ASAAS'
-                    });
+                    if (subscriptionResponse.ok) {
+                      const subscriptionData = await subscriptionResponse.json();
+                      
+                      if (subscriptionData.data && subscriptionData.data.length > 0) {
+                        const subscription = subscriptionData.data[0];
+                        const dataValidade = new Date(subscription.nextDueDate);
+                        const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        // Se a assinatura está ativa e válida
+                        if (subscription.status === 'ACTIVE' && daysRemaining > 0) {
+                          clientesAtivos.push({
+                            id: customerData.id,
+                            nome: customerData.name,
+                            email: customerData.email,
+                            telefone: customerData.mobilePhone || customerData.phone || '',
+                            origem: 'ASAAS'
+                          });
+
+                          clientesAsaasProcessados.add(payment.customer);
+                        }
+                      }
+                    }
                   }
+                } catch (customerError) {
+                  console.warn(`Erro ao buscar detalhes do cliente ${payment.customer}:`, customerError);
                 }
               }
             }
           }
         } catch (asaasError) {
-          console.warn('Erro ao buscar clientes do Asaas:', asaasError);
+          console.warn('Erro ao conectar com Asaas, usando apenas dados locais:', asaasError);
         }
       }
 
+      console.log(`Clientes ativos para agendamento: ${clientesAtivos.length}`);
       res.json(clientesAtivos);
     } catch (error) {
       console.error('Erro ao buscar clientes ativos:', error);
