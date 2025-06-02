@@ -67,6 +67,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserById(id: number): Promise<User | undefined>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User>;
+  updateUserPassword(id: number, hashedPassword: string): Promise<void>;
 
   // Barbeiros
   getAllBarbeiros(): Promise<Barbeiro[]>;
@@ -245,6 +246,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updated;
+  }
+
+  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, id));
   }
 
   async getAllBarbeiros(): Promise<Barbeiro[]> {

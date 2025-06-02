@@ -84,6 +84,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Endpoint temporário para resetar senha do admin
+  app.post("/api/auth/reset-admin-password", async (req, res) => {
+    try {
+      const admin = await storage.getUserByEmail("admin@tratodebarbados.com");
+      if (admin) {
+        const hashedPassword = await bcrypt.hash("admin123", 10);
+        await storage.updateUserPassword(admin.id, hashedPassword);
+        console.log("Senha do admin resetada para: admin123");
+        res.json({ message: "Senha resetada com sucesso" });
+      } else {
+        res.status(404).json({ message: "Admin não encontrado" });
+      }
+    } catch (error) {
+      console.error("Erro ao resetar senha:", error);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
       const userId = req.session?.userId;
