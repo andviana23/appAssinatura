@@ -619,10 +619,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== ROTAS DE CLIENTES UNIFICADOS =====
-  // Lista todos os clientes (Asaas + Externos) de forma unificada
+  // Lista todos os clientes da tabela central unificada
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
     try {
-      const clientesUnificados = await storage.getAllClientesUnified();
+      const clientesUnificados = await storage.getAllClientes();
       res.json(clientesUnificados);
     } catch (error) {
       console.error("Erro ao buscar clientes unificados:", error);
@@ -635,48 +635,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { mes, ano } = req.query;
       
-      // Buscar estatísticas base (clientes da primeira conta Asaas + externos)
-      const statsBase = await storage.getClientesUnifiedStats(mes as string, ano as string);
+      // Usar métodos do sistema central unificado
+      const totalClientes = await storage.getTotalClientes();
+      const clientesPorOrigem = await storage.getClientesPorOrigem();
+      const valorTotalAssinaturas = await storage.getValorTotalAssinaturas();
       
-      // Buscar dados da segunda conta Asaas (Andrey)
-      let clientesAtivosAndrey = 0;
-      let receitaAssinaturasAndrey = 0;
-      
-      const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
-      if (tokenAndrey) {
-        try {
-          // Buscar assinaturas ativas da segunda conta
-          const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
-            headers: {
-              'access_token': tokenAndrey,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (assinaturasResponse.ok) {
-            const assinaturasData = await assinaturasResponse.json();
-            clientesAtivosAndrey = assinaturasData.totalCount || 0;
-            
-            // Somar receita das assinaturas ativas
-            assinaturasData.data?.forEach((assinatura: any) => {
-              receitaAssinaturasAndrey += parseFloat(assinatura.value) || 0;
+      // Resposta consolidada do sistema central unificado
+      res.json({
+        total: totalClientes,
+        origem: clientesPorOrigem,
+        valorTotalAssinaturas: valorTotalAssinaturas,
+        stats: {
+          totalClientes,
+          valorTotalAssinaturas,
+          clientesPorOrigem
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas unificadas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ===== ROTA DA API 1 CLIENTE PRINCIPAL (CORRIGIDA) =====
+  app.get("/api/clientes", requireAuth, async (req, res) => {
+    try {
+      const apiKey = process.env.ASAAS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "Chave API principal não configurada" });
+      }
+
+      // Buscar clientes da API 1 Principal  
+      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!clientesResponse.ok) {
+        throw new Error(`Erro na API: ${clientesResponse.status}`);
+      }
+
+      const clientesData = await clientesResponse.json();
+
+      // Buscar assinaturas para identificar clientes ativos
+      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const assinaturasData = await assinaturasResponse.json();
+
+      // IMPLEMENTAR FLUXO OBRIGATÓRIO: API 1 → Sistema Central
+      const assinaturasPorCliente = new Map();
+      for (const assinatura of assinaturasData.data || []) {
+        assinaturasPorCliente.set(assinatura.customer, {
+          planoNome: assinatura.billingType || 'Plano API 1',
+          planoValor: assinatura.value || '0.00',
+          formaPagamento: assinatura.billingType || 'CREDIT_CARD',
+          statusAssinatura: 'ATIVO',
+          dataInicioAssinatura: new Date(assinatura.dateCreated),
+          dataVencimentoAssinatura: new Date(assinatura.nextDueDate || Date.now() + 30*24*60*60*1000)
+        });
+      }
+
+      // Verificar clientes existentes na tabela central
+      const clientesExistentes = await storage.getAllClientes();
+      const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+      const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId).filter(Boolean));
+
+      let clientesSincronizados = 0;
+      for (const customer of clientesData.data || []) {
+        // Pular se cliente já existe por email ou asaasCustomerId
+        if (emailsExistentes.has(customer.email.toLowerCase()) || asaasIdsExistentes.has(customer.id)) {
+          continue;
+        }
+
+        const assinatura = assinaturasPorCliente.get(customer.id);
+        
+        // Só cadastrar clientes com assinatura ativa
+        if (assinatura) {
+          try {
+            // ETAPA 3: Cadastrar na tabela CLIENTES DO SISTEMA (FLUXO OBRIGATÓRIO)
+            await storage.createCliente({
+              nome: (customer.name || '').substring(0, 250),
+              email: (customer.email || '').substring(0, 250),
+              telefone: (customer.phone || customer.mobilePhone || '').substring(0, 20),
+              cpf: (customer.cpfCnpj || '').substring(0, 14),
+              origem: 'ASAAS_PRINCIPAL', // Identificação da fonte de dados
+              asaasCustomerId: customer.id,
+              planoNome: (assinatura.planoNome || '').substring(0, 250),
+              planoValor: assinatura.planoValor,
+              formaPagamento: (assinatura.formaPagamento || '').substring(0, 50),
+              statusAssinatura: assinatura.statusAssinatura,
+              dataInicioAssinatura: assinatura.dataInicioAssinatura,
+              dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura
             });
+            clientesSincronizados++;
+            console.log(`✅ Cliente API 1 sincronizado na tabela central: ${customer.name}`);
+          } catch (error) {
+            console.warn(`❌ Erro ao sincronizar cliente API 1 ${customer.name}:`, error);
           }
-        } catch (error) {
-          console.log('Aviso: Não foi possível buscar dados da segunda conta Asaas:', error);
         }
       }
-      
-      // Combinar estatísticas
-      const statsUnificadas = {
-        totalActiveClients: statsBase.totalActiveClients + clientesAtivosAndrey,
-        totalSubscriptionRevenue: statsBase.totalSubscriptionRevenue + receitaAssinaturasAndrey,
-        totalExpiringSubscriptions: statsBase.totalExpiringSubscriptions
-      };
-      
-      res.json(statsUnificadas);
+
+      console.log(`🔍 API 1 Principal processada: ${clientesSincronizados} clientes sincronizados no sistema central`);
+
+      res.json({
+        success: true,
+        total: clientesData.totalCount || clientesData.data?.length || 0,
+        clientesSincronizados,
+        clientes: clientesData.data || []
+      });
     } catch (error) {
-      console.error("Erro ao buscar estatísticas de clientes:", error);
+      console.error("Erro na API 1 Cliente Principal:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
@@ -3928,16 +4003,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
 
-            // Verificar clientes existentes para evitar duplicação (ambas as tabelas)
+            // Verificar clientes existentes na tabela central unificada
             const clientesExistentes = await storage.getAllClientes();
-            const clientesExternosExistentes = await storage.getAllClientesExternos();
             
-            const emailsExistentes = new Set([
-              ...clientesExistentes.map(c => c.email.toLowerCase()),
-              ...clientesExternosExistentes.map(c => c.email.toLowerCase())
-            ]);
-            
-            const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId));
+            const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+            const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId).filter(Boolean));
 
             let clientesSincronizados = 0;
             for (const customer of clientesData.data || []) {
@@ -3951,12 +4021,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Só cadastrar clientes com assinatura ativa
               if (assinatura) {
                 try {
-                  // Salvar na tabela principal 'clientes' com asaasCustomerId da segunda conta
+                  // Salvar na tabela central unificada (FLUXO OBRIGATÓRIO)
                   await storage.createCliente({
                     nome: (customer.name || '').substring(0, 250),
                     email: (customer.email || '').substring(0, 250),
                     telefone: (customer.phone || customer.mobilePhone || '').substring(0, 20),
                     cpf: (customer.cpfCnpj || '').substring(0, 14),
+                    origem: 'ASAAS_ANDREY', // Identificação da fonte de dados
                     asaasCustomerId: customer.id, // ID da segunda conta Asaas
                     planoNome: (assinatura.planoNome || '').substring(0, 250),
                     planoValor: assinatura.planoValor,
