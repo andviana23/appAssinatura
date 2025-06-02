@@ -2231,6 +2231,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint de teste isolado para verificar segunda integração
+  app.get("/api/teste-isolado-segunda-api", requireAuth, async (req, res) => {
+    try {
+      console.log('🧪 TESTE: Testando segunda API isoladamente');
+      
+      const token = process.env.ASAAS_API_KEY_ANDREY;
+      console.log('🔑 Token da segunda API:', token ? token.substring(0, 20) + '...' : 'VAZIO');
+      
+      if (!token) {
+        return res.json({ success: false, error: 'Token não encontrado' });
+      }
+      
+      const response = await fetch('https://api.asaas.com/v3/customers', {
+        headers: {
+          'access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📱 Status da resposta:', response.status);
+      console.log('📱 Response OK:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📱 Dados recebidos:', data);
+        console.log('📱 Quantidade de clientes:', data.data?.length || 0);
+        
+        return res.json({
+          success: true,
+          status: response.status,
+          totalCustomers: data.totalCount,
+          customers: data.data?.slice(0, 3) // Apenas os primeiros 3 para teste
+        });
+      } else {
+        const errorText = await response.text();
+        console.log('❌ Erro na resposta:', errorText);
+        return res.json({ success: false, error: `Status ${response.status}: ${errorText}` });
+      }
+    } catch (error) {
+      console.error('❌ Erro na segunda API:', error);
+      return res.json({ success: false, error: error.message });
+    }
+  });
+
   // Endpoint de teste para verificar segunda integração
   app.get("/api/test-segunda-integracao", requireAuth, async (req, res) => {
     try {
@@ -2328,7 +2372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
-          console.log(`Buscando clientes da conta Asaas: ${account.name}`);
+          console.log(`🔍 INICIANDO busca da conta Asaas: ${account.name}`);
+          console.log(`🔑 Token da API ${account.name}:`, account.apiKey ? account.apiKey.substring(0, 20) + '...' : 'VAZIO');
           const baseUrl = 'https://api.asaas.com/v3';
           
           // Buscar assinaturas ativas primeiro
@@ -2341,8 +2386,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           let clientesProcessados = new Set();
 
+          console.log(`📱 Status da resposta ${account.name}:`, subscriptionsResponse.status);
+          console.log(`📱 Response OK ${account.name}:`, subscriptionsResponse.ok);
+          
           if (subscriptionsResponse.ok) {
             const subscriptionsData = await subscriptionsResponse.json();
+            console.log(`📊 Resposta da API ${account.name}:`, JSON.stringify(subscriptionsData, null, 2));
             console.log(`${account.name}: Total de assinaturas encontradas:`, subscriptionsData.totalCount);
             console.log(`${account.name}: Assinaturas retornadas:`, subscriptionsData.data?.length || 0);
 
