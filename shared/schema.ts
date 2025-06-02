@@ -34,6 +34,21 @@ export const planosAssinatura = pgTable("planos_assinatura", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Planos Personalizados (criados pelo admin)
+export const planosPersonalizados = pgTable("planos_personalizados", {
+  id: serial("id").primaryKey(),
+  nome: text("nome").notNull(),
+  descricao: text("descricao"),
+  valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),
+  categoria: text("categoria").notNull(),
+  billingType: text("billing_type").notNull().default("CREDIT_CARD"), // CREDIT_CARD, PIX, BOLETO
+  cycle: text("cycle").notNull().default("MONTHLY"), // MONTHLY, YEARLY
+  limitesServicos: json("limites_servicos").$type<Record<string, number>>().notNull().default({}),
+  beneficios: json("beneficios").$type<string[]>().notNull().default([]),
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Cliente ASAAS table (apenas clientes vindos do Asaas)
 export const clientes = pgTable("clientes", {
   id: serial("id").primaryKey(),
@@ -223,6 +238,11 @@ export const insertTotalServicoSchema = createInsertSchema(totalServicos).omit({
   createdAt: true,
 });
 
+export const insertPlanoPersonalizadoSchema = createInsertSchema(planosPersonalizados).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   id: true,
   createdAt: true,
@@ -288,6 +308,9 @@ export type PlanoAssinatura = typeof planosAssinatura.$inferSelect;
 export type InsertPlanoAssinatura = z.infer<typeof insertPlanoAssinaturaSchema>;
 
 export type Cliente = typeof clientes.$inferSelect;
+
+export type PlanoPersonalizado = typeof planosPersonalizados.$inferSelect;
+export type InsertPlanoPersonalizado = z.infer<typeof insertPlanoPersonalizadoSchema>;
 export type InsertCliente = z.infer<typeof insertClienteSchema>;
 
 export type ClienteExterno = typeof clientesExternos.$inferSelect;

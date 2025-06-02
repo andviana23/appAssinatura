@@ -25,6 +25,7 @@ import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
 import ListaDaVez from "@/pages/lista-da-vez";
 import GerenciarFila from "@/pages/gerenciar-fila";
+import GerenciarAssinaturas from "@/pages/gerenciar-assinaturas";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -50,6 +51,7 @@ function AuthenticatedRoutes() {
           <Route path="/total-servicos" component={TotalServicos} />
           <Route path="/lista-da-vez" component={ListaDaVez} />
           <Route path="/gerenciar-fila" component={GerenciarFila} />
+          <Route path="/gerenciar-assinaturas" component={GerenciarAssinaturas} />
           <Route path="/configuracoes" component={Configuracoes} />
           <Route component={NotFound} />
         </Switch>

@@ -1045,6 +1045,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CRUD para Planos de Assinatura
+  app.get("/api/planos-assinatura", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const planos = await storage.getAllPlanos();
+      res.json(planos);
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.post("/api/planos-assinatura", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { nome, descricao, valor, categoria, billingType, cycle, limitesServicos, beneficios } = req.body;
+      
+      if (!nome || !valor || !categoria) {
+        return res.status(400).json({ message: 'Nome, valor e categoria são obrigatórios' });
+      }
+
+      const novoPlano = await storage.createPlano({
+        nome,
+        descricao,
+        valor,
+        categoria,
+        billingType: billingType || 'CREDIT_CARD',
+        cycle: cycle || 'MONTHLY',
+        limitesServicos: limitesServicos || {},
+        beneficios: beneficios || [],
+        ativo: true
+      });
+
+      res.json(novoPlano);
+    } catch (error) {
+      console.error('Erro ao criar plano:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.put("/api/planos-assinatura/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { nome, descricao, valor, categoria, billingType, cycle, limitesServicos, beneficios } = req.body;
+      
+      const planoAtualizado = await storage.updatePlano(id, {
+        nome,
+        descricao,
+        valor,
+        categoria,
+        billingType,
+        cycle,
+        limitesServicos,
+        beneficios
+      });
+
+      res.json(planoAtualizado);
+    } catch (error) {
+      console.error('Erro ao atualizar plano:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  app.delete("/api/planos-assinatura/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePlano(id);
+      res.json({ message: 'Plano excluído com sucesso' });
+    } catch (error) {
+      console.error('Erro ao excluir plano:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Rota para clientes unificados (Asaas + Externos)
   app.get("/api/clientes/unified", requireAuth, async (req, res) => {
     try {
