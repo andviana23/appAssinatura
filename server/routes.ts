@@ -2267,7 +2267,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Buscando clientes da conta Asaas: ${account.name}`);
           const baseUrl = 'https://api.asaas.com/v3';
           
-          // Buscar pagamentos confirmados do mês atual
+          // Buscar assinaturas ativas primeiro
+          const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+            headers: {
+              'access_token': account.apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (subscriptionsResponse.ok) {
+            const subscriptionsData = await subscriptionsResponse.json();
+            const clientesProcessados = new Set();
+
+            for (const subscription of subscriptionsData.data || []) {
+              if (!clientesProcessados.has(subscription.customer)) {
+                try {
+                  const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+                    headers: {
+                      'access_token': account.apiKey,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+
+                  if (customerResponse.ok) {
+                    const customer = await customerResponse.json();
+                    
+                    // Calcular próxima data de vencimento
+                    const proximaCobranca = new Date(subscription.nextDueDate);
+                    const daysRemaining = Math.ceil((proximaCobranca.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                    const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+
+                    clientesUnificados.push({
+                      id: `asaas_${account.name}_${subscription.customer}`,
+                      nome: customer.name,
+                      email: customer.email,
+                      telefone: customer.phone || customer.mobilePhone,
+                      cpf: customer.cpfCnpj,
+                      planoNome: subscription.description || 'Assinatura Asaas',
+                      planoValor: subscription.value,
+                      formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                                     subscription.billingType === 'PIX' ? 'PIX' :
+                                     subscription.billingType === 'BOLETO' ? 'Boleto' : subscription.billingType,
+                      statusAssinatura: status,
+                      dataInicioAssinatura: new Date(subscription.dateCreated),
+                      dataVencimentoAssinatura: proximaCobranca,
+                      origem: `ASAAS_${account.name}`,
+                      createdAt: new Date(subscription.dateCreated)
+                    });
+
+                    clientesProcessados.add(subscription.customer);
+                  }
+                } catch (customerError) {
+                  console.warn(`Erro ao buscar cliente ${subscription.customer} da conta ${account.name}:`, customerError);
+                }
+              }
+            }
+          }
+
+          // Buscar também pagamentos confirmados do mês atual (caso não tenham assinatura)
           const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
           const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
           
@@ -2283,7 +2340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (paymentsResponse.ok) {
             const paymentsData = await paymentsResponse.json();
-            const clientesProcessados = new Set();
+            // Reutilizar o Set já existente para evitar duplicatas
 
             for (const payment of paymentsData.data || []) {
               if (!clientesProcessados.has(payment.customer)) {
