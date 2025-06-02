@@ -277,45 +277,45 @@ export default function ListaDaVez() {
           </div>
         </div>
 
-        {/* Estatísticas Resumidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center shadow-md">
-                  <UserCheck className="h-5 w-5 text-white" />
+        {/* Estatísticas Resumidas - Compactas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Total de Barbeiros</p>
-                  <p className="text-xl font-bold text-[#365e78]">{totalBarbeiros}</p>
+                  <p className="text-xs text-gray-500">Barbeiros</p>
+                  <p className="text-lg font-bold text-[#365e78]">{totalBarbeiros}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
-                  <Plus className="h-5 w-5 text-white" />
+          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <Plus className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Total de Atendimentos</p>
-                  <p className="text-xl font-bold text-green-600">{totalAtendimentos}</p>
+                  <p className="text-xs text-gray-500">Atendimentos</p>
+                  <p className="text-lg font-bold text-green-600">{totalAtendimentos}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
-                  <RotateCcw className="h-5 w-5 text-white" />
+          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                  <RotateCcw className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Média por Barbeiro</p>
-                  <p className="text-xl font-bold text-orange-600">{mediaAtendimentos}</p>
+                  <p className="text-xs text-gray-500">Média</p>
+                  <p className="text-lg font-bold text-orange-600">{mediaAtendimentos}</p>
                 </div>
               </div>
             </CardContent>
@@ -323,17 +323,17 @@ export default function ListaDaVez() {
         </div>
 
         {/* Tabela de Atendimento Mensal */}
-        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-lg">
-            <CardTitle className="text-xl">Tabela de Atendimento Mensal</CardTitle>
-            <CardDescription className="text-blue-100">
-              Controle mensal de atendimentos por barbeiro (reseta automaticamente no dia 1º)
+        <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+          <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-xl p-4">
+            <CardTitle className="text-lg">Tabela de Atendimento Mensal</CardTitle>
+            <CardDescription className="text-blue-100 text-sm">
+              Controle mensal de atendimentos por barbeiro
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               {/* Header da tabela */}
-              <div className="hidden lg:grid lg:grid-cols-5 gap-6 p-6 bg-gradient-to-r from-[#365e78]/5 to-[#2a4a5e]/5 border-b-2 border-[#365e78]/10 font-bold text-[#365e78] text-sm">
+              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-[#365e78]/5 to-[#2a4a5e]/5 border-b border-[#365e78]/10 font-medium text-[#365e78] text-sm">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Barbeiro
@@ -345,16 +345,16 @@ export default function ListaDaVez() {
               </div>
 
               {/* Linhas da tabela - Desktop */}
-              <div className="hidden lg:block divide-y divide-gray-100">
+              <div className="hidden lg:block divide-y divide-gray-50">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-6 p-6 hover:bg-[#365e78]/5 transition-all duration-200 items-center group">
+                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-[#365e78]/5 transition-all duration-200 items-center group">
                     {/* Barbeiro */}
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-md">
-                        <User className="h-5 w-5 text-white" />
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center">
+                        <User className="h-4 w-4 text-white" />
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900 text-sm">{item.barbeiro.nome}</div>
+                        <div className="font-medium text-gray-900 text-sm">{item.barbeiro.nome}</div>
                         <div className="text-xs text-gray-500 truncate">{item.barbeiro.email}</div>
                       </div>
                     </div>
@@ -363,7 +363,7 @@ export default function ListaDaVez() {
                     <div className="text-center">
                       <Badge 
                         variant="outline" 
-                        className={`${getPositionBadge(item.posicaoMensal)} px-3 py-1 font-bold text-sm shadow-lg`}
+                        className={`${getPositionBadge(item.posicaoMensal)} px-2 py-1 font-medium text-xs`}
                       >
                         {item.posicaoMensal}º
                       </Badge>
@@ -371,41 +371,41 @@ export default function ListaDaVez() {
 
                     {/* Total de Atendimentos */}
                     <div className="text-center">
-                      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
-                        <span className="text-2xl font-bold text-[#365e78]">{item.totalAtendimentosMes}</span>
-                        <div className="text-xs text-gray-500 mt-1">total</div>
+                      <div className="bg-slate-50 rounded-lg p-2 border border-gray-100">
+                        <span className="text-lg font-bold text-[#365e78]">{item.totalAtendimentosMes}</span>
+                        <div className="text-xs text-gray-500">total</div>
                       </div>
                     </div>
 
                     {/* Vezes que Passou */}
                     <div className="text-center">
-                      <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
-                        <span className="text-2xl font-bold text-orange-600">{item.diasPassouAVez}</span>
-                        <div className="text-xs text-gray-500 mt-1">vezes</div>
+                      <div className="bg-slate-50 rounded-lg p-2 border border-gray-100">
+                        <span className="text-lg font-bold text-orange-600">{item.diasPassouAVez}</span>
+                        <div className="text-xs text-gray-500">vezes</div>
                       </div>
                     </div>
 
                     {/* Ações */}
-                    <div className="flex items-center justify-center space-x-3">
+                    <div className="flex items-center justify-center space-x-2">
                       {(isAdmin || isRecepcionista) && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white px-3 py-1 text-xs h-8"
                             onClick={() => adicionarAtendimento.mutate(item.barbeiro.id)}
                             disabled={adicionarAtendimento.isPending}
                           >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-3 w-3 mr-1" />
                             Cliente
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-2 border-orange-400 text-orange-600 hover:bg-orange-50 hover:border-orange-500 px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                            className="border border-orange-400 text-orange-600 hover:bg-orange-50 px-3 py-1 text-xs h-8"
                             onClick={() => passarVez.mutate(item.barbeiro.id)}
                             disabled={passarVez.isPending}
                           >
-                            <RotateCcw className="h-4 w-4 mr-2" />
+                            <RotateCcw className="h-3 w-3 mr-1" />
                             Passar
                           </Button>
                         </>
