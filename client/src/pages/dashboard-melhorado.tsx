@@ -186,6 +186,14 @@ export default function AdminDashboard() {
             >
               Mês Atual
             </Button>
+
+            <Button 
+              onClick={() => window.location.href = '/gerenciar-fila'}
+              className="bg-[#365e78] hover:bg-[#2a4a5e] text-white font-bold"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Gerenciar Fila
+            </Button>
           </div>
         </div>
       </div>
