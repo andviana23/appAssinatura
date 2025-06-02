@@ -2359,6 +2359,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para cadastrar cliente da segunda conta no banco local
+  // Endpoint para sincronizar clientes da segunda conta com o banco local
+  app.post("/api/clientes-asaas-andrey/sync", requireAuth, async (req, res) => {
+    try {
+      const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+      if (!tokenAndrey) {
+        return res.status(400).json({ message: 'Token da segunda conta Asaas não configurado' });
+      }
+
+      console.log('🔄 Iniciando sincronização de clientes da segunda conta Asaas');
+
+      // Buscar clientes da API Asaas Andrey
+      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        headers: {
+          'access_token': tokenAndrey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!clientesResponse.ok) {
+        throw new Error('Erro ao buscar clientes da segunda conta Asaas');
+      }
+
+      const clientesData = await clientesResponse.json();
+
+      // Buscar assinaturas ativas
+      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+        headers: {
+          'access_token': tokenAndrey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      let assinaturasPorCliente = new Map();
+      if (assinaturasResponse.ok) {
+        const assinaturasData = await assinaturasResponse.json();
+        assinaturasData.data?.forEach((assinatura: any) => {
+          // Calcular data de vencimento (30 dias a partir da próxima cobrança)
+          const dataVencimento = new Date(assinatura.nextDueDate);
+          dataVencimento.setDate(dataVencimento.getDate() + 30);
+          
+          assinaturasPorCliente.set(assinatura.customer, {
+            planoNome: assinatura.description || 'Assinatura Asaas',
+            planoValor: assinatura.value.toString(),
+            formaPagamento: assinatura.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                          assinatura.billingType === 'PIX' ? 'PIX' :
+                          assinatura.billingType === 'BOLETO' ? 'Boleto' : assinatura.billingType,
+            statusAssinatura: 'ATIVO',
+            dataInicioAssinatura: new Date(assinatura.dateCreated),
+            dataVencimentoAssinatura: dataVencimento
+          });
+        });
+      }
+
+      let clientesSincronizados = 0;
+      let clientesIgnorados = 0;
+
+      // Verificar clientes externos existentes para evitar duplicação
+      const clientesExistentes = await storage.getAllClientesExternos();
+      const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+
+      for (const customer of clientesData.data || []) {
+        // Pular se cliente já existe no banco
+        if (emailsExistentes.has(customer.email.toLowerCase())) {
+          clientesIgnorados++;
+          continue;
+        }
+
+        const assinatura = assinaturasPorCliente.get(customer.id);
+        
+        // Só cadastrar clientes com assinatura ativa
+        if (assinatura) {
+          try {
+            await storage.createClienteExterno({
+              nome: customer.name,
+              email: customer.email,
+              telefone: customer.phone || customer.mobilePhone,
+              cpf: customer.cpfCnpj,
+              planoNome: assinatura.planoNome,
+              planoValor: assinatura.planoValor,
+              formaPagamento: assinatura.formaPagamento,
+              statusAssinatura: assinatura.statusAssinatura,
+              dataInicioAssinatura: assinatura.dataInicioAssinatura,
+              dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura,
+              observacoes: 'Cliente sincronizado da segunda conta Asaas (Andrey)'
+            });
+            clientesSincronizados++;
+          } catch (error) {
+            console.warn(`Erro ao sincronizar cliente ${customer.name}:`, error);
+          }
+        }
+      }
+
+      console.log(`✅ Sincronização concluída: ${clientesSincronizados} novos clientes, ${clientesIgnorados} ignorados`);
+
+      res.json({
+        success: true,
+        message: `Sincronização concluída com sucesso`,
+        clientesSincronizados,
+        clientesIgnorados
+      });
+
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   app.post("/api/clientes-asaas-andrey/cadastrar", requireAuth, async (req, res) => {
     try {
       const { clienteId, planoId, formaPagamento } = req.body;
@@ -3544,8 +3651,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calcular KPIs com dados reais do mês
       const totalAtendimentos = agendamentosFiltrados.length;
       
-      // Receita real das assinaturas do mês vigente
-      const receitaTotal = clientesStats.totalSubscriptionRevenue || 0;
+      // Calcular receita total das duas contas Asaas + clientes externos
+      let receitaTotal = clientesStats.totalSubscriptionRevenue || 0;
+      
+      // Somar receita da primeira conta Asaas
+      try {
+        const asaasToken = process.env.ASAAS_API_KEY;
+        if (asaasToken) {
+          const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+            headers: {
+              'access_token': asaasToken,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (assinaturasResponse.ok) {
+            const assinaturasData = await assinaturasResponse.json();
+            const receitaAsaas = assinaturasData.data?.reduce((sum: number, sub: any) => sum + (sub.value || 0), 0) || 0;
+            receitaTotal += receitaAsaas;
+          }
+        }
+      } catch (error) {
+        console.warn('Erro ao buscar receita da primeira conta Asaas:', error);
+      }
+      
+      // Somar receita da segunda conta Asaas (Andrey)
+      try {
+        const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+        if (tokenAndrey) {
+          const assinaturasAndreyResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+            headers: {
+              'access_token': tokenAndrey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (assinaturasAndreyResponse.ok) {
+            const assinaturasAndreyData = await assinaturasAndreyResponse.json();
+            const receitaAsaasAndrey = assinaturasAndreyData.data?.reduce((sum: number, sub: any) => sum + (sub.value || 0), 0) || 0;
+            receitaTotal += receitaAsaasAndrey;
+          }
+        }
+      } catch (error) {
+        console.warn('Erro ao buscar receita da segunda conta Asaas:', error);
+      }
       
       // Ticket médio baseado em clientes que realmente pagaram no mês vigente
       const clientesComPagamentoMes = clientesStats.clientesPagantesDoMes || 0;
