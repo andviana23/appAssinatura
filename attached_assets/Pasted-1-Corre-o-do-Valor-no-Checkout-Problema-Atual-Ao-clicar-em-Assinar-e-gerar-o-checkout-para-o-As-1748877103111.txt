@@ -1,0 +1,64 @@
+1. Correção do Valor no Checkout
+Problema Atual: Ao clicar em "Assinar" e gerar o checkout para o Asaas, está sendo enviado um valor fixo de R$ 5,00 independentemente do plano selecionado.
+Solução Necessária:
+
+Capturar dinamicamente o valor real de cada plano conforme cadastrado nos cards
+Garantir que o valor correto seja enviado para a API do Asaas no momento da criação do checkout
+Validar se a variável que armazena o preço do plano está sendo corretamente passada para a função de pagamento
+
+2. Limitação de CPF
+Implementar: Máscara e validação no campo CPF para aceitar apenas 11 dígitos numéricos
+
+Bloquear caracteres não numéricos
+Aplicar formatação automática (000.000.000-00)
+Validar se possui exatamente 11 dígitos antes de prosseguir
+
+3. Ajuste nas Opções de Pagamento
+Primeira Tela (Checkout Principal):
+
+Remover completamente as opções "Boleto" e "Pix"
+Manter apenas as opções de cartão de crédito disponíveis
+
+Pagamento Externo:
+
+Disponibilizar apenas "Pix" e "Cartão de Débito"
+Remover outras modalidades de pagamento externo
+
+4. Integração com Lista de Clientes Ativos
+Funcionalidade a Implementar:
+
+Quando um pagamento externo (Pix ou Cartão de Débito) for processado com sucesso, o cliente deve ser automaticamente adicionado à lista de "Clientes Ativos"
+O valor pago deve ser contabilizado apenas no mês vigente (mês atual)
+Criar lógica para identificar e somar pagamentos externos na contabilidade mensal
+Garantir que o status do cliente seja atualizado para "ativo" após confirmação do pagamento
+
+Pontos de Atenção
+Validações Necessárias:
+
+Verificar se o nome do plano está sendo enviado corretamente para o Asaas (não deve ser nome genérico)
+Verificar se o valor do plano está sendo capturado corretamente do DOM ou banco de dados
+Confirmar se o valor R$ 114,90 está correto para "Clube do Trato Mult Corte 2x"
+Confirmar se a integração com Asaas está recebendo os parâmetros corretos
+Testar se a máscara do CPF não interfere no envio dos dados
+Validar se os pagamentos externos estão sendo registrados corretamente no sistema
+
+Fluxo Esperado:
+
+Cliente seleciona um plano na página
+Sistema captura o valor real e o nome correto do plano selecionado
+Cliente preenche CPF (com validação de 11 dígitos)
+Cliente escolhe forma de pagamento (conforme novas regras)
+Sistema envia dados corretos (nome e valor) para processamento no Asaas
+Checkout aparece com o nome específico do plano (ex: "Clube do Trato One")
+Após confirmação, cliente é adicionado à lista de ativos com valor contabilizado no mês vigente
+
+Resultado Final Esperado
+
+Nomes corretos dos planos aparecendo no checkout do Asaas (não mais "Teste de Funcionalidade")
+Plano "Clube do Trato Mult Corte 2x" com valor correto R$ 114,90
+Nomenclatura padronizada para planos Mult (formato: "Clube do Trato Mult - Serviço Quantidade")
+Valores corretos sendo enviados para o Asaas
+CPF com validação adequada
+Opções de pagamento simplificadas e organizadas
+Clientes com pagamentos externos integrados ao sistema de gestão ativo
+Contabilidade mensal precisa incluindo pagamentos externos

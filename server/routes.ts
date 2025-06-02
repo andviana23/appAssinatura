@@ -1787,7 +1787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://api.asaas.com/v3' 
         : 'https://sandbox.asaas.com/api/v3';
 
-      const { nome, email, cpf, billingType, valorPlano } = req.body;
+      const { nome, email, cpf, billingType, valorPlano, planoSelecionado } = req.body;
 
       // 1. Criar ou buscar cliente
       let customerId;
@@ -1848,13 +1848,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Valor do plano é obrigatório e deve ser maior que zero');
       }
 
+      // Gerar descrição baseada no plano selecionado
+      const descricaoPlano = planoSelecionado || 'Clube do Trato';
+      
       let chargePayload: any = {
         customer: customerId,
         billingType: billingType || 'CREDIT_CARD',
         value: parseFloat(valorPlano),
         dueDate: tomorrow.toISOString().split('T')[0],
-        description: 'Clube do Trato Único - Teste de Funcionalidade',
-        externalReference: `teste-${Date.now()}`
+        description: descricaoPlano,
+        externalReference: `${descricaoPlano.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
       };
 
       // Configurações específicas por tipo de pagamento

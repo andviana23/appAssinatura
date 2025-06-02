@@ -196,7 +196,8 @@ export default function Planos() {
       // Enviar dados com valor correto do plano
       const requestData = {
         ...formData,
-        valorPlano: planoSelecionado.valor
+        valorPlano: planoSelecionado.valor,
+        planoSelecionado: planoSelecionado.nome
       };
       
       const response = await apiRequest("/api/asaas/checkout", "POST", requestData);
