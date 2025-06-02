@@ -130,7 +130,7 @@ export default function Planos() {
     multi: [
       { 
         id: "6", 
-        nome: "Clube do Trato Multi", 
+        nome: "Clube do Trato Mult - Corte e Barba 2x", 
         categoria: "Corte e Barba 2x",
         valor: 199.90, 
         descricao: "Flexibilidade máxima", 
@@ -142,7 +142,7 @@ export default function Planos() {
       },
       { 
         id: "7", 
-        nome: "Clube do Trato Multi", 
+        nome: "Clube do Trato Mult - Corte 2x e Barba 4x", 
         categoria: "Corte 2x + Barba 4x",
         valor: 299.90, 
         descricao: "Para quem cuida da barba", 
@@ -154,9 +154,9 @@ export default function Planos() {
       },
       { 
         id: "8", 
-        nome: "Clube do Trato Multi", 
+        nome: "Clube do Trato Mult - Corte 2x", 
         categoria: "Corte 2x",
-        valor: 214.90, 
+        valor: 114.90, 
         descricao: "Sempre com corte em dia", 
         detalhes: ["2x Corte por mês", "Agendamento prioritário", "Flexibilidade total"],
         popular: false,
