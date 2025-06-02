@@ -19,6 +19,7 @@ export function useAuth() {
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
+    enabled: true, // Sempre habilitado, mas com tratamento de erro silencioso
   });
 
   const loginMutation = useMutation({
