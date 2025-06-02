@@ -2312,9 +2312,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Nova rota para clientes de ambas as contas Asaas
+  // Nova rota para clientes de ambas as contas Asaas  
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
-    console.log('Iniciando busca de clientes unificados...');
+    console.log('=== INICIANDO BUSCA CLIENTES UNIFICADOS ===');
+    console.log('Timestamp:', new Date().toISOString());
     try {
       const clientesUnificados = [];
       const hoje = new Date();
@@ -2376,15 +2377,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🔑 Token da API ${account.name}:`, account.apiKey ? account.apiKey.substring(0, 20) + '...' : 'VAZIO');
           const baseUrl = 'https://api.asaas.com/v3';
           
-          // Buscar assinaturas ativas primeiro
-          const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
-            headers: {
-              'access_token': account.apiKey,
-              'Content-Type': 'application/json'
-            }
-          });
+          // Para a conta ANDREY, buscar todos os clientes diretamente
+          if (account.name === 'ANDREY') {
+            console.log(`📋 Buscando TODOS os clientes da conta ${account.name}`);
+            const customersResponse = await fetch(`${baseUrl}/customers?limit=100`, {
+              headers: {
+                'access_token': account.apiKey,
+                'Content-Type': 'application/json'
+              }
+            });
 
-          let clientesProcessados = new Set();
+            if (customersResponse.ok) {
+              const customersData = await customersResponse.json();
+              console.log(`${account.name}: Total de clientes encontrados:`, customersData.totalCount);
+              console.log(`${account.name}: Clientes retornados:`, customersData.data?.length || 0);
+
+              for (const customer of customersData.data || []) {
+                clientesUnificados.push({
+                  id: `asaas_${account.name}_${customer.id}`,
+                  nome: customer.name,
+                  email: customer.email,
+                  telefone: customer.phone || customer.mobilePhone,
+                  cpf: customer.cpfCnpj,
+                  planoNome: 'Cliente Asaas - Sem Assinatura Ativa',
+                  planoValor: '0.00',
+                  formaPagamento: 'N/A',
+                  statusAssinatura: 'CLIENTE_CADASTRADO',
+                  dataInicioAssinatura: new Date(customer.dateCreated),
+                  dataVencimentoAssinatura: null,
+                  origem: `ASAAS_${account.name}`,
+                  createdAt: new Date(customer.dateCreated)
+                });
+              }
+            }
+          } else {
+            // Para conta principal, buscar assinaturas ativas primeiro
+            const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+              headers: {
+                'access_token': account.apiKey,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            let clientesProcessados = new Set();
 
           console.log(`📱 Status da resposta ${account.name}:`, subscriptionsResponse.status);
           console.log(`📱 Response OK ${account.name}:`, subscriptionsResponse.ok);
@@ -2510,13 +2545,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`=== RESULTADO FINAL ===`);
       console.log(`Total de clientes encontrados: ${clientesUnificados.length}`);
       console.log(`Distribuição por origem:`);
       const contagemPorOrigem = clientesUnificados.reduce((acc, cliente) => {
         acc[cliente.origem] = (acc[cliente.origem] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
-      console.log(contagemPorOrigem);
+      console.log(JSON.stringify(contagemPorOrigem, null, 2));
+      console.log(`=== FIM BUSCA UNIFICADA ===`);
       res.json(clientesUnificados);
     } catch (error) {
       console.error('Erro ao buscar clientes unificados:', error);
