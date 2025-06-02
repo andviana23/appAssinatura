@@ -87,11 +87,19 @@ export default function Profissionais() {
   }, [profissionalData, isEdicao, isNovo, tipoProfissional]);
 
   const criarProfissional = useMutation({
-    mutationFn: (data: any) => {
-      if (formData.role === 'barbeiro') {
-        return apiRequest("/api/barbeiros", "POST", data);
-      } else {
-        return apiRequest("/api/users", "POST", { ...data, role: 'recepcionista' });
+    mutationFn: async (data: any) => {
+      try {
+        console.log("Dados sendo enviados:", data);
+        if (formData.role === 'barbeiro') {
+          // Para barbeiros, remover campos desnecessários
+          const { senha, role, ...dadosBarbeiro } = data;
+          return await apiRequest("/api/barbeiros", "POST", dadosBarbeiro);
+        } else {
+          return await apiRequest("/api/users", "POST", { ...data, role: 'recepcionista' });
+        }
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+        throw error;
       }
     },
     onSuccess: () => {
