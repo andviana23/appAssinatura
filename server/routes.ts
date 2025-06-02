@@ -2509,6 +2509,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar clientes externos do banco local
       const clientesExternos = await storage.getAllClientesExternos();
       
+      // Criar conjunto de emails dos clientes externos para evitar duplicação
+      const emailsClientesExternos = new Set(
+        clientesExternos.map(cliente => cliente.email.toLowerCase())
+      );
+      
       // Adicionar clientes externos válidos
       for (const cliente of clientesExternos) {
         if (cliente.dataVencimentoAssinatura) {
@@ -2628,6 +2633,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                       if (customerResponse.ok) {
                         const customer = await customerResponse.json();
+                        
+                        // Verificar se o cliente já existe como externo (evitar duplicação)
+                        if (emailsClientesExternos.has(customer.email.toLowerCase())) {
+                          console.log(`Cliente ${customer.name} já existe como externo, pulando da lista Asaas`);
+                          clientesProcessados.add(subscription.customer);
+                          continue;
+                        }
                         
                         // Calcular próxima data de vencimento
                         const proximaCobranca = new Date(subscription.nextDueDate);
