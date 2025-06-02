@@ -2213,6 +2213,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint de teste para verificar segunda integração
+  app.get("/api/test-segunda-integracao", requireAuth, async (req, res) => {
+    try {
+      console.log('=== TESTE SEGUNDA INTEGRAÇÃO ===');
+      console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
+      console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
+      
+      if (process.env.ASAAS_API_KEY_ANDREY) {
+        const baseUrl = 'https://api.asaas.com/v3';
+        const response = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=5`, {
+          headers: {
+            'access_token': process.env.ASAAS_API_KEY_ANDREY,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Assinaturas da conta Andrey:', data.totalCount);
+          res.json({
+            success: true,
+            totalSubscriptions: data.totalCount,
+            subscriptions: data.data?.slice(0, 3)
+          });
+        } else {
+          console.log('Erro na API Andrey:', response.status);
+          res.json({ success: false, error: 'Erro na API' });
+        }
+      } else {
+        res.json({ success: false, error: 'Chave API não encontrada' });
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
   // Nova rota para clientes de ambas as contas Asaas
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
     console.log('Iniciando busca de clientes unificados...');
@@ -2259,6 +2296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'ANDREY'
         }
       ];
+
+      console.log('Verificando variáveis de ambiente:');
+      console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
+      console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
 
       // Buscar clientes de ambas as contas Asaas
       for (const account of asaasAccounts) {
