@@ -29,6 +29,8 @@ interface ClienteUnificado {
   dataVencimentoAssinatura: Date | null;
   origem: 'ASAAS' | 'EXTERNO';
   createdAt: Date;
+  dataProximaFatura?: string | null;
+  cycle?: string | null;
 }
 
 interface ClientesStats {
@@ -437,30 +439,49 @@ export default function Clientes() {
                   <div key={cliente.id} className="border rounded-lg p-4 hover:bg-gray-50">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{cliente.nome}</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
+                          <div className="flex items-center gap-2">
+                            {cliente.statusAssinatura === 'ATIVO' ? (
+                              <Badge variant="default" className="bg-green-100 text-green-800 text-xs">ATIVO</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">SEM ASSINATURA</Badge>
+                            )}
+                            <Badge variant="secondary" className="text-xs">ASAAS PRINCIPAL</Badge>
+                            {cliente.planoValor && parseFloat(cliente.planoValor) > 0 && (
+                              <span className="text-sm font-semibold text-gray-900">
+                                R$ {parseFloat(cliente.planoValor).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600">{cliente.email}</p>
                         {cliente.telefone && (
-                          <p className="text-sm text-gray-500">{cliente.telefone}</p>
+                          <p className="text-sm text-gray-500">Telefone: {cliente.telefone}</p>
                         )}
+                        {cliente.cpf && (
+                          <p className="text-sm text-gray-500">CPF: {cliente.cpf}</p>
+                        )}
+                        
+                        {cliente.planoNome && (
+                          <div className="mt-2 text-sm text-gray-600">
+                            <strong>Plano:</strong> {cliente.planoNome} | <strong>Pagamento:</strong> {cliente.formaPagamento}
+                          </div>
+                        )}
+                        
+                        {cliente.dataVencimentoAssinatura && (
+                          <div className="text-sm text-gray-600">
+                            <strong>Próxima fatura:</strong> {new Date(cliente.dataVencimentoAssinatura).toLocaleDateString()}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-4 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            Cadastrado: {new Date(cliente.createdAt).toLocaleDateString()}
+                          </Badge>
+                        </div>
                       </div>
                       <div className="flex items-start gap-3">
-                        <div className="text-right">
-                          <Badge 
-                            className={
-                              cliente.statusAssinatura === 'ATIVO' 
-                                ? "bg-green-100 text-green-700 border-green-200" 
-                                : cliente.statusAssinatura === 'CANCELADO'
-                                ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                : "bg-gray-100 text-gray-700 border-gray-200"
-                            }
-                          >
-                            {cliente.statusAssinatura || 'INATIVO'}
-                          </Badge>
-                          <p className="text-sm text-gray-500 mt-1">{cliente.origem}</p>
-                          <p className="text-sm font-medium text-[#365e78]">
-                            {cliente.planoValor ? formatCurrency(parseFloat(cliente.planoValor)) : 'N/A'}
-                          </p>
-                        </div>
                         
                         {/* Menu de Ações */}
                         <DropdownMenu>

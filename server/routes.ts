@@ -2344,7 +2344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dataProximaFatura: assinatura?.dataProximaFatura || null,
           cycle: assinatura?.cycle || null
         };
-      }) || [];
+      }).filter((cliente: any) => cliente.statusAssinatura === 'ATIVO') || [];
       
       return res.json({
         success: true,
