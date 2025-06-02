@@ -30,6 +30,7 @@ export const planosAssinatura = pgTable("planos_assinatura", {
   nome: text("nome").notNull(),
   valorMensal: decimal("valor_mensal", { precision: 10, scale: 2 }).notNull(),
   descricao: text("descricao"),
+  categoria: text("categoria"),
   servicosIncluidos: json("servicos_incluidos").$type<number[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

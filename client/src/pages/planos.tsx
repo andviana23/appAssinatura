@@ -130,15 +130,19 @@ export default function Planos() {
         isPersonalizado: true
       };
 
-      // Categorizar baseado no nome do plano
+      // Categorizar baseado na categoria do banco ou nome do plano
+      const categoria = plano.categoria;
       const nomeLower = plano.nome.toLowerCase();
       const descricaoLower = (plano.descricao || '').toLowerCase();
       
-      if (nomeLower.includes('one') || nomeLower.includes('básico') || nomeLower.includes('simples')) {
+      // Primeiro verifica se há categoria definida no banco
+      if (categoria === 'Exclusiva clientes antigo') {
+        categorias.clientesAntigos.push(planoFormatado);
+      } else if (categoria === '⭐One' || nomeLower.includes('one') || nomeLower.includes('básico') || nomeLower.includes('simples')) {
         categorias.one.push(planoFormatado);
-      } else if (nomeLower.includes('gold') || nomeLower.includes('premium') || nomeLower.includes('avançado')) {
+      } else if (categoria === '👑Gold' || nomeLower.includes('gold') || nomeLower.includes('premium') || nomeLower.includes('avançado')) {
         categorias.gold.push(planoFormatado);
-      } else if (nomeLower.includes('multi') || nomeLower.includes('família') || nomeLower.includes('completo')) {
+      } else if (categoria === '🚀Multi' || nomeLower.includes('multi') || nomeLower.includes('família') || nomeLower.includes('completo')) {
         categorias.multi.push(planoFormatado);
       } else if (nomeLower.includes('exclusiv') || nomeLower.includes('antigo') || nomeLower.includes('especial') || 
                  nomeLower.includes('promo') || nomeLower.includes('desconto') || nomeLower.includes('vip') ||
