@@ -3928,14 +3928,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
 
-            // Verificar clientes externos existentes para evitar duplicação
-            const clientesExistentes = await storage.getAllClientesExternos();
-            const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+            // Verificar clientes existentes para evitar duplicação (ambas as tabelas)
+            const clientesExistentes = await storage.getAllClientes();
+            const clientesExternosExistentes = await storage.getAllClientesExternos();
+            
+            const emailsExistentes = new Set([
+              ...clientesExistentes.map(c => c.email.toLowerCase()),
+              ...clientesExternosExistentes.map(c => c.email.toLowerCase())
+            ]);
+            
+            const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId));
 
             let clientesSincronizados = 0;
             for (const customer of clientesData.data || []) {
-              // Pular se cliente já existe no banco
-              if (emailsExistentes.has(customer.email.toLowerCase())) {
+              // Pular se cliente já existe por email ou asaasCustomerId
+              if (emailsExistentes.has(customer.email.toLowerCase()) || asaasIdsExistentes.has(customer.id)) {
                 continue;
               }
 
@@ -3944,21 +3951,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Só cadastrar clientes com assinatura ativa
               if (assinatura) {
                 try {
-                  await storage.createClienteExterno({
-                    nome: customer.name,
-                    email: customer.email,
-                    telefone: customer.phone || customer.mobilePhone,
-                    cpf: customer.cpfCnpj,
-                    planoNome: assinatura.planoNome,
+                  // Salvar na tabela principal 'clientes' com asaasCustomerId da segunda conta
+                  await storage.createCliente({
+                    nome: (customer.name || '').substring(0, 250),
+                    email: (customer.email || '').substring(0, 250),
+                    telefone: (customer.phone || customer.mobilePhone || '').substring(0, 20),
+                    cpf: (customer.cpfCnpj || '').substring(0, 14),
+                    asaasCustomerId: customer.id, // ID da segunda conta Asaas
+                    planoNome: (assinatura.planoNome || '').substring(0, 250),
                     planoValor: assinatura.planoValor,
-                    formaPagamento: assinatura.formaPagamento,
+                    formaPagamento: (assinatura.formaPagamento || '').substring(0, 50),
                     statusAssinatura: assinatura.statusAssinatura,
                     dataInicioAssinatura: assinatura.dataInicioAssinatura,
                     dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura
                   });
                   clientesSincronizados++;
+                  console.log(`✅ Cliente sincronizado na tabela principal: ${customer.name}`);
                 } catch (error) {
-                  console.warn(`Erro ao sincronizar cliente ${customer.name}:`, error);
+                  console.warn(`❌ Erro ao sincronizar cliente ${customer.name}:`, error);
                 }
               }
             }
