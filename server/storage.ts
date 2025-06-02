@@ -104,6 +104,7 @@ export interface IStorage {
 
   // Clientes Asaas
   getAllClientes(): Promise<Cliente[]>;
+  getAllClientesExternos(): Promise<ClienteExterno[]>;
   getClienteById(id: number): Promise<Cliente | undefined>;
   createCliente(cliente: InsertCliente): Promise<Cliente>;
   updateCliente(id: number, cliente: Partial<InsertCliente>): Promise<Cliente>;
@@ -398,6 +399,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllClientes(): Promise<Cliente[]> {
     return await db.select().from(clientes).orderBy(clientes.nome);
+  }
+
+  async getAllClientesExternos(): Promise<ClienteExterno[]> {
+    return await db.select().from(clientesExternos).orderBy(clientesExternos.nome);
   }
 
   async getClienteById(id: number): Promise<Cliente | undefined> {

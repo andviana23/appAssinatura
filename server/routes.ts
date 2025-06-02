@@ -3164,7 +3164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: `ext_${cliente.id}`, // Prefixo para evitar conflito de IDs
               nome: cliente.nome,
               email: cliente.email,
-              telefone: cliente.telefone,
+              telefone: cliente.telefone || '',
               origem: 'EXTERNO'
             });
           }
