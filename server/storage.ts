@@ -123,6 +123,14 @@ export interface IStorage {
   // Ordem da Fila
   getOrdemFila(): Promise<OrdemFila[]>;
   updateOrdemFila(items: InsertOrdemFila[]): Promise<void>;
+  
+  // Métodos adicionais necessários
+  getAllUsers(): Promise<User[]>;
+  getAllProfissionais(): Promise<User[]>;
+  getAllPlanos(): Promise<PlanoAssinatura[]>;
+  createPlano(plano: InsertPlanoAssinatura): Promise<PlanoAssinatura>;
+  updatePlano(id: number, plano: Partial<InsertPlanoAssinatura>): Promise<PlanoAssinatura | undefined>;
+  deletePlano(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -336,7 +344,7 @@ export class DatabaseStorage implements IStorage {
 
   // Ordem da Fila
   async getOrdemFila(): Promise<OrdemFila[]> {
-    return await db.select().from(ordemFila).orderBy(ordemFila.posicao);
+    return await db.select().from(ordemFila).orderBy(ordemFila.ordem);
   }
 
   async updateOrdemFila(items: InsertOrdemFila[]): Promise<void> {
@@ -344,6 +352,35 @@ export class DatabaseStorage implements IStorage {
     if (items.length > 0) {
       await db.insert(ordemFila).values(items);
     }
+  }
+
+  // ===== MÉTODOS ADICIONAIS NECESSÁRIOS =====
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.nomeCompleto);
+  }
+
+  async getAllProfissionais(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, 'barbeiro')).orderBy(users.nomeCompleto);
+  }
+
+  async getAllPlanos(): Promise<PlanoAssinatura[]> {
+    return await db.select().from(planosAssinatura).orderBy(planosAssinatura.nome);
+  }
+
+  async createPlano(plano: InsertPlanoAssinatura): Promise<PlanoAssinatura> {
+    const [created] = await db.insert(planosAssinatura).values(plano).returning();
+    return created;
+  }
+
+  async updatePlano(id: number, plano: Partial<InsertPlanoAssinatura>): Promise<PlanoAssinatura | undefined> {
+    const [updated] = await db.update(planosAssinatura).set(plano).where(eq(planosAssinatura.id, id)).returning();
+    return updated;
+  }
+
+  async deletePlano(id: number): Promise<boolean> {
+    const result = await db.delete(planosAssinatura).where(eq(planosAssinatura.id, id));
+    return result.length > 0;
   }
 }
 
