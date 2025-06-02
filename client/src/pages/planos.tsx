@@ -61,6 +61,15 @@ export default function Planos() {
   });
   const [externalPaymentMethod, setExternalPaymentMethod] = useState('');
 
+  // Buscar planos personalizados do banco de dados
+  const { data: planosPersonalizados = [], isLoading: loadingPersonalizados } = useQuery({
+    queryKey: ['/api/planos-assinatura'],
+    queryFn: async () => {
+      const response = await apiRequest('/api/planos-assinatura');
+      return response.json();
+    }
+  });
+
   // Planos organizados por categoria com nova estrutura
   const planosData = {
     one: [
@@ -167,12 +176,42 @@ export default function Planos() {
     ]
   };
 
+  // Converter planos personalizados para o formato esperado
+  const planosPersonalizadosFormatados = planosPersonalizados.map((plano: any) => ({
+    id: `custom_${plano.id}`,
+    nome: plano.nome,
+    categoria: plano.categoria,
+    valor: typeof plano.valorMensal === 'number' ? plano.valorMensal : parseFloat(plano.valorMensal || '0'),
+    descricao: plano.descricao || '',
+    detalhes: plano.beneficios || [],
+    popular: false,
+    urlCheckout: '',
+    ativo: plano.ativo !== false,
+    criadoEm: plano.createdAt || new Date().toISOString()
+  }));
+
+  // Organizar planos personalizados por categoria
+  const planosPersonalizadosPorCategoria = {
+    one: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '⭐One'),
+    gold: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '👑Gold'),
+    multi: planosPersonalizadosFormatados.filter((p: any) => p.categoria === '🚀Multi'),
+    exclusivo: planosPersonalizadosFormatados.filter((p: any) => p.categoria === 'Exclusiva clientes antigo')
+  };
+
+  // Mesclar planos fixos com personalizados
+  const planosCompletos = {
+    one: [...planosData.one, ...planosPersonalizadosPorCategoria.one],
+    gold: [...planosData.gold, ...planosPersonalizadosPorCategoria.gold],
+    multi: [...planosData.multi, ...planosPersonalizadosPorCategoria.multi],
+    exclusivo: planosPersonalizadosPorCategoria.exclusivo
+  };
+
   // Flatten all plans for filtering
-  const allPlanos = Object.values(planosData).flat();
+  const allPlanos = Object.values(planosCompletos).flat();
   
   const getFilteredPlanos = () => {
     if (selectedCategory === 'todos') return allPlanos;
-    return planosData[selectedCategory as keyof typeof planosData] || [];
+    return planosCompletos[selectedCategory as keyof typeof planosCompletos] || [];
   };
 
   const createCheckoutMutation = useMutation({
@@ -321,7 +360,8 @@ export default function Planos() {
                   { key: 'todos', label: 'Todos os Planos', icon: '🎯' },
                   { key: 'one', label: 'One', icon: '⭐' },
                   { key: 'gold', label: 'Gold', icon: '👑' },
-                  { key: 'multi', label: 'Multi', icon: '🚀' }
+                  { key: 'multi', label: 'Multi', icon: '🚀' },
+                  { key: 'exclusivo', label: 'Exclusivos', icon: '💎' }
                 ].map((category) => (
                   <button
                     key={category.key}
@@ -342,69 +382,90 @@ export default function Planos() {
         </div>
 
         {/* Grid de planos redesenhado */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {getFilteredPlanos().map((plano) => (
-            <Card 
-              key={plano.id} 
-              className={`relative group bg-white/95 backdrop-blur-sm border border-slate-200/50 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${
-                plano.popular ? 'ring-2 ring-[#365e78]/20 shadow-[#365e78]/10' : ''
-              }`}
-            >
-              {/* Badge popular minimalista */}
-              {plano.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                  <Badge className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] text-white border-0 shadow-lg px-4 py-1 rounded-full text-xs font-medium">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Mais Popular
-                  </Badge>
-                </div>
-              )}
-
-              <CardContent className="p-0">
-                {/* Header minimalista */}
-                <div className="text-center pt-8 pb-6 px-6">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#365e78] to-[#2d4a5f] rounded-2xl flex items-center justify-center shadow-lg">
-                    <CreditCard className="h-8 w-8 text-white" />
+        {loadingPersonalizados ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="bg-white/95 backdrop-blur-sm border border-slate-200/50 rounded-3xl">
+                <CardContent className="p-6">
+                  <Skeleton className="h-16 w-16 mx-auto mb-4 rounded-2xl" />
+                  <Skeleton className="h-6 w-32 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-24 mx-auto mb-4" />
+                  <Skeleton className="h-8 w-20 mx-auto mb-6" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-1">{plano.nome}</h3>
-                  <p className="text-sm text-slate-500 mb-4">{plano.categoria}</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-slate-900">{formatCurrency(plano.valor)}</span>
-                    <span className="text-sm text-slate-500 ml-1">/mês</span>
+                  <Skeleton className="h-12 w-full mt-6" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {getFilteredPlanos().map((plano) => (
+              <Card 
+                key={plano.id} 
+                className={`relative group bg-white/95 backdrop-blur-sm border border-slate-200/50 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${
+                  plano.popular ? 'ring-2 ring-[#365e78]/20 shadow-[#365e78]/10' : ''
+                }`}
+              >
+                {/* Badge popular minimalista */}
+                {plano.popular && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                    <Badge className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] text-white border-0 shadow-lg px-4 py-1 rounded-full text-xs font-medium">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Mais Popular
+                    </Badge>
                   </div>
-                </div>
+                )}
 
-                {/* Linha divisória sutil */}
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-6"></div>
+                <CardContent className="p-0">
+                  {/* Header minimalista */}
+                  <div className="text-center pt-8 pb-6 px-6">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#365e78] to-[#2d4a5f] rounded-2xl flex items-center justify-center shadow-lg">
+                      <CreditCard className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-1">{plano.nome}</h3>
+                    <p className="text-sm text-slate-500 mb-4">{plano.categoria}</p>
+                    <div className="mb-6">
+                      <span className="text-4xl font-bold text-slate-900">{formatCurrency(plano.valor)}</span>
+                      <span className="text-sm text-slate-500 ml-1">/mês</span>
+                    </div>
+                  </div>
 
-                <div className="px-6 pb-8">
-                  {/* Descrição */}
-                  <p className="text-slate-600 text-sm text-center mb-6">{plano.descricao}</p>
+                  {/* Linha divisória sutil */}
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-6"></div>
 
-                  {/* Lista de benefícios minimalista */}
-                  <div className="space-y-4 mb-8">
-                    {plano.detalhes?.map((detalhe, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="mt-1 w-5 h-5 rounded-full bg-[#365e78]/10 flex items-center justify-center flex-shrink-0">
-                          <div className="w-2 h-2 rounded-full bg-[#365e78]"></div>
+                  <div className="px-6 pb-8">
+                    {/* Descrição */}
+                    <p className="text-slate-600 text-sm text-center mb-6">{plano.descricao}</p>
+
+                    {/* Lista de benefícios minimalista */}
+                    <div className="space-y-4 mb-8">
+                      {plano.detalhes?.map((detalhe, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="mt-1 w-5 h-5 rounded-full bg-[#365e78]/10 flex items-center justify-center flex-shrink-0">
+                            <div className="w-2 h-2 rounded-full bg-[#365e78]"></div>
+                          </div>
+                          <span className="text-sm text-slate-700 leading-relaxed">{detalhe}</span>
                         </div>
-                        <span className="text-sm text-slate-700 leading-relaxed">{detalhe}</span>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                  {/* Botão de ação minimalista */}
-                  <Button 
-                    onClick={() => handleAssinar(plano)}
-                    className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-2xl font-medium py-3 h-12 transition-all duration-300 shadow-lg hover:shadow-xl border-0 group-hover:scale-[1.02]"
-                  >
-                    Assinar Agora
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    {/* Botão de ação minimalista */}
+                    <Button 
+                      onClick={() => handleAssinar(plano)}
+                      className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-2xl font-medium py-3 h-12 transition-all duration-300 shadow-lg hover:shadow-xl border-0 group-hover:scale-[1.02]"
+                    >
+                      Assinar Agora
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Modais de checkout */}
         <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
@@ -439,87 +500,119 @@ export default function Planos() {
                   value={checkoutData.telefone}
                   onChange={(e) => setCheckoutData(prev => ({ ...prev, telefone: e.target.value }))}
                   className="rounded-xl"
+                  placeholder="(11) 99999-9999"
                 />
               </div>
               <div>
                 <Label htmlFor="cpf">CPF</Label>
                 <Input
                   id="cpf"
-                  value={checkoutData.cpf}
-                  onChange={(e) => {
-                    const formattedCPF = formatCPF(e.target.value);
-                    setCheckoutData(prev => ({ ...prev, cpf: formattedCPF }));
-                  }}
+                  value={formatCPF(checkoutData.cpf)}
+                  onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
+                  className="rounded-xl"
                   placeholder="000.000.000-00"
                   maxLength={14}
-                  className="rounded-xl"
                 />
-                {checkoutData.cpf && !isValidCPF(checkoutData.cpf) && (
-                  <p className="text-sm text-red-600 mt-1">CPF deve ter 11 dígitos</p>
-                )}
               </div>
               
-              <RadioGroup 
-                value={checkoutData.billingType} 
-                onValueChange={(value) => setCheckoutData(prev => ({ ...prev, billingType: value }))}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="CREDIT_CARD" id="credit" />
-                  <Label htmlFor="credit" className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Cartão de Crédito
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="EXTERNAL" id="external" />
-                  <Label htmlFor="external" className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Pagamento Externo
-                  </Label>
-                </div>
-              </RadioGroup>
-
-              <Button
+              <div className="space-y-4">
+                <Label>Forma de Pagamento</Label>
+                <RadioGroup
+                  value={checkoutData.billingType}
+                  onValueChange={(value) => setCheckoutData(prev => ({ ...prev, billingType: value }))}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                    <RadioGroupItem value="CREDIT_CARD" id="credit" />
+                    <Label htmlFor="credit" className="flex items-center gap-2 cursor-pointer flex-1">
+                      <CreditCard className="h-4 w-4" />
+                      Cartão de Crédito
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                    <RadioGroupItem value="PIX" id="pix" />
+                    <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1">
+                      <QrCode className="h-4 w-4" />
+                      PIX
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                    <RadioGroupItem value="BOLETO" id="boleto" />
+                    <Label htmlFor="boleto" className="flex items-center gap-2 cursor-pointer flex-1">
+                      <Banknote className="h-4 w-4" />
+                      Boleto
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                    <RadioGroupItem value="EXTERNAL" id="external" />
+                    <Label htmlFor="external" className="flex items-center gap-2 cursor-pointer flex-1">
+                      <TestTube className="h-4 w-4" />
+                      Pagamento Externo (Dinheiro/PIX/Cartão)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              <Button 
                 onClick={() => createCheckoutMutation.mutate(checkoutData)}
-                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email}
-                className="w-full bg-primary hover:bg-primary/90 rounded-xl"
+                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email || !checkoutData.telefone || !checkoutData.cpf}
+                className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-xl"
               >
-                {createCheckoutMutation.isPending ? 'Processando...' : 'Continuar'}
+                {createCheckoutMutation.isPending ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                )}
+                {checkoutData.billingType === 'EXTERNAL' ? 'Cadastrar Cliente' : 'Gerar Checkout'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
 
+        {/* Modal de Pagamento Externo */}
         <Dialog open={showExternalPaymentModal} onOpenChange={setShowExternalPaymentModal}>
           <DialogContent className="max-w-md mx-auto">
             <DialogHeader>
-              <DialogTitle className="text-center">Forma de Pagamento</DialogTitle>
+              <DialogTitle className="text-center">Selecione a Forma de Pagamento</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <RadioGroup value={externalPaymentMethod} onValueChange={setExternalPaymentMethod}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="PIX" id="pix-external" />
-                  <Label htmlFor="pix-external" className="flex items-center gap-2">
+              <RadioGroup
+                value={externalPaymentMethod}
+                onValueChange={setExternalPaymentMethod}
+                className="space-y-3"
+              >
+                <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                  <RadioGroupItem value="Dinheiro" id="dinheiro" />
+                  <Label htmlFor="dinheiro" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Banknote className="h-4 w-4" />
+                    Dinheiro
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                  <RadioGroupItem value="PIX" id="pix-ext" />
+                  <Label htmlFor="pix-ext" className="flex items-center gap-2 cursor-pointer flex-1">
                     <QrCode className="h-4 w-4" />
                     PIX
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Cartão Débito" id="debito" />
-                  <Label htmlFor="debito" className="flex items-center gap-2">
+                <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
+                  <RadioGroupItem value="Cartão" id="cartao-ext" />
+                  <Label htmlFor="cartao-ext" className="flex items-center gap-2 cursor-pointer flex-1">
                     <CreditCard className="h-4 w-4" />
-                    Cartão de Débito
+                    Cartão (Débito/Crédito)
                   </Label>
                 </div>
               </RadioGroup>
-
-              <Button
+              
+              <Button 
                 onClick={() => createExternalClientMutation.mutate(externalPaymentMethod)}
                 disabled={createExternalClientMutation.isPending || !externalPaymentMethod}
-                className="w-full bg-primary hover:bg-primary/90 rounded-xl"
+                className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-xl"
               >
-                {createExternalClientMutation.isPending ? 'Cadastrando...' : 'Cadastrar Cliente'}
+                {createExternalClientMutation.isPending ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Confirmar Cadastro
               </Button>
             </div>
           </DialogContent>
