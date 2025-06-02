@@ -140,7 +140,9 @@ export default function Planos() {
         categorias.gold.push(planoFormatado);
       } else if (nomeLower.includes('multi') || nomeLower.includes('família') || nomeLower.includes('completo')) {
         categorias.multi.push(planoFormatado);
-      } else if (nomeLower.includes('exclusiv') || nomeLower.includes('antigo') || descricaoLower.includes('exclusiv') || descricaoLower.includes('antigo')) {
+      } else if (nomeLower.includes('exclusiv') || nomeLower.includes('antigo') || nomeLower.includes('especial') || 
+                 nomeLower.includes('promo') || nomeLower.includes('desconto') || nomeLower.includes('vip') ||
+                 descricaoLower.includes('exclusiv') || descricaoLower.includes('antigo') || descricaoLower.includes('especial')) {
         categorias.clientesAntigos.push(planoFormatado);
       } else {
         categorias.outros.push(planoFormatado);
