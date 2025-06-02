@@ -237,8 +237,8 @@ export default function Planos() {
         throw new Error(`Plano "${formData.planoSelecionado}" não encontrado`);
       }
       
-      // Validar CPF antes de enviar
-      if (!isValidCPF(formData.cpf)) {
+      // Validar CPF apenas para pagamentos não externos
+      if (formData.billingType !== 'EXTERNAL' && !isValidCPF(formData.cpf)) {
         throw new Error('CPF deve ter exatamente 11 dígitos');
       }
       
@@ -540,20 +540,6 @@ export default function Planos() {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
-                    <RadioGroupItem value="PIX" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <QrCode className="h-4 w-4" />
-                      PIX
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
-                    <RadioGroupItem value="BOLETO" id="boleto" />
-                    <Label htmlFor="boleto" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <Banknote className="h-4 w-4" />
-                      Boleto
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 border rounded-xl hover:bg-accent transition-colors">
                     <RadioGroupItem value="EXTERNAL" id="external" />
                     <Label htmlFor="external" className="flex items-center gap-2 cursor-pointer flex-1">
                       <TestTube className="h-4 w-4" />
@@ -565,7 +551,13 @@ export default function Planos() {
               
               <Button 
                 onClick={() => createCheckoutMutation.mutate(checkoutData)}
-                disabled={createCheckoutMutation.isPending || !checkoutData.nome || !checkoutData.email || !checkoutData.telefone || !checkoutData.cpf}
+                disabled={
+                  createCheckoutMutation.isPending || 
+                  !checkoutData.nome || 
+                  !checkoutData.email || 
+                  !checkoutData.telefone || 
+                  (checkoutData.billingType !== 'EXTERNAL' && !checkoutData.cpf)
+                }
                 className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-xl"
               >
                 {createCheckoutMutation.isPending ? (
