@@ -141,11 +141,11 @@ export default function Planos() {
   const isLoading = loadingPersonalizados || loadingAsaas;
 
   // Flatten all plans for filtering
-  const allPlanos = Object.values(planosCompletos).flat();
+  const allPlanos = Object.values(planosData).flat();
   
   const getFilteredPlanos = () => {
     if (selectedCategory === 'todos') return allPlanos;
-    return planosCompletos[selectedCategory as keyof typeof planosCompletos] || [];
+    return planosData[selectedCategory as keyof typeof planosData] || [];
   };
 
   const createCheckoutMutation = useMutation({
