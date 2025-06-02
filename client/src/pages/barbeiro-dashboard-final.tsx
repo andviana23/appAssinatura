@@ -48,7 +48,7 @@ export default function BarbeiroDashboardFinal() {
   
   // Estados para formulários
   const [perfilForm, setPerfilForm] = useState({
-    nome: user?.username || '',
+    nome: (user as any)?.nome || user?.email || '',
     email: user?.email || ''
   });
   const [senhaForm, setSenhaForm] = useState({
@@ -63,11 +63,7 @@ export default function BarbeiroDashboardFinal() {
     queryFn: () => apiRequest(`/api/barbeiro/comissao-dados?mes=${filtroMes}`),
   });
 
-  // Buscar dados da Lista da Vez
-  const { data: listaVezData, isLoading: listaLoading } = useQuery({
-    queryKey: ["/api/lista-vez/barbeiro"],
-    queryFn: () => apiRequest("/api/lista-vez/barbeiro"),
-  });
+  // Remover busca da Lista da Vez (não será mais usado)
 
   // Mutação para atualizar perfil
   const updatePerfilMutation = useMutation({
@@ -174,11 +170,10 @@ export default function BarbeiroDashboardFinal() {
     updateSenhaMutation.mutate(senhaForm);
   };
 
-  // Calcular estatísticas
-  const servicosFinalizados = comissaoData?.totalServicos || 0;
-  const tempoTotal = comissaoData?.tempoTotalMinutos || 0;
-  const comissaoTotal = comissaoData?.comissaoTotal || 0;
-  const clientesNaFila = listaVezData?.clientes?.length || 0;
+  // Calcular estatísticas baseadas na mesma fonte da página de distribuição
+  const servicosFinalizados = (comissaoData as any)?.totalServicos || 0;
+  const tempoTotal = (comissaoData as any)?.tempoTotalMinutos || 0;
+  const comissaoTotal = (comissaoData as any)?.comissaoTotal || 0;
 
   const tempoFormatado = `${Math.floor(tempoTotal / 60)}h ${tempoTotal % 60}min`;
 
@@ -202,7 +197,7 @@ export default function BarbeiroDashboardFinal() {
                 Dashboard Barbeiro
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Bem-vindo, {user?.nome}
+                Bem-vindo, {(user as any)?.nome || user?.email}
               </p>
             </div>
           </div>
@@ -373,7 +368,7 @@ export default function BarbeiroDashboardFinal() {
         </div>
 
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Serviços Finalizados */}
           <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -434,25 +429,7 @@ export default function BarbeiroDashboardFinal() {
             </CardContent>
           </Card>
 
-          {/* Lista da Vez */}
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
-                Lista da Vez
-              </CardTitle>
-              <Users className="h-4 w-4 opacity-90" />
-            </CardHeader>
-            <CardContent>
-              {listaLoading ? (
-                <Skeleton className="h-8 w-12 bg-white/20" />
-              ) : (
-                <div className="text-2xl font-bold">{clientesNaFila}</div>
-              )}
-              <p className="text-xs opacity-90">
-                Clientes na fila
-              </p>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Ações Rápidas */}

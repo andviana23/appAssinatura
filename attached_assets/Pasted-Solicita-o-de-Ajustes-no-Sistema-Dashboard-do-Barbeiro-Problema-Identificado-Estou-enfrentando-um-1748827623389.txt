@@ -1,0 +1,49 @@
+Solicitação de Ajustes no Sistema - Dashboard do Barbeiro
+Problema Identificado
+Estou enfrentando um problema crítico no dashboard da conta do barbeiro do meu sistema. Os dados exibidos nos cards do dashboard não estão refletindo as informações reais que constam no banco de dados.
+Situação Atual
+Cards Problemáticos no Dashboard do Barbeiro:
+
+Card "Serviços Finalizados" - Mostra: 0 serviços
+Card "Tempo Trabalhado" - Mostra: 0h 0min
+Card "Comissão do Mês" - Mostra: R$ 0,00
+
+Onde os Dados Corretos Estão Disponíveis:
+Quando eu acesso o sistema com a conta de administrador e navego até a seção "Comissões", consigo visualizar perfeitamente:
+
+A comissão real calculada para cada barbeiro
+A quantidade exata de atendimentos realizados
+O tempo total trabalhado por cada profissional
+
+Correções Necessárias
+1. Sincronização de Dados dos Cards
+URGENTE: Os três cards mencionados precisam buscar e exibir os dados reais do banco de dados, os mesmos que aparecem corretamente na área administrativa de comissões.
+Detalhamento do que precisa ser corrigido:
+
+O card "Serviços Finalizados" deve mostrar o número real de serviços concluídos pelo barbeiro
+O card "Tempo Trabalhado" deve exibir o tempo total acumulado de atendimentos
+O card "Comissão do Mês" deve calcular e mostrar o valor correto da comissão baseado nos atendimentos realizados
+
+2. Remoção de Card Desnecessário
+REMOVER COMPLETAMENTE: O card "Lista da Vez" (que atualmente mostra "0 - Clientes na fila") precisa ser removido do dashboard do barbeiro, pois:
+
+Não possui funcionalidade implementada
+Está ocupando espaço desnecessário na interface
+Pode confundir os usuários
+
+Verificação Solicitada
+Após realizar as correções, por favor:
+
+Teste a sincronização: Verifique se os dados dos cards do barbeiro batem exatamente com os dados mostrados na área administrativa de comissões
+Confirme a remoção: Certifique-se de que o card "Lista da Vez" foi completamente removido
+Teste com dados reais: Se possível, teste com um barbeiro que já tenha atendimentos registrados para validar se os valores estão sendo calculados corretamente
+
+Prioridade
+Esta correção é ALTA PRIORIDADE pois afeta diretamente a experiência dos barbeiros ao visualizarem suas métricas de trabalho, podendo causar confusão e insatisfação com o sistema.
+Observações Importantes
+
+Os dados corretos JÁ EXISTEM no sistema (visíveis na área administrativa)
+O problema é apenas na exibição/busca desses dados nos cards do dashboard do barbeiro
+Não devem ser criadas novas funcionalidades, apenas corrigir a conexão com os dados existentes
+
+Aguardo a correção destes pontos para que o sistema funcione adequadamente para todos os usuários.
