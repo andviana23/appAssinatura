@@ -1,0 +1,106 @@
+📋 RESUMO DA TAREFA
+Criar uma segunda integração com a API do Asaas para exibir dados de clientes de duas contas diferentes na página de listagem de clientes, mantendo toda a funcionalidade atual intacta.
+
+🎯 OBJETIVO PRINCIPAL
+Adicionar uma SEGUNDA INTEGRAÇÃO com a API do Asaas na página de lista de clientes, sem substituir ou alterar a integração existente.
+
+📊 SITUAÇÃO ATUAL
+✅ Sistema possui clientes ativos e assinaturas ativas
+✅ Já existe uma integração funcional com uma conta Asaas
+✅ Sistema funciona corretamente para criação de checkouts
+✅ Lista de clientes exibe dados da primeira integração
+🎯 ESCOPO DA IMPLEMENTAÇÃO
+✅ O QUE DEVE SER FEITO:
+1. CRIAR SEGUNDA INTEGRAÇÃO
+Criar uma nova integração com a segunda conta Asaas
+Token da Segunda Conta: $aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj
+Esta segunda integração é referente à conta do Andrey Viana
+2. MODIFICAÇÃO NA LISTA DE CLIENTES
+Manter a integração atual funcionando normalmente
+Adicionar busca da segunda integração
+Combinar os resultados de ambas as integrações
+Exibir todos os clientes de ambas as contas em uma única lista
+3. DADOS A SEREM BUSCADOS
+A segunda integração deve buscar exatamente os mesmos tipos de dados que a primeira integração já busca
+Manter a mesma estrutura de informações para compatibilidade
+Os dados devem ser apresentados da mesma forma na lista
+❌ O QUE NÃO DEVE SER ALTERADO:
+🚫 FUNCIONALIDADES PROTEGIDAS:
+❌ NÃO ALTERAR a integração usada para criação de checkouts
+❌ NÃO MODIFICAR as funcionalidades de planos/assinaturas
+❌ NÃO ALTERAR outras páginas além da lista de clientes
+❌ NÃO REMOVER ou modificar a integração atual existente
+❌ NÃO SUBSTITUIR a integração atual, apenas ADICIONAR uma segunda
+🔧 IMPLEMENTAÇÃO REQUERIDA
+TAREFA 1: Configurar Segunda Integração
+Configurar acesso à segunda conta Asaas usando o token fornecido
+Testar conectividade com a segunda conta
+Garantir que ela busca os mesmos tipos de dados da primeira integração
+TAREFA 2: Modificar Lista de Clientes
+Identificar onde a lista de clientes faz a busca atual
+Adicionar busca da segunda integração em paralelo
+Combinar os resultados de ambas as integrações
+Exibir lista unificada com clientes de ambas as contas
+TAREFA 3: Tratamento de Dados
+Garantir que os dados das duas integrações sejam compatíveis
+Implementar tratamento para caso uma das integrações falhe
+Manter a lista funcionando mesmo se apenas uma integração estiver disponível
+TAREFA 4: Identificação Visual (Opcional)
+Considerar adicionar alguma forma de identificar de qual conta cada cliente veio
+Pode ser um badge, cor diferente, ou outro indicador visual sutil
+📋 CHECKLIST DE IMPLEMENTAÇÃO
+ANÁLISE INICIAL:
+ Identificar onde está localizada a lista de clientes no código
+ Mapear como a integração atual funciona
+ Entender quais dados são buscados da primeira integração
+DESENVOLVIMENTO:
+ Configurar segunda integração com o token fornecido
+ Testar segunda integração isoladamente
+ Implementar busca combinada das duas integrações
+ Modificar exibição da lista para mostrar dados combinados
+ Implementar tratamento de erros
+VALIDAÇÃO:
+ Confirmar que lista mostra clientes de ambas as contas
+ Verificar que checkout continua funcionando normalmente
+ Testar comportamento se uma integração falhar
+ Validar que outras funcionalidades não foram afetadas
+ Confirmar performance adequada da página
+🚨 PONTOS CRÍTICOS DE ATENÇÃO
+OBRIGATÓRIOS:
+MANTER SISTEMA ATUAL FUNCIONANDO - A integração atual deve continuar 100% operacional
+PROTEGER CHECKOUT - Não alterar qual integração é usada para criar checkouts
+ADICIONAR, NÃO SUBSTITUIR - Criar segunda integração sem afetar a primeira
+IMPORTANTES:
+Se uma das integrações falhar, a outra deve continuar funcionando
+A página não deve ficar lenta por causa das duas buscas
+Implementar logs para acompanhar o funcionamento das duas integrações
+📝 ENTREGÁVEIS ESPERADOS
+FUNCIONALIDADE:
+Lista de clientes mostrando dados de ambas as contas Asaas
+Sistema atual mantido sem alterações
+Segunda integração funcionando corretamente
+DOCUMENTAÇÃO:
+Breve explicação de como foi implementada a segunda integração
+Instruções sobre como identificar clientes de cada conta (se aplicável)
+EVIDÊNCIAS:
+Print ou screenshot da lista mostrando clientes de ambas as contas
+Confirmação de que checkout e outras funcionalidades não foram afetadas
+⚠️ LEMBRETES IMPORTANTES
+PARA O DESENVOLVEDOR:
+Esta é uma ADIÇÃO de funcionalidade, não uma substituição
+A integração atual deve permanecer exatamente como está
+Apenas a lista de clientes deve ser modificada
+O token fornecido é da conta do Andrey Viana no Asaas
+OBJETIVO FINAL:
+Uma lista de clientes que mostra dados de duas contas Asaas diferentes
+Sistema atual 100% preservado
+Funcionalidade de checkout inalterada
+🤝 SUPORTE E DÚVIDAS
+Se surgir alguma dúvida durante a implementação:
+
+Sobre a estrutura atual: analisar o código existente
+Sobre o token: confirmar se está correto antes de usar
+Sobre layout: verificar se precisa de indicação visual das contas
+Sobre funcionalidade: sempre priorizar manter o sistema atual funcionando
+RESUMO EXECUTIVO: Criar segunda integração com API Asaas para mostrar mais clientes na lista, sem mexer em nada que já funciona.
+

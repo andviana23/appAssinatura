@@ -1212,13 +1212,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesExternos = await storage.getAllClientes();
       const hoje = new Date();
       
-      // Primeiro, sincronizar clientes do Asaas (se houver)
+      // Sincronizar clientes de ambas as contas Asaas
       let clientesAsaasSincronizados = new Set();
 
-      // Buscar cobranças confirmadas do Asaas no mês atual
-      const asaasApiKey = process.env.ASAAS_API_KEY;
-      if (asaasApiKey) {
+      // Configuração das duas contas Asaas
+      const asaasAccounts = [
+        {
+          apiKey: process.env.ASAAS_API_KEY,
+          name: 'ASAAS_PRINCIPAL'
+        },
+        {
+          apiKey: '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
+          name: 'ASAAS_ANDREY'
+        }
+      ];
+
+      // Buscar cobranças confirmadas de ambas as contas Asaas
+      for (const account of asaasAccounts) {
+        if (!account.apiKey) continue;
+        
         try {
+          console.log(`Buscando clientes da conta: ${account.name}`);
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
             ? 'https://api.asaas.com/v3' 
             : 'https://sandbox.asaas.com/api/v3';
@@ -1229,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`, {
             headers: {
-              'access_token': asaasApiKey,
+              'access_token': account.apiKey,
               'Content-Type': 'application/json'
             }
           });
