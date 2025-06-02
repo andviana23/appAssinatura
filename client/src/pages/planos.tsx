@@ -306,62 +306,65 @@ export default function Planos() {
         </div>
 
         {/* Grid de planos redesenhado */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {getFilteredPlanos().map((plano) => (
             <Card 
               key={plano.id} 
-              className={`relative overflow-hidden bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
-                plano.popular ? 'ring-2 ring-primary ring-offset-2' : ''
+              className={`relative group bg-white/95 backdrop-blur-sm border border-slate-200/50 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 ${
+                plano.popular ? 'ring-2 ring-[#365e78]/20 shadow-[#365e78]/10' : ''
               }`}
             >
-              {/* Badge popular */}
+              {/* Badge popular minimalista */}
               {plano.popular && (
-                <div className="absolute top-4 right-4 z-10">
-                  <Badge className="bg-primary text-primary-foreground border-0 shadow-lg">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                  <Badge className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] text-white border-0 shadow-lg px-4 py-1 rounded-full text-xs font-medium">
                     <Sparkles className="h-3 w-3 mr-1" />
-                    Popular
+                    Mais Popular
                   </Badge>
                 </div>
               )}
 
-              {/* Header gradiente */}
-              <div className="bg-gradient-to-r from-primary via-primary/90 to-info p-6 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-                <div className="relative">
-                  <h3 className="text-xl font-bold">{plano.nome}</h3>
-                  <p className="text-sm opacity-90 mt-1">{plano.categoria}</p>
-                  <div className="mt-4">
-                    <span className="text-3xl font-bold">{formatCurrency(plano.valor)}</span>
-                    <span className="text-sm opacity-80 ml-1">/mês</span>
+              <CardContent className="p-0">
+                {/* Header minimalista */}
+                <div className="text-center pt-8 pb-6 px-6">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#365e78] to-[#2d4a5f] rounded-2xl flex items-center justify-center shadow-lg">
+                    <CreditCard className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-1">{plano.nome}</h3>
+                  <p className="text-sm text-slate-500 mb-4">{plano.categoria}</p>
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold text-slate-900">{formatCurrency(plano.valor)}</span>
+                    <span className="text-sm text-slate-500 ml-1">/mês</span>
                   </div>
                 </div>
-              </div>
 
-              <CardContent className="p-6 space-y-6">
-                {/* Descrição */}
-                <p className="text-muted-foreground text-sm">{plano.descricao}</p>
+                {/* Linha divisória sutil */}
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-6"></div>
 
-                {/* Lista de benefícios */}
-                <div className="space-y-3">
-                  {plano.detalhes?.map((detalhe, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <div className="px-6 pb-8">
+                  {/* Descrição */}
+                  <p className="text-slate-600 text-sm text-center mb-6">{plano.descricao}</p>
+
+                  {/* Lista de benefícios minimalista */}
+                  <div className="space-y-4 mb-8">
+                    {plano.detalhes?.map((detalhe, index) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-[#365e78]/10 flex items-center justify-center flex-shrink-0">
+                          <div className="w-2 h-2 rounded-full bg-[#365e78]"></div>
+                        </div>
+                        <span className="text-sm text-slate-700 leading-relaxed">{detalhe}</span>
                       </div>
-                      <span className="text-sm text-foreground">{detalhe}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {/* Botão de ação */}
-                <Button 
-                  onClick={() => handleAssinar(plano)}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-semibold py-3 transition-all duration-200 shadow-md hover:shadow-lg"
-                  size="lg"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Assinar Agora
-                </Button>
+                  {/* Botão de ação minimalista */}
+                  <Button 
+                    onClick={() => handleAssinar(plano)}
+                    className="w-full bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white rounded-2xl font-medium py-3 h-12 transition-all duration-300 shadow-lg hover:shadow-xl border-0 group-hover:scale-[1.02]"
+                  >
+                    Assinar Agora
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
