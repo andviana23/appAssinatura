@@ -3123,6 +3123,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/clientes-ativos-agendamento - Clientes com assinaturas ativas para agendamento
+  app.get('/api/clientes-ativos-agendamento', requireAuth, async (req, res) => {
+    try {
+      const hoje = new Date();
+      const clientesAtivos = [];
+
+      // Buscar clientes do banco local (incluindo sincronizados do Asaas)
+      const clientesLocais = await storage.getAllClientes();
+      
+      for (const cliente of clientesLocais) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          if (validade >= hoje) {
+            clientesAtivos.push({
+              id: cliente.id,
+              nome: cliente.nome,
+              email: cliente.email,
+              telefone: cliente.telefone,
+              origem: cliente.asaasCustomerId ? 'ASAAS' : 'EXTERNO'
+            });
+          }
+        }
+      }
+
+      // Buscar clientes direto da API do Asaas que ainda não foram sincronizados
+      if (process.env.ASAAS_API_KEY) {
+        try {
+          const asaasApiKey = process.env.ASAAS_API_KEY;
+          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+            ? 'https://www.asaas.com/api/v3' 
+            : 'https://sandbox.asaas.com/api/v3';
+
+          // Buscar assinaturas ativas
+          const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+            headers: {
+              'access_token': asaasApiKey
+            }
+          });
+
+          if (subscriptionsResponse.ok) {
+            const subscriptionsData = await subscriptionsResponse.json();
+            
+            for (const subscription of subscriptionsData.data || []) {
+              // Verificar se já não foi sincronizado no banco local
+              const jaExiste = clientesLocais.find(c => c.asaasCustomerId === subscription.customer);
+              
+              if (!jaExiste) {
+                // Buscar dados do cliente no Asaas
+                const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
+                  headers: {
+                    'access_token': asaasApiKey
+                  }
+                });
+
+                if (customerResponse.ok) {
+                  const customerData = await customerResponse.json();
+                  
+                  // Verificar se a assinatura ainda está válida
+                  const nextDueDate = new Date(subscription.nextDueDate);
+                  if (nextDueDate >= hoje) {
+                    // Criar cliente no banco local para evitar duplicações futuras
+                    await storage.createCliente({
+                      nome: customerData.name,
+                      email: customerData.email,
+                      telefone: customerData.mobilePhone || customerData.phone || null,
+                      cpf: customerData.cpfCnpj || null,
+                      planoNome: subscription.description || 'Plano Asaas',
+                      planoValor: subscription.value,
+                      formaPagamento: 'Asaas',
+                      dataInicioAssinatura: new Date(subscription.dateCreated),
+                      dataVencimentoAssinatura: nextDueDate,
+                      asaasCustomerId: subscription.customer
+                    });
+
+                    clientesAtivos.push({
+                      id: subscription.customer,
+                      nome: customerData.name,
+                      email: customerData.email,
+                      telefone: customerData.mobilePhone || customerData.phone || '',
+                      origem: 'ASAAS'
+                    });
+                  }
+                }
+              }
+            }
+          }
+        } catch (asaasError) {
+          console.warn('Erro ao buscar clientes do Asaas:', asaasError);
+        }
+      }
+
+      res.json(clientesAtivos);
+    } catch (error) {
+      console.error('Erro ao buscar clientes ativos:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // GET /api/clientes/unified-stats - Estatísticas unificadas de clientes
   app.get('/api/clientes/unified-stats', requireAuth, async (req, res) => {
     try {

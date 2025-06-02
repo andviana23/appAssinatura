@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, subDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays, ArrowLeft, Clock, X, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays, ArrowLeft, Clock, X, AlertTriangle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -48,6 +49,8 @@ export default function Agendamento() {
   const [selectedBarbeiro, setSelectedBarbeiro] = useState("");
   const [selectedCliente, setSelectedCliente] = useState("");
   const [selectedServico, setSelectedServico] = useState("");
+  const [clienteSearchTerm, setClienteSearchTerm] = useState("");
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
@@ -74,8 +77,13 @@ export default function Agendamento() {
     queryKey: ["/api/barbeiros"],
   });
 
+  // Buscar apenas clientes com assinaturas ativas para agendamento
   const { data: clientes = [] } = useQuery({
-    queryKey: ["/api/clientes/unified"],
+    queryKey: ["/api/clientes-ativos-agendamento"],
+    queryFn: async () => {
+      const response = await apiRequest("/api/clientes-ativos-agendamento");
+      return await response.json();
+    }
   });
 
   const { data: servicos = [] } = useQuery({
@@ -85,6 +93,14 @@ export default function Agendamento() {
   const { data: todosServicos = [] } = useQuery({
     queryKey: ["/api/servicos"],
   });
+
+  // Filtrar clientes com base no termo de busca
+  const clientesFiltrados = useMemo(() => {
+    if (!clienteSearchTerm.trim()) return clientes;
+    return clientes.filter((cliente: any) => 
+      cliente.nome.toLowerCase().includes(clienteSearchTerm.toLowerCase())
+    );
+  }, [clientes, clienteSearchTerm]);
 
   // Mutations
   const createAgendamento = useMutation({
@@ -99,6 +115,8 @@ export default function Agendamento() {
       setSelectedBarbeiro("");
       setSelectedServico("");
       setSelectedHour("");
+      setClienteSearchTerm("");
+      setShowClienteDropdown(false);
     },
     onError: (error) => {
       console.error("Erro ao criar agendamento:", error);
@@ -640,18 +658,46 @@ export default function Agendamento() {
 
             <div>
               <label className="text-sm font-bold text-gray-700 mb-3 block">👤 Cliente</label>
-              <Select value={selectedCliente} onValueChange={setSelectedCliente} required>
-                <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl">
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {Array.isArray(clientes) ? clientes.map((cliente: any) => (
-                    <SelectItem key={cliente.id} value={cliente.id.toString()} className="rounded-lg">
-                      {cliente.nome}
-                    </SelectItem>
-                  )) : null}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Digite o nome do cliente..."
+                    value={clienteSearchTerm}
+                    onChange={(e) => {
+                      setClienteSearchTerm(e.target.value);
+                      setShowClienteDropdown(true);
+                    }}
+                    onFocus={() => setShowClienteDropdown(true)}
+                    className="h-12 pl-10 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl"
+                  />
+                </div>
+                {showClienteDropdown && clientesFiltrados.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {clientesFiltrados.map((cliente: any) => (
+                      <button
+                        key={cliente.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCliente(cliente.id.toString());
+                          setClienteSearchTerm(cliente.nome);
+                          setShowClienteDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="font-medium text-gray-900">{cliente.nome}</div>
+                        <div className="text-sm text-gray-500">{cliente.email}</div>
+                        <div className="text-xs text-blue-600">{cliente.origem === 'ASAAS' ? 'Cliente Asaas' : 'Cliente Externo'}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showClienteDropdown && clientesFiltrados.length === 0 && clienteSearchTerm && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
+                    <div className="text-gray-500 text-center">Nenhum cliente encontrado</div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
