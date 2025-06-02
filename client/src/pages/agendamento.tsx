@@ -696,200 +696,100 @@ export default function Agendamento() {
 
       {/* Modal da Comanda */}
       <Dialog open={isComandaOpen} onOpenChange={setIsComandaOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-          <DialogHeader className="border-b border-slate-200 pb-6 mb-8">
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
-                <span className="text-white text-lg">📋</span>
-              </div>
-              Comanda - {selectedAgendamento?.cliente?.nome}
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-white">
+          <DialogHeader className="border-b pb-4 mb-6">
+            <DialogTitle className="text-xl font-bold text-[#365e78] flex items-center gap-2">
+              📋 Comanda - {selectedAgendamento?.cliente?.nome}
             </DialogTitle>
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-200/50 mt-4">
-              <div className="flex flex-wrap gap-6 text-sm text-slate-600">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <span className="text-xs">📅</span>
-                  </div>
-                  <span className="font-medium">Data:</span>
-                  <span>{selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "dd/MM/yyyy", { locale: ptBR })}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
-                    <span className="text-xs">⏰</span>
-                  </div>
-                  <span className="font-medium">Horário:</span>
-                  <span>{selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "HH:mm")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <span className="text-xs">💼</span>
-                  </div>
-                  <span className="font-medium">Profissional:</span>
-                  <span>{selectedAgendamento?.barbeiro?.nome}</span>
-                </div>
-              </div>
+            <div className="text-sm text-slate-600 flex gap-4">
+              <span>📅 {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "dd/MM/yyyy", { locale: ptBR })}</span>
+              <span>⏰ {selectedAgendamento && format(new Date(selectedAgendamento.dataHora), "HH:mm")}</span>
+              <span>💼 {selectedAgendamento?.barbeiro?.nome}</span>
             </div>
           </DialogHeader>
 
           {/* Serviço Agendado */}
           {selectedAgendamento?.servico && (
-            <div className="mb-8 bg-blue-50/80 backdrop-blur-sm rounded-3xl shadow-lg border border-blue-200/50 p-8">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-blue-200 pb-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
-                  <span className="text-white text-sm">📋</span>
+            <div className="mb-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h4 className="font-semibold text-[#365e78] mb-3 flex items-center gap-2">
+                📋 Serviço Agendado
+              </h4>
+              <div className="flex items-center justify-between bg-white rounded-lg p-3">
+                <div>
+                  <div className="font-medium text-slate-800">{selectedAgendamento.servico.nome}</div>
+                  <div className="text-sm text-slate-500">{selectedAgendamento.servico.tempoMinutos} min • Incluído</div>
                 </div>
-                Serviço Agendado
-              </h3>
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="font-bold text-slate-800 text-xl mb-2">{selectedAgendamento.servico.nome}</div>
-                    <div className="text-sm text-slate-500 bg-blue-100/60 rounded-lg px-3 py-1 inline-block mb-2">
-                      {selectedAgendamento.servico.tempoMinutos} min
-                    </div>
-                    <div className="text-xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                      Incluído no agendamento
-                    </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0 rounded-lg border-red-200 text-red-500 hover:bg-red-50"
+                  onClick={() => {
+                    if (confirm('Deseja realmente remover este serviço do agendamento?')) {
+                      toast({ title: "Funcionalidade em desenvolvimento", description: "Remoção de serviços agendados será implementada em breve." });
+                    }
+                  }}
+                >
+                  🗑️
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Button 
+              className="bg-[#365e78] hover:bg-[#2d4a5f] text-white py-3 px-4 rounded-lg"
+              onClick={() => {
+                toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de serviços adicionais será implementada em breve." });
+              }}
+            >
+              ➕ Adicionar Serviço
+            </Button>
+            <Button 
+              className="bg-[#365e78] hover:bg-[#2d4a5f] text-white py-3 px-4 rounded-lg"
+              onClick={() => {
+                toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de produtos será implementada em breve." });
+              }}
+            >
+              ➕ Adicionar Produto
+            </Button>
+          </div>
+
+          {/* Resumo da Comanda */}
+          {Object.keys(comandaItems).length > 0 && (
+            <div className="bg-slate-50 rounded-lg p-4 mb-4">
+              <h4 className="font-semibold text-[#365e78] mb-3">📊 Itens Adicionais</h4>
+              <div className="space-y-2">
+                {Object.entries(comandaItems).map(([id, item]) => (
+                  <div key={id} className="flex justify-between items-center py-2 px-3 bg-white rounded-lg">
+                    <span className="text-sm">{item.quantidade}x {item.nome}</span>
+                    <span className="font-semibold text-[#365e78]">R$ {(item.quantidade * item.preco).toFixed(2)}</span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-12 w-12 p-0 rounded-xl border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200"
-                    onClick={() => {
-                      if (confirm('Deseja realmente remover este serviço do agendamento?')) {
-                        // Aqui você pode implementar a lógica para remover o serviço do agendamento
-                        toast({ title: "Funcionalidade em desenvolvimento", description: "Remoção de serviços agendados será implementada em breve." });
-                      }
-                    }}
-                  >
-                    <span className="text-lg">🗑️</span>
-                  </Button>
+                ))}
+              </div>
+              <div className="border-t mt-3 pt-3">
+                <div className="flex justify-between items-center bg-[#365e78] text-white p-3 rounded-lg">
+                  <span className="font-bold">💰 TOTAL:</span>
+                  <span className="text-lg font-bold">R$ {calcularTotalComanda().toFixed(2)}</span>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Botão Adicionar Serviços */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-200/50 p-8">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
-                  <span className="text-white text-sm">✂️</span>
-                </div>
-                Serviços Adicionais
-              </h3>
-              <div className="text-center py-8">
-                <Button 
-                  className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white py-6 px-8 text-lg font-bold shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl"
-                  onClick={() => {
-                    toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de serviços adicionais será implementada em breve." });
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                      <span className="text-lg">➕</span>
-                    </div>
-                    Adicionar Serviço
-                  </div>
-                </Button>
-              </div>
-            </div>
-
-            {/* Botão Adicionar Produtos */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-200/50 p-8">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
-                  <span className="text-white text-sm">🧴</span>
-                </div>
-                Produtos Adicionais
-              </h3>
-              <div className="text-center py-8">
-                <Button 
-                  className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white py-6 px-8 text-lg font-bold shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl"
-                  onClick={() => {
-                    toast({ title: "Funcionalidade em desenvolvimento", description: "Seleção de produtos será implementada em breve." });
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                      <span className="text-lg">➕</span>
-                    </div>
-                    Adicionar Produto
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Resumo da Comanda */}
-          <div className="mt-10 bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/50 p-8">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent mb-6 flex items-center gap-3 border-b border-slate-200 pb-4">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#365e78] to-[#2d4a5f] flex items-center justify-center">
-                <span className="text-white text-sm">📊</span>
-              </div>
-              Resumo da Comanda
-            </h3>
-            {Object.keys(comandaItems).length > 0 ? (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  {Object.entries(comandaItems).map(([id, item]) => (
-                    <div key={id} className="flex justify-between items-center py-4 px-6 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-slate-700 text-lg">{item.quantidade}x {item.nome}</span>
-                      <span className="font-bold text-xl bg-gradient-to-r from-[#365e78] to-[#2d4a5f] bg-clip-text text-transparent">
-                        R$ {(item.quantidade * item.preco).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t-2 border-slate-200 pt-4"></div>
-                <div className="bg-gradient-to-r from-[#365e78] to-[#2d4a5f] rounded-2xl p-6 shadow-lg">
-                  <div className="flex justify-between items-center text-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <span className="text-xl">💰</span>
-                      </div>
-                      <span className="text-2xl font-bold">TOTAL GERAL:</span>
-                    </div>
-                    <span className="text-3xl font-bold">R$ {calcularTotalComanda().toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-slate-400">
-                <div className="w-20 h-20 mx-auto mb-6 bg-slate-100 rounded-3xl flex items-center justify-center">
-                  <span className="text-3xl">🛒</span>
-                </div>
-                <p className="text-xl font-semibold mb-2">Nenhum item adicionado</p>
-                <p className="text-sm">Selecione serviços ou produtos acima</p>
-              </div>
-            )}
-          </div>
-
           {/* Botões de Ação */}
-          <div className="flex flex-col sm:flex-row gap-6 mt-10">
+          <div className="flex gap-3 mt-4">
             <Button 
-              className="flex-1 bg-gradient-to-r from-[#365e78] to-[#2d4a5f] hover:from-[#2d4a5f] hover:to-[#365e78] text-white py-6 text-xl font-bold shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl disabled:opacity-50"
+              className="flex-1 bg-[#365e78] hover:bg-[#2d4a5f] text-white py-3 rounded-lg disabled:opacity-50"
               onClick={finalizarComanda}
               disabled={Object.keys(comandaItems).length === 0}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                  <span className="text-lg">✅</span>
-                </div>
-                Finalizar Comanda
-              </div>
+              ✅ Finalizar Comanda
             </Button>
             <Button 
               variant="outline" 
-              className="flex-1 border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 py-6 text-xl font-bold rounded-2xl transition-all duration-300"
+              className="flex-1 border-slate-300 hover:bg-slate-50 py-3 rounded-lg"
               onClick={fecharComanda}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center">
-                  <span className="text-lg">❌</span>
-                </div>
-                Fechar Comanda
-              </div>
+              ❌ Fechar
             </Button>
           </div>
         </DialogContent>
