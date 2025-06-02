@@ -19,10 +19,10 @@ export default function BarbeiroDashboardNovo() {
   const [filtroMes, setFiltroMes] = useState(dayjs().format("YYYY-MM"));
   const [filtroAno, setFiltroAno] = useState(dayjs().format("YYYY"));
   
-  // Buscar dados de comissão do barbeiro específico
+  // Buscar dados de comissão do barbeiro baseado na página de distribuição
   const { data: comissaoData, isLoading: comissaoLoading } = useQuery({
-    queryKey: ["/api/comissoes/barbeiro"],
-    queryFn: () => apiRequest("/api/comissoes/barbeiro"),
+    queryKey: ["/api/barbeiro/comissao-dados", filtroMes],
+    queryFn: () => apiRequest(`/api/barbeiro/comissao-dados?mes=${filtroMes}`),
   });
 
   // Buscar agendamentos do barbeiro

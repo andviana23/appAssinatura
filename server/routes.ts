@@ -729,6 +729,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Nova API para dados de comissão do barbeiro baseado na página de distribuição
+  app.get("/api/barbeiro/comissao-dados", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'barbeiro' || !req.session.barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { mes } = req.query;
+      const mesConsulta = mes ? mes.toString() : new Date().toISOString().slice(0, 7);
+
+      // Buscar barbeiro
+      const barbeiro = await storage.getBarbeiroById(req.session.barbeiroId);
+      if (!barbeiro) {
+        return res.status(404).json({ message: "Barbeiro não encontrado" });
+      }
+
+      // Buscar agendamentos finalizados do barbeiro no mês
+      const agendamentos = await storage.getAllAgendamentos();
+      const agendamentosFinalizados = agendamentos.filter(a => 
+        a.barbeiroId === req.session.barbeiroId &&
+        a.status === 'FINALIZADO' &&
+        new Date(a.dataHora).toISOString().slice(0, 7) === mesConsulta
+      );
+
+      // Buscar serviços para calcular tempo
+      const servicos = await storage.getAllServicos();
+      const servicosMap = new Map(servicos.map(s => [s.id, s]));
+
+      // Calcular dados
+      let totalServicos = 0;
+      let tempoTotalMinutos = 0;
+      let comissaoTotal = 0;
+
+      for (const agendamento of agendamentosFinalizados) {
+        const servico = servicosMap.get(agendamento.servicoId);
+        if (servico) {
+          totalServicos += 1;
+          tempoTotalMinutos += servico.tempoMinutos;
+        }
+      }
+
+      // Buscar comissões registradas do barbeiro para o mês
+      const comissoes = await storage.getComissoesByBarbeiro(req.session.barbeiroId);
+      const comissaoMes = comissoes.find(c => c.mes === mesConsulta);
+      if (comissaoMes) {
+        comissaoTotal = parseFloat(comissaoMes.valor);
+      }
+
+      res.json({
+        barbeiro: {
+          id: barbeiro.id,
+          nome: barbeiro.nome,
+          email: barbeiro.email
+        },
+        mes: mesConsulta,
+        totalServicos,
+        tempoTotalMinutos,
+        comissaoTotal,
+        servicosFinalizados: agendamentosFinalizados.length
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar dados de comissão:", error);
+      res.status(500).json({ message: "Erro ao buscar dados de comissão" });
+    }
+  });
+
+  // API para editar perfil do barbeiro
+  app.put("/api/barbeiro/perfil", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'barbeiro' || !req.session.barbeiroId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { nome, email } = req.body;
+      
+      if (!nome || !email) {
+        return res.status(400).json({ message: "Nome e email são obrigatórios" });
+      }
+
+      // Atualizar dados do barbeiro
+      const barbeiro = await storage.updateBarbeiro(req.session.barbeiroId!, { nome, email });
+      
+      // Atualizar dados do usuário também
+      await storage.updateUser(req.session.userId, { nome, email });
+
+      res.json({ message: "Perfil atualizado com sucesso", barbeiro });
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      res.status(500).json({ message: "Erro ao atualizar perfil" });
+    }
+  });
+
+  // API para trocar senha do barbeiro
+  app.put("/api/barbeiro/senha", requireAuth, async (req, res) => {
+    try {
+      if (req.session.userRole !== 'barbeiro' || !req.session.userId) {
+        return res.status(403).json({ message: "Acesso negado" });
+      }
+
+      const { senhaAtual, novaSenha } = req.body;
+      
+      if (!senhaAtual || !novaSenha) {
+        return res.status(400).json({ message: "Senha atual e nova senha são obrigatórias" });
+      }
+
+      // Buscar usuário
+      const user = await storage.getUserById(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      // Verificar senha atual
+      const senhaValida = await bcrypt.compare(senhaAtual, user.password);
+      if (!senhaValida) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+
+      // Criptografar nova senha
+      const novaSenhaCriptografada = await bcrypt.hash(novaSenha, 10);
+      
+      // Atualizar senha
+      await storage.updateUser(req.session.userId, { password: novaSenhaCriptografada });
+
+      res.json({ message: "Senha alterada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao alterar senha:", error);
+      res.status(500).json({ message: "Erro ao alterar senha" });
+    }
+  });
+
   app.get("/api/comissoes/barbeiro/:barbeiroId", requireAuth, async (req, res) => {
     try {
       const barbeiroId = parseInt(req.params.barbeiroId);
