@@ -2441,8 +2441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               formaPagamento: assinatura.formaPagamento,
               statusAssinatura: assinatura.statusAssinatura,
               dataInicioAssinatura: assinatura.dataInicioAssinatura,
-              dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura,
-              observacoes: 'Cliente sincronizado da segunda conta Asaas (Andrey)'
+              dataVencimentoAssinatura: assinatura.dataVencimentoAssinatura
             });
             clientesSincronizados++;
           } catch (error) {
