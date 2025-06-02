@@ -15,6 +15,7 @@ import {
   Settings,
   ListOrdered,
   ClipboardList,
+  Crown,
 } from "lucide-react";
 
 const navigation = [
@@ -42,6 +43,11 @@ const navigation = [
     name: "Planos",
     href: "/planos",
     icon: CreditCard,
+  },
+  {
+    name: "Gerenciar Assinaturas",
+    href: "/gerenciar-assinaturas",
+    icon: Crown,
   },
   {
     name: "Agendamento",
