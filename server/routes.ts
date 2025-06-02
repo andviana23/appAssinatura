@@ -1443,6 +1443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/agendamentos/:id/cancelar', requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const agendamento = await storage.cancelarAgendamento(Number(id));
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoints para comissão dos barbeiros
   app.get('/api/comissao/barbeiros', requireAuth, async (req, res) => {
     try {

@@ -181,6 +181,7 @@ export interface IStorage {
   getAgendamentosByDate(date: string): Promise<any[]>;
   createAgendamento(agendamento: any): Promise<any>;
   finalizarAgendamento(id: number): Promise<any>;
+  cancelarAgendamento(id: number): Promise<any>;
 
   // Lista da Vez - Atendimentos Diários
   getAtendimentosDiarios(data: string): Promise<AtendimentoDiario[]>;
@@ -962,6 +963,32 @@ export class DatabaseStorage implements IStorage {
         mes: mes,
       });
     }
+
+    return agendamento;
+  }
+
+  async cancelarAgendamento(id: number): Promise<any> {
+    // Atualizar status do agendamento para CANCELADO
+    const [agendamento] = await db
+      .update(agendamentos)
+      .set({ status: 'CANCELADO' })
+      .where(eq(agendamentos.id, id))
+      .returning();
+
+    if (!agendamento) {
+      throw new Error('Agendamento não encontrado');
+    }
+
+    // Remover qualquer atendimento relacionado (se existir) para cancelar comissão
+    await db
+      .delete(atendimentos)
+      .where(
+        and(
+          eq(atendimentos.barbeiroId, agendamento.barbeiroId),
+          eq(atendimentos.servicoId, agendamento.servicoId),
+          eq(atendimentos.dataAtendimento, agendamento.dataHora)
+        )
+      );
 
     return agendamento;
   }
