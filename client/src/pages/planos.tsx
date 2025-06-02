@@ -14,6 +14,24 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useState } from "react";
 
+// Função para máscara de CPF
+const formatCPF = (value: string) => {
+  const numericValue = value.replace(/\D/g, '');
+  if (numericValue.length <= 11) {
+    return numericValue
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2');
+  }
+  return value;
+};
+
+// Função para validar CPF
+const isValidCPF = (cpf: string) => {
+  const numericCPF = cpf.replace(/\D/g, '');
+  return numericCPF.length === 11;
+};
+
 interface PlanoAsaas {
   id: string;
   nome: string;
@@ -158,13 +176,30 @@ export default function Planos() {
   };
 
   const createCheckoutMutation = useMutation({
-    mutationFn: async (data: typeof checkoutData) => {
-      if (data.billingType === 'EXTERNAL') {
+    mutationFn: async (formData: typeof checkoutData) => {
+      if (formData.billingType === 'EXTERNAL') {
         // Para pagamento externo, não criar checkout Asaas
         return { external: true };
       }
       
-      const response = await apiRequest("/api/asaas/checkout", "POST", data);
+      // Buscar o valor correto do plano selecionado
+      const planoSelecionado = getFilteredPlanos().find(p => p.nome === formData.planoSelecionado);
+      if (!planoSelecionado) {
+        throw new Error(`Plano "${formData.planoSelecionado}" não encontrado`);
+      }
+      
+      // Validar CPF antes de enviar
+      if (!isValidCPF(formData.cpf)) {
+        throw new Error('CPF deve ter exatamente 11 dígitos');
+      }
+      
+      // Enviar dados com valor correto do plano
+      const requestData = {
+        ...formData,
+        valorPlano: planoSelecionado.valor
+      };
+      
+      const response = await apiRequest("/api/asaas/checkout", "POST", requestData);
       return response.json();
     },
     onSuccess: (data: any) => {
@@ -410,9 +445,17 @@ export default function Planos() {
                 <Input
                   id="cpf"
                   value={checkoutData.cpf}
-                  onChange={(e) => setCheckoutData(prev => ({ ...prev, cpf: e.target.value }))}
+                  onChange={(e) => {
+                    const formattedCPF = formatCPF(e.target.value);
+                    setCheckoutData(prev => ({ ...prev, cpf: formattedCPF }));
+                  }}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
                   className="rounded-xl"
                 />
+                {checkoutData.cpf && !isValidCPF(checkoutData.cpf) && (
+                  <p className="text-sm text-red-600 mt-1">CPF deve ter 11 dígitos</p>
+                )}
               </div>
               
               <RadioGroup 
@@ -425,20 +468,6 @@ export default function Planos() {
                   <Label htmlFor="credit" className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
                     Cartão de Crédito
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="BOLETO" id="boleto" />
-                  <Label htmlFor="boleto" className="flex items-center gap-2">
-                    <Banknote className="h-4 w-4" />
-                    Boleto
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="PIX" id="pix" />
-                  <Label htmlFor="pix" className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4" />
-                    PIX
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -469,20 +498,18 @@ export default function Planos() {
             <div className="space-y-4">
               <RadioGroup value={externalPaymentMethod} onValueChange={setExternalPaymentMethod}>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Dinheiro" id="dinheiro" />
-                  <Label htmlFor="dinheiro">Dinheiro</Label>
+                  <RadioGroupItem value="PIX" id="pix-external" />
+                  <Label htmlFor="pix-external" className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    PIX
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Cartão Débito" id="debito" />
-                  <Label htmlFor="debito">Cartão de Débito</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Cartão Crédito" id="credito-local" />
-                  <Label htmlFor="credito-local">Cartão de Crédito</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="PIX Local" id="pix-local" />
-                  <Label htmlFor="pix-local">PIX</Label>
+                  <Label htmlFor="debito" className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Cartão de Débito
+                  </Label>
                 </div>
               </RadioGroup>
 
