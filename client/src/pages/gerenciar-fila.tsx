@@ -186,7 +186,7 @@ export default function GerenciarFila() {
           </div>
           
           <div className="flex flex-col lg:flex-row gap-3">
-            {ordemFila.length === 0 ? (
+            {!ordemFila || !Array.isArray(ordemFila) || ordemFila.length === 0 ? (
               <Button
                 onClick={() => inicializarOrdem.mutate()}
                 disabled={inicializarOrdem.isPending}

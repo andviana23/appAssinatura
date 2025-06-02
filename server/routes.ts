@@ -2438,7 +2438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Acesso negado' });
       }
 
-      const filaMensal = await storage.getFilaMensal(mes);
+      const filaMensal = await storage.getFilaMensalComOrdem(mes);
       res.json(filaMensal);
     } catch (error: any) {
       console.error('Erro ao buscar fila mensal:', error);
@@ -2534,7 +2534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Acesso negado' });
       }
 
-      const filaMensal = await storage.getFilaMensal(mesConsulta);
+      const filaMensal = await storage.getFilaMensalComOrdem(mesConsulta);
       
       // Se for barbeiro, retornar apenas as informações dele
       if (req.session.userRole === 'barbeiro' && req.session.barbeiroId) {
