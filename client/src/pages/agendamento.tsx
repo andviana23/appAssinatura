@@ -780,7 +780,7 @@ export default function Agendamento() {
             <Button 
               className="flex-1 bg-[#365e78] hover:bg-[#2d4a5f] text-white py-3 rounded-lg disabled:opacity-50"
               onClick={finalizarComanda}
-              disabled={Object.keys(comandaItems).length === 0}
+              disabled={!selectedAgendamento?.servico && Object.keys(comandaItems).length === 0}
             >
               ✅ Finalizar Comanda
             </Button>
