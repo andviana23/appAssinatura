@@ -6,9 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search } from "lucide-react";
+import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface ClienteUnificado {
   id: number;
@@ -34,6 +35,7 @@ interface ClientesStats {
 
 export default function Clientes() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   // Estados para filtros de data
   const currentDate = new Date();
@@ -119,11 +121,22 @@ export default function Clientes() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-            <p className="text-gray-600 mt-1">
-              Gerencie clientes e assinaturas do sistema
-            </p>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setLocation("/")}
+              variant="outline"
+              size="sm"
+              className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
+              <p className="text-gray-600 mt-1">
+                Gerencie clientes e assinaturas do sistema
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
             <Button
