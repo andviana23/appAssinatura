@@ -2215,6 +2215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Nova rota para clientes de ambas as contas Asaas
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
+    console.log('Iniciando busca de clientes unificados...');
     try {
       const clientesUnificados = [];
       const hoje = new Date();
@@ -2261,7 +2262,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar clientes de ambas as contas Asaas
       for (const account of asaasAccounts) {
-        if (!account.apiKey) continue;
+        if (!account.apiKey) {
+          console.log(`Chave API não encontrada para conta: ${account.name}`);
+          continue;
+        }
 
         try {
           console.log(`Buscando clientes da conta Asaas: ${account.name}`);
@@ -2396,6 +2400,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Total de clientes encontrados: ${clientesUnificados.length}`);
+      console.log(`Distribuição por origem:`);
+      const contagemPorOrigem = clientesUnificados.reduce((acc, cliente) => {
+        acc[cliente.origem] = (acc[cliente.origem] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log(contagemPorOrigem);
       res.json(clientesUnificados);
     } catch (error) {
       console.error('Erro ao buscar clientes unificados:', error);
