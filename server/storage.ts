@@ -310,9 +310,9 @@ export class DatabaseStorage implements IStorage {
         email: barbeiro.email,
         ativo: barbeiro.ativo,
         tipo: 'barbeiro',
-        telefone: barbeiro.telefone,
-        endereco: barbeiro.endereco,
-        comissao: barbeiro.comissao
+        telefone: barbeiro.telefone || undefined,
+        endereco: barbeiro.endereco || undefined,
+        comissao: barbeiro.comissao || undefined
       })),
       ...recepcionistasList.map(recepcionista => ({
         id: recepcionista.id,

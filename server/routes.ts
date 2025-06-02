@@ -276,9 +276,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertBarbeiroSchema.parse(req.body);
       const barbeiro = await storage.createBarbeiro(validatedData);
       res.status(201).json(barbeiro);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar barbeiro:", error);
-      res.status(400).json({ message: "Dados inválidos para criação do barbeiro" });
+      if (error.code === '23505') {
+        res.status(400).json({ message: "Email já está em uso por outro barbeiro" });
+      } else if (error.issues) {
+        res.status(400).json({ message: "Dados inválidos", errors: error.issues });
+      } else {
+        res.status(400).json({ message: error.message || "Erro ao criar barbeiro" });
+      }
     }
   });
 

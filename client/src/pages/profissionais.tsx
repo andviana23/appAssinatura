@@ -101,9 +101,10 @@ export default function Profissionais() {
       setLocation("/profissionais");
     },
     onError: (error: any) => {
+      console.error("Erro detalhado ao cadastrar profissional:", error);
       toast({ 
         title: "Erro ao cadastrar profissional", 
-        description: error.message || "Tente novamente",
+        description: error.message || error.error || "Verifique os dados e tente novamente",
         variant: "destructive" 
       });
     },
