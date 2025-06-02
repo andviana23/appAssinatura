@@ -104,11 +104,10 @@ function AuthenticatedRoutes() {
 function AppContent() {
   const { user, isLoading, isAuthenticated } = useAuth();
   
-  // Timer de inatividade - Para testes: 30s com aviso aos 10s
-  // Para produção: 10 minutos com aviso 1 minuto antes
+  // Timer de inatividade - 10 minutos com aviso 1 minuto antes
   const { showWarning, timeLeft, dismissWarning } = useIdleTimer({
-    timeout: 30 * 1000, // 30 segundos (teste) - trocar para: 10 * 60 * 1000 (produção)
-    warningTime: 10 * 1000, // 10 segundos de aviso (teste) - trocar para: 1 * 60 * 1000 (produção)
+    timeout: 10 * 60 * 1000, // 10 minutos
+    warningTime: 1 * 60 * 1000, // 1 minuto de aviso
   });
 
   if (isLoading) {

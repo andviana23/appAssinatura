@@ -1787,7 +1787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://api.asaas.com/v3' 
         : 'https://sandbox.asaas.com/api/v3';
 
-      const { nome, email, cpf, billingType } = req.body;
+      const { nome, email, cpf, billingType, valorPlano } = req.body;
 
       // 1. Criar ou buscar cliente
       let customerId;
@@ -1843,10 +1843,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       
+      // Validar valor do plano
+      if (!valorPlano || valorPlano <= 0) {
+        throw new Error('Valor do plano é obrigatório e deve ser maior que zero');
+      }
+
       let chargePayload: any = {
         customer: customerId,
         billingType: billingType || 'CREDIT_CARD',
-        value: 5.00,
+        value: parseFloat(valorPlano),
         dueDate: tomorrow.toISOString().split('T')[0],
         description: 'Clube do Trato Único - Teste de Funcionalidade',
         externalReference: `teste-${Date.now()}`
