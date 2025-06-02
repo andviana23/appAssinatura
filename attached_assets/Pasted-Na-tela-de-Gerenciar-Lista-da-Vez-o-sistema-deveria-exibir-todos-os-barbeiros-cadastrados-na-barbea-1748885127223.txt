@@ -1,0 +1,73 @@
+Na tela de Gerenciar Lista da Vez, o sistema deveria exibir todos os barbeiros cadastrados na barbearia para que a gente consiga:
+
+Reordenar a sequência de atendimento (setas “↑↓” ou equivalente).
+
+Ativar/Desativar barbeiros conforme necessidade.
+
+Hoje, nenhum barbeiro cadastrado aparece nessa lista. O botão “Inicializar Agora” está lá, mas, mesmo clicando, a lista continua vazia. Precisamos corrigir a lógica de funcionamento para que a lista seja preenchida com os barbeiros ativos cadastrados.
+
+Lógica esperada de funcionamento (sem dicas de código, apenas a ideia):
+
+Carregar dados dos barbeiros ativos:
+
+Ao abrir a página, o sistema deve buscar todos os barbeiros que estão marcados como “ativos” na base de dados.
+
+Se estiver vazio, deve indicar que não há barbeiros ativos. Caso contrário, exibir cada barbeiro em uma linha/posição.
+
+Exibição inicial e ordenação padrão:
+
+Quando clico em “Inicializar Agora”, o sistema deve pegar todos os barbeiros ativos e colocar na tela numa ordem padrão (por exemplo, ordem de cadastro ou ordem alfabética).
+
+Esses barbeiros devem aparecer com um número de atendimento (que representa quantas vezes já atenderam) ou pelo menos com o nome e botão para reordenar.
+
+Reordenar a sequência de atendimento:
+
+Cada barbeiro exibido deve ter controles (seta para cima e para baixo) para alterar a posição na fila.
+
+Ao mover um barbeiro, a posição dos demais deve ser ajustada automaticamente, mantendo a integridade da sequência.
+
+A ordem definida deve persistir mesmo que eu saia da página ou novos atendimentos sejam registrados.
+
+Ativar/Desativar barbeiros:
+
+Cada barbeiro listado deve ter um switch ou botão para desativar. Ao desativar, o barbeiro some da lista pública de atendimento, mas a posição dele e o histórico de atendimentos devem ser guardados para reativação futura.
+
+Ao reativar, o barbeiro volta à mesma posição que ocupava antes de ser desativado (ou, se preferível, volta ao fim da fila—definir comportamento esperado).
+
+Barbeiros “inativos” não aparecem na lista pública de clientes, mas devem aparecer nesta tela de gerenciamento com o switch desativado, para que possamos reativar quando quisermos.
+
+Preservação de dados originais:
+
+A “ordem da fila” e o número original de atendimentos de cada barbeiro devem ser mantidos. Não pode zerar os contadores ou embaralhar a ordem sempre que recarregar.
+
+Se eu adicionar novos atendimentos (clientes sendo atendidos), isso não pode resetar ou sobrescrever a ordem manual que configurei.
+
+Fluxo de uso ideal:
+
+Inicialização: Clico em “Inicializar Agora” → Página carrega todos os barbeiros ativos em ordem padrão.
+
+Reorganização: Uso setas para mover barbeiros e definir quem atende primeiro. Esses ajustes ficam salvos em algum estado (local ou banco).
+
+Ativar/Desativar: Caso precise tirar alguém de circulação, desativo e ele some da lista pública, mas fica marcado aqui como inativo. Depois, posso reativar.
+
+Persistência: Se eu fechar e abrir novamente, a sequência que defini continua lá, sem precisar resetar manualmente a ordem.
+
+Pontos que precisam ser checados:
+
+Origem dos dados: A tela está realmente buscando da fonte correta (API ou banco de dados) todos os barbeiros ativos?
+
+Filtragem: Será que está filtrando apenas “ativos” e, se não encontrar nenhum, volta vazio? Ou a consulta não está sendo feita?
+
+Estado/armazenamento: Depois de carregar, esses barbeiros deveriam estar disponíveis para a interface. Será que o estado não está sendo populado ou está sendo sobrescrito por algum valor vazio?
+
+Renderização: Mesmo com dados, a lista pode não estar sendo renderizada corretamente. Talvez o componente responsável pela exibição não esteja recebendo a lista de barbeiros.
+
+Botão Inicializar Ordem: Deve disparar a lógica de busca e preenchimento. Checar se, ao clicar, existe alguma ação chamou essa busca.
+
+Resultado esperado:
+
+Assim que a página carregar ou ao clicar em “Inicializar Agora”, todos os barbeiros cadastrados (status “ativo”) aparecem listados.
+
+Posso ver o nome (ou ID) do barbeiro, a posição na fila (número de vezes atendido), e controles para mover ou alternar status.
+
+Ao mover ou desativar, a interface reflete a mudança imediatamente e grava a nova ordem/estado para não ser perdida.
