@@ -634,8 +634,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
       const { mes, ano } = req.query;
-      const stats = await storage.getClientesUnifiedStats(mes as string, ano as string);
-      res.json(stats);
+      
+      // Buscar estatísticas base (clientes da primeira conta Asaas + externos)
+      const statsBase = await storage.getClientesUnifiedStats(mes as string, ano as string);
+      
+      // Buscar dados da segunda conta Asaas (Andrey)
+      let clientesAtivosAndrey = 0;
+      let receitaAssinaturasAndrey = 0;
+      
+      const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+      if (tokenAndrey) {
+        try {
+          // Buscar assinaturas ativas da segunda conta
+          const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+            headers: {
+              'access_token': tokenAndrey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (assinaturasResponse.ok) {
+            const assinaturasData = await assinaturasResponse.json();
+            clientesAtivosAndrey = assinaturasData.totalCount || 0;
+            
+            // Somar receita das assinaturas ativas
+            assinaturasData.data?.forEach((assinatura: any) => {
+              receitaAssinaturasAndrey += parseFloat(assinatura.value) || 0;
+            });
+          }
+        } catch (error) {
+          console.log('Aviso: Não foi possível buscar dados da segunda conta Asaas:', error);
+        }
+      }
+      
+      // Combinar estatísticas
+      const statsUnificadas = {
+        totalActiveClients: statsBase.totalActiveClients + clientesAtivosAndrey,
+        totalSubscriptionRevenue: statsBase.totalSubscriptionRevenue + receitaAssinaturasAndrey,
+        totalExpiringSubscriptions: statsBase.totalExpiringSubscriptions
+      };
+      
+      res.json(statsUnificadas);
     } catch (error) {
       console.error("Erro ao buscar estatísticas de clientes:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
@@ -2241,18 +2280,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, error: 'Token da segunda API não encontrado' });
       }
       
-      const response = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+      // Buscar clientes
+      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
         headers: {
           'access_token': token,
           'Content-Type': 'application/json'
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`📋 Encontrados ${data.totalCount} clientes da conta Andrey`);
+      if (!clientesResponse.ok) {
+        const errorText = await clientesResponse.text();
+        console.log('❌ Erro na segunda API:', errorText);
+        return res.status(clientesResponse.status).json({ success: false, error: `Erro da API: ${errorText}` });
+      }
+
+      const clientesData = await clientesResponse.json();
+      console.log(`📋 Encontrados ${clientesData.totalCount} clientes da conta Andrey`);
+
+      // Buscar assinaturas ativas
+      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+        headers: {
+          'access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const assinaturasData = assinaturasResponse.ok ? await assinaturasResponse.json() : { data: [] };
+      
+      // Criar mapa de assinaturas por cliente
+      const assinaturasPorCliente = new Map();
+      assinaturasData.data?.forEach((assinatura: any) => {
+        assinaturasPorCliente.set(assinatura.customer, {
+          planoNome: assinatura.description || 'Plano não informado',
+          planoValor: assinatura.value || 0,
+          formaPagamento: assinatura.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                           assinatura.billingType === 'BOLETO' ? 'Boleto' : 
+                           assinatura.billingType === 'PIX' ? 'PIX' : 'Dinheiro',
+          statusAssinatura: 'ATIVO',
+          dataProximaFatura: assinatura.nextDueDate,
+          cycle: assinatura.cycle
+        });
+      });
+      
+      const clientesFormatados = clientesData.data?.map((customer: any) => {
+        const assinatura = assinaturasPorCliente.get(customer.id);
         
-        const clientesFormatados = data.data?.map((customer: any) => ({
+        return {
           id: customer.id,
           nome: customer.name,
           email: customer.email,
@@ -2262,19 +2335,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cidade: customer.cityName,
           estado: customer.state,
           dataCadastro: customer.dateCreated,
-          origem: 'ASAAS_ANDREY'
-        })) || [];
-        
-        return res.json({
-          success: true,
-          total: data.totalCount,
-          clientes: clientesFormatados
-        });
-      } else {
-        const errorText = await response.text();
-        console.log('❌ Erro na segunda API:', errorText);
-        return res.status(response.status).json({ success: false, error: `Erro da API: ${errorText}` });
-      }
+          origem: 'ASAAS_ANDREY',
+          // Informações de assinatura
+          planoNome: assinatura?.planoNome || null,
+          planoValor: assinatura?.planoValor || null,
+          formaPagamento: assinatura?.formaPagamento || null,
+          statusAssinatura: assinatura?.statusAssinatura || 'SEM_ASSINATURA',
+          dataProximaFatura: assinatura?.dataProximaFatura || null,
+          cycle: assinatura?.cycle || null
+        };
+      }) || [];
+      
+      return res.json({
+        success: true,
+        total: clientesData.totalCount,
+        clientes: clientesFormatados
+      });
+
     } catch (error) {
       console.error('❌ Erro ao buscar clientes Asaas Andrey:', error);
       return res.status(500).json({ success: false, error: 'Erro interno do servidor' });

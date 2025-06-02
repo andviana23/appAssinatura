@@ -1,0 +1,149 @@
+A lista está mostrando apenas os clientes da primeira conta (Trato de Barbados) e não está exibindo os clientes da segunda API (conta Andrey Viana).
+
+🔧 PASSOS PARA DIAGNOSTICAR
+PASSO 1: Verificar se a Segunda Requisição Está Sendo Feita
+Adicione logs para verificar se a função da segunda API está sendo chamada:
+javascript// No início da função que busca da segunda API, adicione:
+console.log('🔍 INICIANDO busca da segunda API (Andrey Viana)');
+PASSO 2: Verificar se o Token Está Correto
+Confirme se o token da segunda API está correto:
+javascript// Verificar o token
+console.log('🔑 Token da segunda API:', token_segunda_api);
+Token correto: $aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj
+PASSO 3: Verificar a Resposta da Segunda API
+Adicione logs para ver o que a segunda API está retornando:
+javascript// Após fazer a requisição da segunda API
+console.log('📊 Resposta da segunda API:', response);
+console.log('📊 Dados da segunda API:', response.data);
+console.log('📊 Quantidade de clientes da segunda API:', response.data?.data?.length || 0);
+PASSO 4: Verificar se os Dados Estão Sendo Combinados
+Verifique se a combinação dos arrays está funcionando:
+javascript// Ao combinar os dados
+console.log('📋 Clientes da primeira API:', clientes_primeira.length);
+console.log('📋 Clientes da segunda API:', clientes_segunda.length);
+console.log('📋 Total combinado:', [...clientes_primeira, ...clientes_segunda].length);
+
+🔍 POSSÍVEIS CAUSAS DO PROBLEMA
+1. ERRO NO TOKEN
+
+Token pode estar mal formatado
+Token pode estar inválido
+Token pode ter permissões insuficientes
+
+2. ERRO NA URL/ENDPOINT
+
+URL da segunda API pode estar incorreta
+Endpoint pode ser diferente entre as contas
+
+3. ERRO NOS HEADERS
+
+Headers de autenticação podem estar incorretos
+Pode estar faltando algum header obrigatório
+
+4. ERRO NA COMBINAÇÃO DE DADOS
+
+Arrays podem não estar sendo combinados corretamente
+Uma das requisições pode estar falhando silenciosamente
+
+5. ERRO DE ASYNC/AWAIT
+
+Requisições podem não estar aguardando corretamente
+Promises podem não estar sendo resolvidas
+
+
+🛠️ SOLUÇÕES PARA TESTAR
+SOLUÇÃO 1: Testar Segunda API Isoladamente
+Crie uma função temporária só para testar a segunda API:
+javascript// Função temporária para testar
+async function testarSegundaApi() {
+    try {
+        console.log('🧪 TESTE: Testando segunda API isoladamente');
+        
+        const response = await fetch('https://www.asaas.com/api/v3/customers', {
+            headers: {
+                'access_token': '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📱 Status da resposta:', response.status);
+        console.log('📱 Response OK:', response.ok);
+        
+        const data = await response.json();
+        console.log('📱 Dados recebidos:', data);
+        
+        return data;
+    } catch (error) {
+        console.error('❌ Erro na segunda API:', error);
+        return null;
+    }
+}
+
+// Chame esta função para testar
+testarSegundaApi();
+SOLUÇÃO 2: Verificar Headers da Primeira API
+Compare os headers que funcionam na primeira API:
+javascript// Copie exatamente os headers da primeira API que funciona
+// e adapte apenas o token para a segunda API
+SOLUÇÃO 3: Verificar Estrutura de Resposta
+As duas APIs podem retornar estruturas diferentes:
+javascript// Primeira API pode retornar: response.data.data
+// Segunda API pode retornar: response.data ou response.customers
+// Verifique a estrutura exata
+
+⚡ TESTE RÁPIDO
+Execute este teste simples:
+
+Abra o console do navegador (F12)
+Cole este código para testar diretamente:
+
+javascriptfetch('https://www.asaas.com/api/v3/customers', {
+    headers: {
+        'access_token': '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
+        'Content-Type': 'application/json'
+    }
+})
+.then(response => {
+    console.log('Status:', response.status);
+    return response.json();
+})
+.then(data => {
+    console.log('Dados da segunda API:', data);
+    console.log('Quantidade de clientes:', data.data?.length || 0);
+})
+.catch(error => {
+    console.error('Erro:', error);
+});
+
+📋 CHECKLIST DE VERIFICAÇÃO
+VERIFICAÇÕES BÁSICAS:
+
+ Token da segunda API está correto e completo
+ URL/endpoint está igual ao da primeira API
+ Headers estão configurados corretamente
+ Função da segunda API está sendo chamada
+
+VERIFICAÇÕES AVANÇADAS:
+
+ Segunda API retorna dados quando testada isoladamente
+ Estrutura da resposta é igual à primeira API
+ Arrays estão sendo combinados corretamente
+ Não há erros silenciosos sendo ignorados
+
+LOGS NECESSÁRIOS:
+
+ Log no início da função da segunda API
+ Log da resposta da segunda API
+ Log da quantidade de clientes retornados
+ Log do resultado final combinado
+
+
+🎯 PRÓXIMOS PASSOS
+
+Execute os logs sugeridos acima
+Teste a segunda API isoladamente
+Compare com o funcionamento da primeira API
+Identifique onde exatamente está falhando
+Ajuste baseado nos resultados dos logs
+
+ME ENVIE OS LOGS que aparecerem no console para eu ajudar a identificar exatamente onde está o problema!

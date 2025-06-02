@@ -48,6 +48,12 @@ interface ClienteAsaasAndrey {
   estado: string | null;
   dataCadastro: string;
   origem: 'ASAAS_ANDREY';
+  planoNome: string | null;
+  planoValor: number | null;
+  formaPagamento: string | null;
+  statusAssinatura: string | null;
+  dataProximaFatura: string | null;
+  cycle: string | null;
 }
 
 export default function Clientes() {
@@ -582,7 +588,22 @@ export default function Clientes() {
                       <div key={cliente.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
+                              <div className="flex items-center gap-2">
+                                {cliente.statusAssinatura === 'ATIVO' ? (
+                                  <Badge variant="default" className="bg-green-100 text-green-800 text-xs">ATIVO</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">SEM ASSINATURA</Badge>
+                                )}
+                                <Badge variant="secondary" className="text-xs">ASAAS ANDREY</Badge>
+                                {cliente.planoValor && (
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    R$ {cliente.planoValor.toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                             <p className="text-sm text-gray-600">{cliente.email}</p>
                             {cliente.telefone && (
                               <p className="text-sm text-gray-500">Telefone: {cliente.telefone}</p>
@@ -590,12 +611,22 @@ export default function Clientes() {
                             {cliente.cpf && (
                               <p className="text-sm text-gray-500">CPF: {cliente.cpf}</p>
                             )}
+                            
+                            {cliente.planoNome && (
+                              <div className="mt-2 text-sm text-gray-600">
+                                <strong>Plano:</strong> {cliente.planoNome} | <strong>Pagamento:</strong> {cliente.formaPagamento}
+                              </div>
+                            )}
+                            
+                            {cliente.dataProximaFatura && (
+                              <div className="text-sm text-gray-600">
+                                <strong>Próxima fatura:</strong> {new Date(cliente.dataProximaFatura).toLocaleDateString()}
+                              </div>
+                            )}
+                            
                             <div className="flex items-center gap-4 mt-2">
                               <Badge variant="outline" className="text-xs">
                                 Cadastrado: {new Date(cliente.dataCadastro).toLocaleDateString()}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Asaas Andrey
                               </Badge>
                             </div>
                           </div>
