@@ -3928,16 +3928,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
 
-            // Verificar clientes existentes para evitar duplicação (ambas as tabelas)
+            // Verificar clientes existentes na tabela central unificada
             const clientesExistentes = await storage.getAllClientes();
-            const clientesExternosExistentes = await storage.getAllClientesExternos();
             
-            const emailsExistentes = new Set([
-              ...clientesExistentes.map(c => c.email.toLowerCase()),
-              ...clientesExternosExistentes.map(c => c.email.toLowerCase())
-            ]);
-            
-            const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId));
+            const emailsExistentes = new Set(clientesExistentes.map(c => c.email.toLowerCase()));
+            const asaasIdsExistentes = new Set(clientesExistentes.map(c => c.asaasCustomerId).filter(Boolean));
 
             let clientesSincronizados = 0;
             for (const customer of clientesData.data || []) {
@@ -3951,12 +3946,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Só cadastrar clientes com assinatura ativa
               if (assinatura) {
                 try {
-                  // Salvar na tabela principal 'clientes' com asaasCustomerId da segunda conta
+                  // Salvar na tabela central unificada (FLUXO OBRIGATÓRIO)
                   await storage.createCliente({
                     nome: (customer.name || '').substring(0, 250),
                     email: (customer.email || '').substring(0, 250),
                     telefone: (customer.phone || customer.mobilePhone || '').substring(0, 20),
                     cpf: (customer.cpfCnpj || '').substring(0, 14),
+                    origem: 'ASAAS_ANDREY', // Identificação da fonte de dados
                     asaasCustomerId: customer.id, // ID da segunda conta Asaas
                     planoNome: (assinatura.planoNome || '').substring(0, 250),
                     planoValor: assinatura.planoValor,
