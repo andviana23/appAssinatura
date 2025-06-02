@@ -868,24 +868,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar clientes na lista da vez do barbeiro
-      const listaVez = await storage.getAllListaVez();
-      const clientesBarbeiro = listaVez.filter(item => item.barbeiroId === req.session.barbeiroId);
+      const agendamentos = await storage.getAllAgendamentos();
+      const agendamentosHoje = agendamentos.filter(a => 
+        a.barbeiroId === req.session.barbeiroId &&
+        a.status === 'AGENDADO' &&
+        new Date(a.dataHora).toDateString() === new Date().toDateString()
+      );
 
       // Buscar dados dos clientes
       const clientes = await storage.getAllClientes();
       const clientesMap = new Map(clientes.map(c => [c.id, c]));
 
-      const clientesComDetalhes = clientesBarbeiro.map(item => {
-        const cliente = clientesMap.get(item.clienteId);
+      const clientesComDetalhes = agendamentosHoje.map((agendamento, index) => {
+        const cliente = clientesMap.get(agendamento.clienteId);
         return {
-          id: item.id,
-          posicao: item.posicao,
+          id: agendamento.id,
+          posicao: index + 1,
           cliente: cliente ? {
             id: cliente.id,
             nome: cliente.nome,
             telefone: cliente.telefone
           } : null,
-          criadoEm: item.criadoEm
+          criadoEm: agendamento.dataHora
         };
       }).filter(item => item.cliente !== null);
 
