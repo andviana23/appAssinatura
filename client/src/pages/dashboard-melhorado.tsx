@@ -36,7 +36,7 @@ interface ClientesStats {
   overdueClients: number;
 }
 
-export default function DashboardMelhorado() {
+export default function AdminDashboard() {
   // Estados para filtros de data - sempre usar mês atual
   const currentMonth = format(new Date(), "yyyy-MM");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
