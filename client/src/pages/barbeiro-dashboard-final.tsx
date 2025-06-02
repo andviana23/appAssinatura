@@ -186,30 +186,30 @@ export default function BarbeiroDashboardFinal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/")}
-              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 flex-shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 truncate">
                 Dashboard Barbeiro
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 truncate">
                 Bem-vindo, {(user as any)?.nome || user?.email}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {/* Botão de tema */}
             <Button
               variant="outline"
@@ -338,59 +338,57 @@ export default function BarbeiroDashboardFinal() {
         </div>
 
         {/* Filtros */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                <Calendar className="h-5 w-5 text-[#365e78]" />
+            <CardHeader className="pb-3 px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-[#365e78]" />
                 Filtros
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="mes" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Mês
-                  </Label>
-                  <Select value={filtroMes} onValueChange={setFiltroMes}>
-                    <SelectTrigger className="border-slate-300 dark:border-slate-600 dark:bg-slate-700">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 12 }, (_, i) => {
-                        const mes = dayjs().month(i).format("YYYY-MM");
-                        const mesNome = dayjs().month(i).format("MMMM YYYY");
-                        return (
-                          <SelectItem key={mes} value={mes}>
-                            {mesNome}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent className="px-4 sm:px-6">
+              <div className="w-full">
+                <Label htmlFor="mes" className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-2">
+                  Mês
+                </Label>
+                <Select value={filtroMes} onValueChange={setFiltroMes}>
+                  <SelectTrigger className="w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const mes = dayjs().month(i).format("YYYY-MM");
+                      const mesNome = dayjs().month(i).format("MMMM YYYY");
+                      return (
+                        <SelectItem key={mes} value={mes}>
+                          {mesNome}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Serviços Finalizados */}
           <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">
                 Serviços Finalizados
               </CardTitle>
-              <CheckCircle className="h-4 w-4 opacity-90" />
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 opacity-90 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {comissaoLoading ? (
                 <Skeleton className="h-8 w-16 bg-white/20" />
               ) : (
-                <div className="text-2xl font-bold">{servicosFinalizados}</div>
+                <div className="text-xl sm:text-2xl font-bold">{servicosFinalizados}</div>
               )}
-              <p className="text-xs opacity-90">
+              <p className="text-xs opacity-90 mt-1">
                 Total de serviços concluídos
               </p>
             </CardContent>
@@ -398,39 +396,39 @@ export default function BarbeiroDashboardFinal() {
 
           {/* Tempo Trabalhado */}
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">
                 Tempo Trabalhado
               </CardTitle>
-              <Clock className="h-4 w-4 opacity-90" />
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 opacity-90 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {comissaoLoading ? (
                 <Skeleton className="h-8 w-20 bg-white/20" />
               ) : (
-                <div className="text-2xl font-bold">{tempoFormatado}</div>
+                <div className="text-xl sm:text-2xl font-bold">{tempoFormatado}</div>
               )}
-              <p className="text-xs opacity-90">
+              <p className="text-xs opacity-90 mt-1">
                 Tempo total em atendimentos
               </p>
             </CardContent>
           </Card>
 
           {/* Comissão do Mês */}
-          <Card className="bg-gradient-to-br from-[#365e78] to-[#2d4a5f] text-white shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
+          <Card className="bg-gradient-to-br from-[#365e78] to-[#2d4a5f] text-white shadow-lg sm:col-span-2 lg:col-span-1">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium opacity-90">
                 Comissão do Mês
               </CardTitle>
-              <DollarSign className="h-4 w-4 opacity-90" />
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 opacity-90 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {comissaoLoading ? (
                 <Skeleton className="h-8 w-24 bg-white/20" />
               ) : (
-                <div className="text-2xl font-bold">{formatCurrency(comissaoTotal)}</div>
+                <div className="text-xl sm:text-2xl font-bold">{formatCurrency(comissaoTotal)}</div>
               )}
-              <p className="text-xs opacity-90">
+              <p className="text-xs opacity-90 mt-1">
                 Valor total da comissão
               </p>
             </CardContent>
@@ -440,25 +438,25 @@ export default function BarbeiroDashboardFinal() {
         </div>
 
         {/* Ações Rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                <Scissors className="h-5 w-5 text-[#365e78]" />
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                <Scissors className="h-4 w-4 sm:h-5 sm:w-5 text-[#365e78]" />
                 Ações Rápidas
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
               <Button
                 onClick={() => setLocation("/lista-da-vez")}
-                className="w-full bg-[#365e78] hover:bg-[#2d4a5f] text-white"
+                className="w-full bg-[#365e78] hover:bg-[#2d4a5f] text-white h-10 sm:h-11 text-sm sm:text-base"
               >
                 Ver Lista da Vez
               </Button>
               <Button
                 onClick={() => setLocation("/agenda")}
                 variant="outline"
-                className="w-full border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
+                className="w-full border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white h-10 sm:h-11 text-sm sm:text-base"
               >
                 Ver Agenda
               </Button>
@@ -466,23 +464,23 @@ export default function BarbeiroDashboardFinal() {
           </Card>
 
           <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                <Award className="h-5 w-5 text-[#365e78]" />
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                <Award className="h-4 w-4 sm:h-5 sm:w-5 text-[#365e78]" />
                 Desempenho
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="px-4 sm:px-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Média por Serviço</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Média por Serviço</span>
+                  <span className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
                     {servicosFinalizados > 0 ? formatCurrency(comissaoTotal / servicosFinalizados) : "R$ 0,00"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Tempo Médio por Serviço</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Tempo Médio por Serviço</span>
+                  <span className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
                     {servicosFinalizados > 0 ? `${Math.round(tempoTotal / servicosFinalizados)} min` : "0 min"}
                   </span>
                 </div>
