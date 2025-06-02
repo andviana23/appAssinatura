@@ -28,7 +28,7 @@ export default function GerenciarFila() {
   const [alteracoesPendentes, setAlteracoesPendentes] = useState(false);
 
   // Buscar configuração atual da ordem da fila
-  const { data: ordemFila = [], isLoading } = useQuery({
+  const { data: ordemFila, isLoading } = useQuery({
     queryKey: ["/api/ordem-fila"],
     queryFn: () => apiRequest("/api/ordem-fila"),
     enabled: isAdmin
@@ -36,8 +36,7 @@ export default function GerenciarFila() {
 
   // Sincronizar dados quando carregados
   React.useEffect(() => {
-    console.log("Dados recebidos:", ordemFila, "É array:", Array.isArray(ordemFila), "Comprimento:", ordemFila?.length);
-    if (ordemFila && Array.isArray(ordemFila)) {
+    if (ordemFila && Array.isArray(ordemFila) && ordemFila.length > 0) {
       setOrdemModificada([...ordemFila]);
     }
   }, [ordemFila]);
@@ -224,7 +223,14 @@ export default function GerenciarFila() {
         </div>
 
         {/* Conteúdo Principal */}
-        {(!Array.isArray(ordemFila) || ordemFila.length === 0) ? (
+        {isLoading ? (
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando configuração...</p>
+            </CardContent>
+          </Card>
+        ) : (!ordemFila || !Array.isArray(ordemFila) || ordemFila.length === 0) ? (
           <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
             <CardContent className="p-8 text-center">
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
