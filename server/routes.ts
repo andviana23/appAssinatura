@@ -3210,6 +3210,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // NOVOS ENDPOINTS - GESTÃO DE ASSINATURAS EXTERNAS
+  // ==========================================
+
+  // Cancelar assinatura externa (status = CANCELADO)
+  app.put('/api/assinaturas-externas/:id/cancelar', async (req: Request, res: Response) => {
+    try {
+      const clienteId = parseInt(req.params.id);
+      
+      if (!clienteId || isNaN(clienteId)) {
+        return res.status(400).json({ message: 'ID do cliente inválido' });
+      }
+
+      const clienteCancelado = await storage.cancelarAssinaturaExterna(clienteId);
+      
+      res.json({
+        message: 'Assinatura cancelada com sucesso. Permanecerá ativa até o vencimento.',
+        cliente: clienteCancelado
+      });
+    } catch (error: any) {
+      console.error('Erro ao cancelar assinatura externa:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Cancelar assinatura Asaas (status = CANCELADO)
+  app.put('/api/assinaturas-asaas/:id/cancelar', async (req: Request, res: Response) => {
+    try {
+      const clienteId = parseInt(req.params.id);
+      
+      if (!clienteId || isNaN(clienteId)) {
+        return res.status(400).json({ message: 'ID do cliente inválido' });
+      }
+
+      const clienteCancelado = await storage.cancelarAssinaturaAsaas(clienteId);
+      
+      res.json({
+        message: 'Assinatura cancelada com sucesso. Permanecerá ativa até o vencimento.',
+        cliente: clienteCancelado
+      });
+    } catch (error: any) {
+      console.error('Erro ao cancelar assinatura Asaas:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Excluir assinatura externa completamente
+  app.delete('/api/assinaturas-externas/:id/excluir', async (req: Request, res: Response) => {
+    try {
+      const clienteId = parseInt(req.params.id);
+      
+      if (!clienteId || isNaN(clienteId)) {
+        return res.status(400).json({ message: 'ID do cliente inválido' });
+      }
+
+      // Verificar se o cliente existe antes de excluir
+      const cliente = await storage.getClienteExternoById(clienteId);
+      if (!cliente) {
+        return res.status(404).json({ message: 'Cliente não encontrado' });
+      }
+
+      await storage.excluirAssinaturaExterna(clienteId);
+      
+      res.json({
+        message: 'Assinatura excluída permanentemente com sucesso',
+        clienteExcluido: cliente.nome
+      });
+    } catch (error: any) {
+      console.error('Erro ao excluir assinatura externa:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Excluir assinatura Asaas completamente
+  app.delete('/api/assinaturas-asaas/:id/excluir', async (req: Request, res: Response) => {
+    try {
+      const clienteId = parseInt(req.params.id);
+      
+      if (!clienteId || isNaN(clienteId)) {
+        return res.status(400).json({ message: 'ID do cliente inválido' });
+      }
+
+      // Verificar se o cliente existe antes de excluir
+      const cliente = await storage.getClienteById(clienteId);
+      if (!cliente) {
+        return res.status(404).json({ message: 'Cliente não encontrado' });
+      }
+
+      await storage.excluirAssinaturaAsaas(clienteId);
+      
+      res.json({
+        message: 'Assinatura excluída permanentemente com sucesso',
+        clienteExcluido: cliente.nome
+      });
+    } catch (error: any) {
+      console.error('Erro ao excluir assinatura Asaas:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Buscar assinaturas canceladas que expiraram (para limpeza automática)
+  app.get('/api/assinaturas/canceladas-expiradas', async (req: Request, res: Response) => {
+    try {
+      const assinaturasExpiradas = await storage.getAssinaturasCanceladasExpiradas();
+      
+      res.json({
+        message: 'Assinaturas canceladas e expiradas encontradas',
+        total: assinaturasExpiradas.length,
+        assinaturas: assinaturasExpiradas
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar assinaturas canceladas:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
+  // Processo automático de limpeza de assinaturas canceladas e expiradas
+  app.post('/api/assinaturas/limpeza-automatica', async (req: Request, res: Response) => {
+    try {
+      const assinaturasExpiradas = await storage.getAssinaturasCanceladasExpiradas();
+      let removidas = 0;
+
+      // Remover cada assinatura expirada
+      for (const assinatura of assinaturasExpiradas) {
+        try {
+          // Verificar se é cliente externo ou Asaas
+          if ('formaPagamento' in assinatura && assinatura.formaPagamento) {
+            // É cliente externo
+            await storage.excluirAssinaturaExterna(assinatura.id);
+          } else {
+            // É cliente Asaas
+            await storage.excluirAssinaturaAsaas(assinatura.id);
+          }
+          removidas++;
+        } catch (error) {
+          console.error(`Erro ao remover assinatura ${assinatura.id}:`, error);
+        }
+      }
+
+      res.json({
+        message: 'Limpeza automática executada com sucesso',
+        assinaturasEncontradas: assinaturasExpiradas.length,
+        assinaturasRemovidas: removidas
+      });
+    } catch (error: any) {
+      console.error('Erro na limpeza automática:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor', 
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

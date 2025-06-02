@@ -1,0 +1,71 @@
+CONTEXTO:
+Necessitamos implementar funcionalidades de gestão de assinaturas pagas externas (processamento via dinheiro físico e cartão de débito) com operações específicas de cancelamento e exclusão de dados.
+ESCOPO DA IMPLEMENTAÇÃO:
+1. FUNCIONALIDADE DE CANCELAMENTO DE ASSINATURA
+Criar endpoint e lógica para cancelamento de assinaturas com as seguintes especificações técnicas:
+
+Comportamento: Alterar status da assinatura para "CANCELADO" sem exclusão imediata dos dados
+Regra de Negócio: A assinatura permanece ativa e funcional até a data de vencimento atual
+Persistência: Manter todos os dados do cliente e histórico de pagamentos no banco de dados
+Transição de Estado: No dia do vencimento, executar processo automatizado que:
+
+Remove completamente o registro da assinatura do sistema
+Mantém logs de auditoria conforme necessário
+Executa limpeza de dados relacionados
+
+
+
+2. FUNCIONALIDADE DE EXCLUSÃO IMEDIATA
+Implementar endpoint para exclusão completa e imediata com as seguintes características:
+
+Comportamento: Remoção instantânea e irreversível de todos os dados
+Escopo de Exclusão:
+
+Registro completo do cliente
+Histórico de valores pagos
+Dados de assinatura e configurações associadas
+Todos os metadados relacionados
+
+
+Segurança: Implementar confirmação dupla para prevenir exclusões acidentais
+
+REQUISITOS TÉCNICOS:
+Para Cancelamento:
+
+Criar campo de status com valor "CANCELADO"
+Implementar job/cron para verificação diária de vencimentos
+Manter integridade referencial durante o período de carência
+Log de todas as transições de estado
+
+Para Exclusão:
+
+Implementar transação atômica para garantir consistência
+Validar dependências antes da exclusão
+Implementar soft delete como opção de rollback (se necessário)
+Registrar timestamp e origem da operação de exclusão
+
+ESPECIFICAÇÕES DE API:
+Desenvolver endpoints RESTful para ambas operações:
+
+Métodos HTTP apropriados (PUT para cancelamento, DELETE para exclusão)
+Validação de autenticação e autorização
+Resposta padronizada com códigos de status HTTP adequados
+Tratamento de erros específico para cada cenário
+
+IMPORTANTE:
+
+NÃO ALTERAR nenhum código existente que esteja funcionando
+Criar apenas NOVOS endpoints e funcionalidades
+Implementar como ADIÇÃO ao sistema atual
+Manter compatibilidade total com funcionalidades existentes
+Testar isoladamente antes da integração
+
+ENTREGÁVEIS ESPERADOS:
+
+Novos endpoints para cancelamento e exclusão
+Lógica de negócio para gestão de estados
+Processo automatizado para limpeza de assinaturas canceladas
+Documentação técnica dos novos endpoints
+Validação e tratamento de erros específicos
+
+A implementação deve ser modular, permitindo ativação/desativação independente das novas funcionalidades sem impacto no sistema atual.

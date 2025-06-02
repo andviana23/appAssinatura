@@ -1094,6 +1094,63 @@ export class DatabaseStorage implements IStorage {
       .delete(atendimentosDiarios)
       .where(eq(atendimentosDiarios.mesAno, mesAno));
   }
+
+  // Novos métodos para gestão de assinaturas externas
+  
+  // Cancelar assinatura externa (muda status para CANCELADO)
+  async cancelarAssinaturaExterna(clienteId: number): Promise<ClienteExterno> {
+    const [updated] = await db
+      .update(clientesExternos)
+      .set({ statusAssinatura: "CANCELADO" })
+      .where(eq(clientesExternos.id, clienteId))
+      .returning();
+    return updated;
+  }
+
+  // Cancelar assinatura Asaas (muda status para CANCELADO)
+  async cancelarAssinaturaAsaas(clienteId: number): Promise<Cliente> {
+    const [updated] = await db
+      .update(clientes)
+      .set({ statusAssinatura: "CANCELADO" })
+      .where(eq(clientes.id, clienteId))
+      .returning();
+    return updated;
+  }
+
+  // Excluir assinatura externa completamente
+  async excluirAssinaturaExterna(clienteId: number): Promise<void> {
+    await db.delete(clientesExternos).where(eq(clientesExternos.id, clienteId));
+  }
+
+  // Excluir assinatura Asaas completamente
+  async excluirAssinaturaAsaas(clienteId: number): Promise<void> {
+    await db.delete(clientes).where(eq(clientes.id, clienteId));
+  }
+
+  // Buscar assinaturas canceladas que expiraram (para limpeza automática)
+  async getAssinaturasCanceladasExpiradas(): Promise<(Cliente | ClienteExterno)[]> {
+    const now = new Date();
+    
+    // Buscar clientes Asaas cancelados e vencidos
+    const clientesAsaasCancelados = await db
+      .select()
+      .from(clientes)
+      .where(and(
+        eq(clientes.statusAssinatura, "CANCELADO"),
+        lt(clientes.dataVencimentoAssinatura, now)
+      ));
+
+    // Buscar clientes externos cancelados e vencidos
+    const clientesExternosCancelados = await db
+      .select()
+      .from(clientesExternos)
+      .where(and(
+        eq(clientesExternos.statusAssinatura, "CANCELADO"),
+        lt(clientesExternos.dataVencimentoAssinatura, now)
+      ));
+
+    return [...clientesAsaasCancelados, ...clientesExternosCancelados];
+  }
 }
 
 export const storage = new DatabaseStorage();

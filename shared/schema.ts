@@ -46,7 +46,7 @@ export const clientes = pgTable("clientes", {
   planoNome: text("plano_nome"),
   planoValor: decimal("plano_valor", { precision: 10, scale: 2 }),
   formaPagamento: text("forma_pagamento"), // CREDIT_CARD, BOLETO, PIX
-  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO
+  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO, CANCELADO
   dataInicioAssinatura: timestamp("data_inicio_assinatura"),
   dataVencimentoAssinatura: timestamp("data_vencimento_assinatura"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -62,7 +62,7 @@ export const clientesExternos = pgTable("clientes_externos", {
   planoNome: text("plano_nome").notNull(),
   planoValor: decimal("plano_valor", { precision: 10, scale: 2 }).notNull(),
   formaPagamento: text("forma_pagamento").notNull(), // PIX, Cartão Débito, Dinheiro
-  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO
+  statusAssinatura: text("status_assinatura").default("ATIVO"), // ATIVO, INATIVO, CANCELADO
   dataInicioAssinatura: timestamp("data_inicio_assinatura").notNull(),
   dataVencimentoAssinatura: timestamp("data_vencimento_assinatura").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
