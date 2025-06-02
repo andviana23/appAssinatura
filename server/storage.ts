@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, desc, and, gte, lte, sql, like } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, like, lt } from "drizzle-orm";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -1137,7 +1137,7 @@ export class DatabaseStorage implements IStorage {
       .from(clientes)
       .where(and(
         eq(clientes.statusAssinatura, "CANCELADO"),
-        lt(clientes.dataVencimentoAssinatura, now)
+        lte(clientes.dataVencimentoAssinatura, now)
       ));
 
     // Buscar clientes externos cancelados e vencidos
@@ -1146,7 +1146,7 @@ export class DatabaseStorage implements IStorage {
       .from(clientesExternos)
       .where(and(
         eq(clientesExternos.statusAssinatura, "CANCELADO"),
-        lt(clientesExternos.dataVencimentoAssinatura, now)
+        lte(clientesExternos.dataVencimentoAssinatura, now)
       ));
 
     return [...clientesAsaasCancelados, ...clientesExternosCancelados];
