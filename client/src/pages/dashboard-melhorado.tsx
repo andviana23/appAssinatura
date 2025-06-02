@@ -16,6 +16,7 @@ import {
   Filter,
   Clock,
   Star,
+  Settings,
 } from "lucide-react";
 import {
   LineChart,
