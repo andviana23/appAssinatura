@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, subDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays, ArrowLeft, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Plus, Check, CalendarDays, ArrowLeft, Clock, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,6 +52,8 @@ export default function Agendamento() {
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const [comandaItems, setComandaItems] = useState<{ [key: string]: { quantidade: number; preco: number; nome: string } }>({});
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [agendamentoToCancel, setAgendamentoToCancel] = useState<Agendamento | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -118,6 +120,27 @@ export default function Agendamento() {
     onError: (error) => {
       console.error("Erro ao finalizar atendimento:", error);
       toast({ title: "Erro ao finalizar atendimento", variant: "destructive" });
+    },
+  });
+
+  const cancelarAgendamento = useMutation({
+    mutationFn: (id: number) => 
+      fetch(`/api/agendamentos/${id}/cancelar`, {
+        method: "PATCH",
+      }).then(res => {
+        if (!res.ok) throw new Error("Erro ao cancelar agendamento");
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/comissao"] });
+      toast({ title: "Agendamento cancelado com sucesso!" });
+      setCancelDialogOpen(false);
+      setAgendamentoToCancel(null);
+    },
+    onError: (error) => {
+      console.error("Erro ao cancelar agendamento:", error);
+      toast({ title: "Erro ao cancelar agendamento", variant: "destructive" });
     },
   });
 
@@ -502,20 +525,38 @@ export default function Agendamento() {
                     <div key={barbeiro.id} className="border-r border-gray-200 p-1 relative">
                       {agendamento ? (
                         <div 
-                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full cursor-pointer hover:opacity-90 transition-all duration-200`}
-                          onClick={() => abrirComanda(agendamento)}
+                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full transition-all duration-200 group relative`}
                         >
-                          <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
-                            {agendamento.cliente?.nome}
-                          </div>
-                          <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
-                            {agendamento.servico?.nome}
+                          <div 
+                            className="cursor-pointer"
+                            onClick={() => abrirComanda(agendamento)}
+                          >
+                            <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                              {agendamento.cliente?.nome}
+                            </div>
+                            <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                              {agendamento.servico?.nome}
+                            </div>
+                            
+                            {agendamento.status === "FINALIZADO" && (
+                              <div className="text-xs font-bold opacity-80">
+                                ✅
+                              </div>
+                            )}
                           </div>
                           
-                          {agendamento.status === "FINALIZADO" && (
-                            <div className="text-xs font-bold opacity-80">
-                              ✅
-                            </div>
+                          {agendamento.status !== "FINALIZADO" && agendamento.status !== "CANCELADO" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAgendamentoToCancel(agendamento);
+                                setCancelDialogOpen(true);
+                              }}
+                              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                              title="Cancelar agendamento"
+                            >
+                              <X className="w-2 h-2" />
+                            </button>
                           )}
                         </div>
                       ) : (
@@ -790,6 +831,74 @@ export default function Agendamento() {
               ❌ Cancelar
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação de Cancelamento */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-2xl border-0">
+          <DialogHeader className="text-center pb-6">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+              <AlertTriangle className="h-8 w-8 text-white" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-red-600">Cancelar Agendamento</DialogTitle>
+            <p className="text-gray-600 mt-2">Tem certeza que deseja cancelar este agendamento?</p>
+          </DialogHeader>
+          
+          {agendamentoToCancel && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-xl border">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-red-600 font-bold text-sm">
+                      {agendamentoToCancel.cliente?.nome?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {agendamentoToCancel.cliente?.nome}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {agendamentoToCancel.servico?.nome}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <strong>Data:</strong> {format(new Date(agendamentoToCancel.dataHora), "dd/MM/yyyy", { locale: ptBR })} | 
+                  <strong> Horário:</strong> {format(new Date(agendamentoToCancel.dataHora), "HH:mm")} |
+                  <strong> Profissional:</strong> {agendamentoToCancel.barbeiro?.nome}
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <strong>Atenção:</strong> O cancelamento irá automaticamente remover qualquer comissão relacionada a este atendimento.
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 h-12 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
+                  onClick={() => setCancelDialogOpen(false)}
+                >
+                  Manter Agendamento
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 h-12 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-bold shadow-lg"
+                  disabled={cancelarAgendamento.isPending}
+                  onClick={() => agendamentoToCancel && cancelarAgendamento.mutate(agendamentoToCancel.id)}
+                >
+                  {cancelarAgendamento.isPending ? "Cancelando..." : "Confirmar Cancelamento"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

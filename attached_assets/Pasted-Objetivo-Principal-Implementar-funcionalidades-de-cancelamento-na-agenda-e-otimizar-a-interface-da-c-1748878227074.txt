@@ -1,0 +1,89 @@
+Objetivo Principal
+Implementar funcionalidades de cancelamento na agenda e otimizar a interface da comanda do cliente para melhor usabilidade.
+AJUSTES NECESSÁRIOS NA AGENDA
+1. Funcionalidade de Cancelamento de Agendamento
+Implementar:
+
+Adicionar opção de "Cancelar Agendamento" na agenda
+Botão ou link de cancelamento visível em cada agendamento listado
+Confirmação antes de efetuar o cancelamento (modal de confirmação)
+
+2. Cancelamento Automático de Comissão
+Funcionalidade Crítica:
+
+Quando um agendamento for cancelado, o sistema deve automaticamente:
+
+Cancelar o atendimento do barbeiro na seção de comissões
+Remover ou marcar como cancelado o atendimento para que o barbeiro não receba comissão indevida
+Atualizar o status do agendamento para "Cancelado"
+
+
+
+MELHORIAS NA COMANDA DO CLIENTE
+3. Reorganização da Interface de Serviços
+Problema Atual: Serviços cadastrados aparecem automaticamente na tela, ocupando muito espaço.
+Nova Interface Desejada:
+
+Remover a lista automática de serviços da tela principal
+Criar um botão "Serviços"
+A lista de serviços deve aparecer apenas quando o botão for clicado
+Interface mais limpa e organizada
+
+4. Reorganização da Interface de Produtos
+Implementar o mesmo padrão:
+
+Criar um botão "Produtos"
+Lista de produtos aparece apenas após clicar no botão
+Seguir o mesmo padrão visual dos serviços
+
+5. Otimização do Pop-up da Comanda
+Ajustar Dimensões:
+
+Reduzir o tamanho atual do pop-up da comanda
+Tornar mais compacto e funcional
+Garantir que todos os elementos continuem visíveis e acessíveis
+Melhorar a proporção entre conteúdo e espaço em branco
+
+6. Padronização Visual
+Design System:
+
+Utilizar as cores do design system já cadastrado no Replit
+Aplicar a paleta de cores padrão do projeto
+Manter consistência visual com o resto da aplicação
+Seguir os padrões de botões, tipografia e espaçamentos já estabelecidos
+
+FLUXO ESPERADO
+Para Cancelamento:
+
+Usuário visualiza agenda com agendamentos
+Cada agendamento possui opção "Cancelar"
+Sistema solicita confirmação do cancelamento
+Após confirmação, agendamento é cancelado
+Sistema automaticamente remove/cancela comissão do barbeiro
+Status é atualizado para "Cancelado"
+
+Para Comanda Otimizada:
+
+Usuário abre comanda do cliente
+Interface limpa sem listas automáticas
+Botões "Serviços" e "Produtos" visíveis
+Ao clicar em cada botão, respectiva lista é exibida
+Pop-up com tamanho otimizado
+Cores consistentes com design system
+
+RESULTADO FINAL ESPERADO
+
+Agenda com funcionalidade completa de cancelamento
+Sistema de comissões protegido contra pagamentos indevidos
+Interface de comanda mais limpa e organizada
+Pop-up otimizado em tamanho
+Visual padronizado com design system do projeto
+Melhor experiência do usuário com interface mais intuitiva
+
+PONTOS DE ATENÇÃO
+
+Verificar se o cancelamento realmente remove a comissão do barbeiro
+Testar se os botões de Serviços e Produtos funcionam corretamente
+Confirmar se as cores aplicadas correspondem ao design system
+Validar se o novo tamanho do pop-up não prejudica a usabilidade
+Garantir que a confirmação de cancelamento seja clara para o usuário
