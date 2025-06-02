@@ -2213,7 +2213,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Asaas API Integration - Cobranças Recorrentes
+  // Nova rota para clientes de ambas as contas Asaas
+  app.get("/api/clientes-unified", requireAuth, async (req, res) => {
+    try {
+      const clientesUnificados = [];
+      const hoje = new Date();
+
+      // Buscar clientes externos do banco local
+      const clientesExternos = await storage.getAllClientesExternos();
+      
+      // Adicionar clientes externos válidos
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const daysRemaining = Math.ceil((validade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+          
+          clientesUnificados.push({
+            id: cliente.id,
+            nome: cliente.nome,
+            email: cliente.email,
+            telefone: cliente.telefone,
+            cpf: cliente.cpf,
+            planoNome: cliente.planoNome,
+            planoValor: cliente.planoValor?.toString(),
+            formaPagamento: cliente.formaPagamento,
+            statusAssinatura: status,
+            dataInicioAssinatura: cliente.dataInicioAssinatura,
+            dataVencimentoAssinatura: cliente.dataVencimentoAssinatura,
+            origem: 'EXTERNO',
+            createdAt: cliente.createdAt
+          });
+        }
+      }
+
+      // Configurar contas Asaas
+      const asaasAccounts = [
+        {
+          apiKey: process.env.ASAAS_API_KEY,
+          name: 'PRINCIPAL'
+        },
+        {
+          apiKey: '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
+          name: 'ANDREY'
+        }
+      ];
+
+      // Buscar clientes de ambas as contas Asaas
+      for (const account of asaasAccounts) {
+        if (!account.apiKey) continue;
+
+        try {
+          console.log(`Buscando clientes da conta Asaas: ${account.name}`);
+          const baseUrl = 'https://api.asaas.com/v3';
+          
+          // Buscar pagamentos confirmados do mês atual
+          const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(
+            `${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`,
+            {
+              headers: {
+                'access_token': account.apiKey,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            const clientesProcessados = new Set();
+
+            for (const payment of paymentsData.data || []) {
+              if (!clientesProcessados.has(payment.customer)) {
+                try {
+                  const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+                    headers: {
+                      'access_token': account.apiKey,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+
+                  if (customerResponse.ok) {
+                    const customer = await customerResponse.json();
+                    
+                    // Calcular data de validade: data do pagamento + 30 dias
+                    const dataPagamento = new Date(payment.paymentDate || payment.confirmedDate);
+                    const dataValidade = new Date(dataPagamento);
+                    dataValidade.setDate(dataValidade.getDate() + 30);
+                    
+                    const daysRemaining = Math.ceil((dataValidade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                    const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+
+                    clientesUnificados.push({
+                      id: `asaas_${account.name}_${payment.customer}`,
+                      nome: customer.name,
+                      email: customer.email,
+                      telefone: customer.phone || customer.mobilePhone,
+                      cpf: customer.cpfCnpj,
+                      planoNome: payment.description || 'Cobrança Asaas',
+                      planoValor: payment.value,
+                      formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                                     payment.billingType === 'PIX' ? 'PIX' :
+                                     payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                      statusAssinatura: status,
+                      dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
+                      dataVencimentoAssinatura: dataValidade,
+                      origem: `ASAAS_${account.name}`,
+                      createdAt: new Date(payment.dateCreated)
+                    });
+
+                    clientesProcessados.add(payment.customer);
+                  }
+                } catch (customerError) {
+                  console.warn(`Erro ao buscar cliente ${payment.customer} da conta ${account.name}:`, customerError);
+                }
+              }
+            }
+          }
+        } catch (accountError) {
+          console.warn(`Erro ao conectar com conta Asaas ${account.name}:`, accountError);
+        }
+      }
+
+      console.log(`Total de clientes encontrados: ${clientesUnificados.length}`);
+      res.json(clientesUnificados);
+    } catch (error) {
+      console.error('Erro ao buscar clientes unificados:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Asaas API Integration - Cobranças Recorrentes (manter o endpoint original para compatibilidade)
   app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_API_KEY;
