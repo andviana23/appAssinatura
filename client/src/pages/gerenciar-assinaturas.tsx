@@ -126,10 +126,10 @@ export default function GerenciarAssinaturas() {
     }
 
     const dados = {
-      ...formData,
-      valor: parseFloat(formData.valor),
-      limitesServicos: formData.limitesServicos ? JSON.parse(formData.limitesServicos) : {},
-      beneficios: formData.beneficios.split(',').map(b => b.trim()).filter(b => b)
+      nome: formData.nome,
+      descricao: formData.descricao,
+      valorMensal: parseFloat(formData.valor),
+      categoria: formData.categoria
     };
 
     if (editingPlano) {
