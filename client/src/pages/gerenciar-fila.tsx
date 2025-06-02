@@ -36,14 +36,8 @@ export default function GerenciarFila() {
 
   // Sincronizar dados quando carregados
   React.useEffect(() => {
-    console.log("Debug - ordemFila:", ordemFila);
-    console.log("Debug - isArray:", Array.isArray(ordemFila));
-    console.log("Debug - length:", ordemFila?.length);
-    console.log("Debug - primeiro item:", ordemFila?.[0]);
-    
-    if (ordemFila && Array.isArray(ordemFila) && ordemFila.length > 0) {
+    if (ordemFila && Array.isArray(ordemFila)) {
       setOrdemModificada([...ordemFila]);
-      console.log("Debug - setOrdemModificada executado com:", ordemFila);
     }
   }, [ordemFila]);
 
@@ -192,7 +186,7 @@ export default function GerenciarFila() {
           </div>
           
           <div className="flex flex-col lg:flex-row gap-3">
-            {!ordemFila || !Array.isArray(ordemFila) || ordemFila.length === 0 ? (
+            {!ordemModificada || ordemModificada.length === 0 ? (
               <Button
                 onClick={() => inicializarOrdem.mutate()}
                 disabled={inicializarOrdem.isPending}
@@ -236,7 +230,7 @@ export default function GerenciarFila() {
               <p className="text-gray-600">Carregando configuração...</p>
             </CardContent>
           </Card>
-        ) : (!ordemFila || !Array.isArray(ordemFila) || ordemFila.length === 0) ? (
+        ) : (!ordemModificada || ordemModificada.length === 0) ? (
           <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
             <CardContent className="p-8 text-center">
               <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
