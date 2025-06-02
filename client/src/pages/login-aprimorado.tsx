@@ -30,6 +30,7 @@ export default function LoginAprimorado() {
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   
   const { login } = useAuth();
   const { toast } = useToast();
@@ -54,9 +55,11 @@ export default function LoginAprimorado() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoginError("");
+      setShowErrorModal(false);
       await login({ email: data.email, password: data.password });
     } catch (error) {
       setLoginError("Email ou senha incorretos.");
+      setShowErrorModal(true);
     }
   };
 
@@ -252,6 +255,49 @@ export default function LoginAprimorado() {
               </div>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Erro de Login */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Erro de Autenticação
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Credenciais Incorretas</h3>
+            <p className="text-gray-600 mb-6">
+              O email ou senha informados estão incorretos. Verifique seus dados e tente novamente.
+            </p>
+            
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowErrorModal(false)}
+              >
+                Tentar Novamente
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 bg-[#365e78] hover:bg-[#2d4a5f]"
+                onClick={() => {
+                  setShowErrorModal(false);
+                  setIsForgotPasswordOpen(true);
+                }}
+              >
+                Esqueci a Senha
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
