@@ -5831,18 +5831,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Criar link de pagamento recorrente usando o formato correto do Asaas
+      // Criar paymentLink seguindo exatamente a documentação do Asaas
       const paymentLinkData = {
         billingType: "CREDIT_CARD",
-        chargeType: "RECURRENT", 
-        name: planoSelecionado.nome,
-        description: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome} - Receba os benefícios mensalmente`,
+        chargeType: "RECURRENT",
+        name: `${planoSelecionado.nome} - ${nome}`,
+        description: `Assinatura ${planoSelecionado.nome} para ${nome}`,
         value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
-        subscriptionCycle: "MONTHLY",
-        dueDateLimitDays: 7,
-        maxInstallmentCount: 1,
-        notificationEnabled: true
-        // Removido callback para evitar erro de domínio não configurado
+        subscriptionCycle: "MONTHLY"
       };
 
       console.log('Criando link de pagamento recorrente:', JSON.stringify(paymentLinkData, null, 2));
