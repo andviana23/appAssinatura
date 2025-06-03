@@ -185,13 +185,14 @@ export default function Planos() {
       const dataVencimento = new Date();
       dataVencimento.setDate(dataVencimento.getDate() + 30);
       
-      const response = await apiRequest("/api/asaas/criar-assinatura", "POST", {
-        customer: clienteData.customer.id,
-        billingType: 'CREDIT_CARD',
-        value: planoSelecionado.valorMensal || planoSelecionado.valor,
-        nextDueDate: dataVencimento.toISOString().split('T')[0],
-        description: `Assinatura ${planoSelecionado.nome}`,
-        cycle: 'MONTHLY'
+      const response = await apiRequest("/api/asaas/criar-checkout-recorrente", "POST", {
+        planoNome: planoSelecionado.nome,
+        planoDescricao: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome}`,
+        planoValor: parseFloat(planoSelecionado.valorMensal) || parseFloat(planoSelecionado.valor),
+        clienteNome: formData.nome,
+        clienteEmail: formData.email,
+        clienteTelefone: formData.telefone,
+        clienteCpf: ""
       });
       
       const result = await response.json();

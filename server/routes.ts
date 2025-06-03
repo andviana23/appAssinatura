@@ -5716,6 +5716,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Criar cliente no Asaas (necessário antes de criar assinatura)
+  // Nova rota para checkout recorrente (assinaturas)
+  app.post("/api/asaas/criar-checkout-recorrente", async (req: Request, res: Response) => {
+    try {
+      const { planoNome, planoDescricao, planoValor, clienteNome, clienteEmail, clienteTelefone, clienteCpf } = req.body;
+      const asaasApiKey = process.env.ASAAS_TRATO;
+
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Chave da API do Asaas não configurada' 
+        });
+      }
+
+      // Calcular datas para assinatura mensal
+      const hoje = new Date();
+      const proximoMes = new Date(hoje);
+      proximoMes.setMonth(proximoMes.getMonth() + 1);
+      
+      const umAnoDepois = new Date(hoje);
+      umAnoDepois.setFullYear(umAnoDepois.getFullYear() + 1);
+
+      const payload = {
+        billingTypes: ["CREDIT_CARD"],
+        chargeTypes: ["RECURRENT"],
+        minutesToExpire: 60,
+        callback: {
+          cancelUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/pagamento/cancelado`,
+          expiredUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/pagamento/expirado`,
+          successUrl: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/pagamento/sucesso`
+        },
+        items: [{
+          description: planoDescricao || `Assinatura ${planoNome}`,
+          name: planoNome,
+          quantity: 1,
+          value: parseFloat(planoValor.toString())
+        }],
+        customerData: {
+          cpfCnpj: clienteCpf || "",
+          email: clienteEmail,
+          name: clienteNome,
+          phone: clienteTelefone || ""
+        },
+        subscription: {
+          cycle: "MONTHLY",
+          endDate: umAnoDepois.toISOString().slice(0, 19).replace('T', ' '),
+          nextDueDate: proximoMes.toISOString().slice(0, 19).replace('T', ' ')
+        }
+      };
+
+      console.log('🔄 Criando checkout recorrente no Asaas:', payload);
+
+      const response = await fetch('https://api.asaas.com/v3/checkout', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro na API do Asaas:', errorText);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Erro ao criar checkout no Asaas',
+          details: errorText
+        });
+      }
+
+      const responseData = await response.json();
+
+      if (responseData.errors) {
+        console.error('❌ Erros na resposta do Asaas:', responseData.errors);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Erro retornado pelo Asaas',
+          details: responseData
+        });
+      }
+
+      console.log('✅ Checkout recorrente criado com sucesso:', responseData);
+      
+      res.json({
+        success: true,
+        checkout: responseData,
+        checkoutUrl: responseData.checkoutUrl,
+        message: 'Checkout recorrente criado com sucesso!'
+      });
+
+    } catch (error) {
+      console.error('❌ Erro interno ao criar checkout:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   app.post("/api/asaas/criar-cliente", async (req: Request, res: Response) => {
     try {
       const {

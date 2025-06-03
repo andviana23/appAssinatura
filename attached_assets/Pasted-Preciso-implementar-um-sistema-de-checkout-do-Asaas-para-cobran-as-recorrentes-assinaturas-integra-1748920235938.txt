@@ -1,0 +1,158 @@
+Preciso implementar um sistema de checkout do Asaas para cobranças recorrentes (assinaturas) integrado ao meu sistema de planos. Quando um cliente escolher pagar via cartão de crédito, ele deve ser direcionado a um checkout do Asaas já configurado com o plano selecionado.
+Requisitos Técnicos
+1. Configuração da API
+
+Endpoint: POST https://api.asaas.com/v3/checkout
+Headers necessários:
+access_token: $aaS_SUA_API_KEY
+Content-Type: application/json
+
+
+2. Estrutura do Payload para Checkout Recorrente
+json{
+  "billingTypes": ["CREDIT_CARD"],
+  "chargeTypes": ["RECURRENT"],
+  "minutesToExpire": 100,
+  "callback": {
+    "cancelUrl": "https://meusite.com/pagamento/cancelado",
+    "expiredUrl": "https://meusite.com/pagamento/expirado", 
+    "successUrl": "https://meusite.com/pagamento/sucesso"
+  },
+  "items": [
+    {
+      "description": "Descrição do Plano",
+      "name": "Nome do Plano",
+      "quantity": 1,
+      "value": 99.90
+    }
+  ],
+  "customerData": {
+    "cpfCnpj": "CPF_DO_CLIENTE",
+    "email": "email@cliente.com",
+    "name": "Nome do Cliente",
+    "phone": "11999999999"
+  },
+  "subscription": {
+    "cycle": "MONTHLY",
+    "endDate": "2026-12-31 23:59:59",
+    "nextDueDate": "2025-07-03 23:59:59"
+  }
+}
+3. Configuração de Assinatura Mensal
+
+Ciclo fixo: MONTHLY (assinatura mensal obrigatória)
+Cobrança automática: Todo mês na mesma data
+Renovação contínua: Até a data de término ou cancelamento
+
+Implementação Sugerida
+Fluxo do Sistema:
+
+Cliente seleciona plano → Sistema captura dados do plano
+Cliente escolhe cartão de crédito → Sistema prepara payload do checkout
+Sistema chama API do Asaas → Recebe URL do checkout
+Cliente é redirecionado → Para checkout do Asaas
+Após pagamento → Cliente retorna via callback URLs
+
+Código de Exemplo (Node.js/Express):
+javascript// Função para criar checkout recorrente MENSAL
+async function criarCheckoutRecorrente(dadosPlano, dadosCliente) {
+  // Calcular datas para assinatura mensal
+  const hoje = new Date();
+  const proximoMes = new Date(hoje);
+  proximoMes.setMonth(proximoMes.getMonth() + 1);
+  
+  const umAnoDepois = new Date(hoje);
+  umAnoDepois.setFullYear(umAnoDepois.getFullYear() + 1);
+
+  const payload = {
+    billingTypes: ["CREDIT_CARD"],
+    chargeTypes: ["RECURRENT"],
+    minutesToExpire: 60,
+    callback: {
+      cancelUrl: `${process.env.BASE_URL}/pagamento/cancelado`,
+      expiredUrl: `${process.env.BASE_URL}/pagamento/expirado`,
+      successUrl: `${process.env.BASE_URL}/pagamento/sucesso`
+    },
+    items: [{
+      description: dadosPlano.descricao,
+      name: dadosPlano.nome,
+      quantity: 1,
+      value: dadosPlano.valor
+    }],
+    customerData: {
+      cpfCnpj: dadosCliente.cpf,
+      email: dadosCliente.email,
+      name: dadosCliente.nome,
+      phone: dadosCliente.telefone
+    },
+    subscription: {
+      cycle: "MONTHLY", // SEMPRE MENSAL
+      endDate: umAnoDepois.toISOString().slice(0, 19).replace('T', ' '),
+      nextDueDate: proximoMes.toISOString().slice(0, 19).replace('T', ' ')
+    }
+  };
+
+  const response = await fetch('https://api.asaas.com/v3/checkout', {
+    method: 'POST',
+    headers: {
+      'access_token': process.env.ASAAS_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const checkout = await response.json();
+  
+  if (checkout.errors) {
+    throw new Error(`Erro ao criar checkout: ${JSON.stringify(checkout.errors)}`);
+  }
+  
+  return checkout.checkoutUrl; // URL para redirecionar o cliente
+}
+Webhooks e Callbacks
+URLs de Callback Necessárias:
+
+successUrl: Página de sucesso após pagamento
+cancelUrl: Página quando cliente cancela
+expiredUrl: Página quando checkout expira
+
+Eventos do Webhook:
+
+CHECKOUT_COMPLETED - Checkout finalizado com sucesso
+SUBSCRIPTION_CREATED - Assinatura criada
+PAYMENT_CREATED - Cobrança gerada automaticamente
+
+Pontos Importantes
+
+PRODUÇÃO APENAS: Sistema deve ir direto para produção, sem sandbox
+Assinatura Mensal: Todas as cobranças são mensais (cycle: "MONTHLY")
+Segurança: Nunca exponha a API Key no frontend
+Validação: Sempre valide dados do cliente antes de enviar
+Tratamento de Erros: Implemente tratamento para falhas na API
+Logs: Registre todas as transações para auditoria
+HTTPS: Todas as URLs de callback devem usar HTTPS
+
+Configuração de Produção
+Ambiente de Produção OBRIGATÓRIO
+
+URL da API: https://api.asaas.com/v3/checkout (NÃO usar sandbox)
+API Key de Produção: Obter no painel do Asaas em produção
+Domínio verificado: URLs de callback devem ser do seu domínio em produção
+
+Validação antes de ir ao ar:
+
+✅ API Key de produção configurada
+✅ URLs de callback em HTTPS
+✅ Webhook configurado para receber notificações
+✅ Tratamento de erros implementado
+✅ Log de transações funcionando
+
+Próximos Passos
+
+✅ Obter API Key de PRODUÇÃO no painel Asaas
+✅ Configurar chave de API no ambiente de produção
+✅ Implementar função de criação de checkout mensal
+✅ Criar páginas de callback em HTTPS (sucesso/erro/expirado)
+✅ Configurar webhooks para receber notificações
+✅ Validar fluxo completo com cartão real
+✅ Monitorar logs e cobranças no painel Asaas
