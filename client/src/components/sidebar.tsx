@@ -221,7 +221,11 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 <item.icon className={cn(
                   isCollapsed ? "h-5 w-5" : "h-6 w-6",
                   "transition-all duration-300",
-                  isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
+                  isActive 
+                    ? "text-white" 
+                    : isCollapsed 
+                      ? "text-foreground dark:text-primary-foreground group-hover:text-primary"
+                      : "text-muted-foreground group-hover:text-accent"
                 )} />
                 {!isCollapsed && <span>{item.name}</span>}
               </Link>
@@ -245,7 +249,11 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             <Settings className={cn(
               isCollapsed ? "h-5 w-5" : "h-6 w-6",
               "transition-all duration-300",
-              location === "/configuracoes" ? "text-white" : "text-muted-foreground group-hover:text-accent"
+              location === "/configuracoes" 
+                ? "text-white" 
+                : isCollapsed 
+                  ? "text-foreground dark:text-primary-foreground group-hover:text-primary"
+                  : "text-muted-foreground group-hover:text-accent"
             )} />
             {!isCollapsed && <span>Configurações</span>}
           </Link>
