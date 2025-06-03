@@ -2643,6 +2643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planoNome,
         planoValor: valorNumerico.toFixed(2), // Garantir formato correto
         formaPagamento,
+        origem: origem || 'checkout_externo',
         statusAssinatura: 'ATIVO',
         dataInicioAssinatura: dataInicio,
         dataVencimentoAssinatura: dataVencimento,
@@ -2658,6 +2659,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('Erro ao cadastrar cliente externo:', error);
+      res.status(500).json({ 
+        message: 'Erro interno do servidor',
+        error: error.message 
+      });
+    }
+  });
+
+  // Rota para finalizar pagamento externo
+  app.post('/api/clientes-externos/finalizar-pagamento', async (req, res) => {
+    try {
+      const { nome, email, telefone, planoNome, planoValor, formaPagamento, origem } = req.body;
+
+      if (!nome || !email || !telefone || !planoNome || !planoValor || !formaPagamento) {
+        return res.status(400).json({ message: 'Todos os campos são obrigatórios' });
+      }
+
+      const valorNumerico = parseFloat(planoValor);
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        return res.status(400).json({ message: 'Valor do plano deve ser um número válido maior que zero' });
+      }
+
+      // Data de início: agora
+      const dataInicio = new Date();
+      // Data de vencimento: 30 dias corridos
+      const dataVencimento = new Date();
+      dataVencimento.setDate(dataVencimento.getDate() + 30);
+
+      const cliente = await storage.createClienteExterno({
+        nome,
+        email,
+        telefone,
+        planoNome,
+        planoValor: valorNumerico.toFixed(2),
+        formaPagamento,
+        origem: origem || 'checkout_externo',
+        statusAssinatura: 'ATIVO',
+        dataInicioAssinatura: dataInicio,
+        dataVencimentoAssinatura: dataVencimento,
+      });
+
+      console.log(`Pagamento externo finalizado: ${nome}, método: ${formaPagamento}, valor: R$ ${valorNumerico.toFixed(2)}`);
+
+      res.json({
+        success: true,
+        cliente,
+        message: `Cliente cadastrado com pagamento ${formaPagamento}. Assinatura ativa até ${dataVencimento.toLocaleDateString('pt-BR')}`
+      });
+
+    } catch (error) {
+      console.error('Erro ao finalizar pagamento externo:', error);
       res.status(500).json({ 
         message: 'Erro interno do servidor',
         error: error.message 
