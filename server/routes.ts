@@ -3412,18 +3412,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Configurar contas Asaas
       const asaasAccounts = [
         {
-          apiKey: process.env.ASAAS_API_KEY,
+          apiKey: process.env.ASAAS_TRATO,
           name: 'PRINCIPAL'
         },
         {
-          apiKey: process.env.ASAAS_API_KEY_ANDREY,
+          apiKey: process.env.ASAAS_API_KEY,
           name: 'ANDREY'
         }
       ];
 
       console.log('=== INÍCIO BUSCA CLIENTES UNIFICADOS ===');
+      console.log('ASAAS_TRATO existe:', !!process.env.ASAAS_TRATO);
       console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
-      console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
       console.log('Clientes externos encontrados:', clientesExternos.length);
 
       // Buscar clientes de ambas as contas Asaas
