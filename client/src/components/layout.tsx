@@ -40,7 +40,7 @@ export function Layout({ children }: LayoutProps) {
   // Layout responsivo para admin
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background text-foreground">
         <Header 
           showMenuButton={true}
           onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -53,7 +53,7 @@ export function Layout({ children }: LayoutProps) {
             onClick={() => setMobileMenuOpen(false)}
           >
             <div 
-              className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-card shadow-2xl"
+              className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-card shadow-2xl border-r border-border"
               onClick={e => e.stopPropagation()}
             >
               <Sidebar 
@@ -64,8 +64,10 @@ export function Layout({ children }: LayoutProps) {
           </div>
         )}
         
-        <main className="p-4 pb-20">
-          {children}
+        <main className="container-responsive py-4 pb-20">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     );
@@ -73,15 +75,17 @@ export function Layout({ children }: LayoutProps) {
 
   // Layout desktop/tablet
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background text-foreground">
       <Sidebar collapsed={isTablet} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           showMenuButton={false}
           onMenuToggle={() => {}}
         />
-        <main className={`flex-1 overflow-y-auto ${isTablet ? 'p-4' : 'p-6'}`}>
-          {children}
+        <main className={`flex-1 overflow-y-auto container-responsive ${isTablet ? 'py-4' : 'py-6'}`}>
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

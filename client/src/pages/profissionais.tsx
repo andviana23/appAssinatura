@@ -100,18 +100,22 @@ export default function Profissionais() {
     if (!formData.nome.trim() || !formData.email.trim() || !formData.senha.trim()) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha nome, email e senha",
+        description: "Preencha nome, email e senha",
         variant: "destructive"
       });
       return;
     }
-    
-    criarProfissional.mutate(formData);
-  };
 
-  const handleCancel = () => {
-    setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
-    setIsModalOpen(false);
+    if (formData.senha.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    criarProfissional.mutate(formData);
   };
 
   const handleDelete = (profissional: any) => {
@@ -122,502 +126,292 @@ export default function Profissionais() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando profissionais...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Carregando profissionais...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Header com botão voltar */}
-        <div className="mb-8">
-          <button
-            onClick={() => setLocation("/")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Voltar ao Dashboard
-          </button>
+    <div className="space-y-6 sm:space-y-8">
+      {/* Header com botão voltar */}
+      <div className="space-y-4 sm:space-y-6">
+        <button
+          onClick={() => setLocation("/")}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="text-sm sm:text-base">Voltar ao Dashboard</span>
+        </button>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Gerenciar Profissionais
-              </h1>
-              <p className="text-lg text-gray-600">
-                Administre a equipe de barbeiros e recepcionistas
-              </p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Gerenciar Profissionais
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Administre a equipe de barbeiros e recepcionistas
+            </p>
+          </div>
 
-            {/* Botão principal de cadastro */}
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-8 py-3"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Cadastrar Profissional
-                </Button>
-              </DialogTrigger>
+          {/* Botão principal de cadastro */}
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                size="lg"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+              >
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="hidden sm:inline">Cadastrar Profissional</span>
+                <span className="sm:hidden">Novo Profissional</span>
+              </Button>
+            </DialogTrigger>
 
-              {/* Modal de Cadastro */}
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader className="text-center pb-4">
-                  <DialogTitle className="text-2xl font-bold text-gray-900">
-                    Novo Profissional
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600">
-                    Preencha os dados para cadastrar um novo membro da equipe
-                  </DialogDescription>
-                </DialogHeader>
+            {/* Modal de Cadastro */}
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="text-center pb-4">
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  Novo Profissional
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Preencha os dados para cadastrar um novo membro da equipe
+                </DialogDescription>
+              </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  
-                  {/* Nome */}
-                  <div className="space-y-2">
-                    <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
-                      Nome do profissional *
-                    </Label>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Nome */}
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-sm font-medium text-foreground">
+                    Nome completo *
+                  </Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => handleInputChange('nome', e.target.value)}
+                    placeholder="Digite o nome completo"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                {/* Telefone */}
+                <div className="space-y-2">
+                  <Label htmlFor="telefone" className="text-sm font-medium text-foreground">
+                    Telefone
+                  </Label>
+                  <Input
+                    id="telefone"
+                    type="tel"
+                    value={formData.telefone}
+                    onChange={(e) => handleInputChange('telefone', e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                    Email *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="email@exemplo.com"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                {/* Senha */}
+                <div className="space-y-2">
+                  <Label htmlFor="senha" className="text-sm font-medium text-foreground">
+                    Senha *
+                  </Label>
+                  <div className="relative">
                     <Input
-                      id="nome"
-                      type="text"
-                      value={formData.nome}
-                      onChange={(e) => handleInputChange('nome', e.target.value)}
-                      placeholder="Digite o nome completo"
-                      className="w-full"
+                      id="senha"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.senha}
+                      onChange={(e) => handleInputChange('senha', e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="w-full pr-10"
                       required
                     />
-                  </div>
-
-                  {/* Telefone */}
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
-                      Telefone
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="telefone"
-                        type="tel"
-                        value={formData.telefone}
-                        onChange={(e) => handleInputChange('telefone', e.target.value)}
-                        placeholder="(00) 00000-0000"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                      E-mail *
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        placeholder="email@exemplo.com"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Senha */}
-                  <div className="space-y-2">
-                    <Label htmlFor="senha" className="text-sm font-medium text-gray-700">
-                      Senha *
-                    </Label>
-                    <div className="relative">
-                      <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="senha"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.senha}
-                        onChange={(e) => handleInputChange('senha', e.target.value)}
-                        placeholder="Digite uma senha segura"
-                        className="pl-10 pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      A senha será salva de forma segura. O profissional poderá alterá-la posteriormente.
-                    </p>
-                  </div>
-
-                  {/* Tipo de Profissional */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Tipo de profissional *
-                    </Label>
-                    <RadioGroup 
-                      value={formData.tipo} 
-                      onValueChange={(value) => handleInputChange('tipo', value)}
-                      className="space-y-3"
-                    >
-                      <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <RadioGroupItem value="barbeiro" id="barbeiro" />
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <Label htmlFor="barbeiro" className="font-medium cursor-pointer">
-                              Barbeiro
-                            </Label>
-                            <p className="text-sm text-gray-500">Profissional que realiza serviços de corte e barbearia</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <RadioGroupItem value="recepcionista" id="recepcionista" />
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <UserCheck className="h-4 w-4 text-green-600" />
-                          </div>
-                          <div>
-                            <Label htmlFor="recepcionista" className="font-medium cursor-pointer">
-                              Recepcionista
-                            </Label>
-                            <p className="text-sm text-gray-500">Responsável pelo atendimento e agendamentos</p>
-                          </div>
-                        </div>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {/* Botões */}
-                  <div className="flex gap-3 pt-4">
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                      onClick={handleCancel}
-                      className="flex-1"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Cadastrar
-                    </Button>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+                </div>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <User className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total de Profissionais</p>
-                  <p className="text-2xl font-bold text-gray-900">{profissionais.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <UserCheck className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Profissionais Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {profissionais.filter((p: Profissional) => p.ativo).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <User className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Barbeiros</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {profissionais.filter((p: Profissional) => p.tipo === 'barbeiro').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Lista de Profissionais */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-900">
-              Equipe Cadastrada
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {profissionais.length === 0 ? (
-              <div className="text-center py-12">
-                <UserCheck className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nenhum profissional cadastrado
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Comece cadastrando barbeiros e recepcionistas para sua equipe
-                </p>
-                <Button
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Cadastrar Primeiro Profissional
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {profissionais.map((profissional: Profissional) => (
-                  <div key={profissional.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        profissional.tipo === 'barbeiro' ? 'bg-blue-100' : 'bg-green-100'
-                      }`}>
-                        {profissional.tipo === 'barbeiro' ? (
-                          <User className={`h-6 w-6 ${profissional.tipo === 'barbeiro' ? 'text-blue-600' : 'text-green-600'}`} />
-                        ) : (
-                          <UserCheck className="h-6 w-6 text-green-600" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {profissional.nome}
-                        </h3>
-                        <p className="text-gray-600">{profissional.email}</p>
-                        {profissional.telefone && (
-                          <p className="text-sm text-gray-500">{profissional.telefone}</p>
-                        )}
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Badge variant={profissional.tipo === 'barbeiro' ? 'default' : 'secondary'}>
-                            {profissional.tipo === 'barbeiro' ? 'Barbeiro' : 'Recepcionista'}
-                          </Badge>
-                          <Badge variant={profissional.ativo ? 'default' : 'secondary'} 
-                                 className={profissional.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
-                            {profissional.ativo ? 'Ativo' : 'Inativo'}
-                          </Badge>
-                        </div>
-                      </div>
+                {/* Tipo */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-foreground">
+                    Função *
+                  </Label>
+                  <RadioGroup
+                    value={formData.tipo}
+                    onValueChange={(value) => handleInputChange('tipo', value)}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="barbeiro" id="barbeiro" />
+                      <Label htmlFor="barbeiro" className="text-sm">Barbeiro</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
+                      <RadioGroupItem value="recepcionista" id="recepcionista" />
+                      <Label htmlFor="recepcionista" className="text-sm">Recepcionista</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Botões do modal */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={criarProfissional.isPending}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    {criarProfissional.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Cadastrando...
+                      </>
+                    ) : (
+                      'Cadastrar'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Lista de Profissionais */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Equipe ({profissionais.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {profissionais.length === 0 ? (
+            <div className="text-center py-12">
+              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                Nenhum profissional cadastrado
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Comece adicionando barbeiros e recepcionistas à sua equipe
+              </p>
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Cadastrar Primeiro Profissional
+              </Button>
+            </div>
+          ) : (
+            <div className="grid-responsive-2 lg:grid-cols-3">
+              {profissionais.map((profissional: Profissional) => (
+                <Card key={profissional.id} className="bg-background border-border hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <User className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-card-foreground">{profissional.nome}</h3>
+                          <Badge 
+                            variant={profissional.tipo === 'barbeiro' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {profissional.tipo === 'barbeiro' ? (
+                              <>
+                                <Scissors className="h-3 w-3 mr-1" />
+                                Barbeiro
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="h-3 w-3 mr-1" />
+                                Recepcionista
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Badge variant={profissional.ativo ? 'default' : 'destructive'} className="text-xs">
+                        {profissional.ativo ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        {profissional.email}
+                      </div>
+                      {profissional.telefone && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-4 w-4" />
+                          {profissional.telefone}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          // TODO: Implementar edição
+                          toast({
+                            title: "Em desenvolvimento",
+                            description: "Funcionalidade de edição será implementada em breve",
+                          });
+                        }}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => handleDelete(profissional)}
                         disabled={deletarProfissional.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal de Cadastro */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-gray-900">
-              Cadastrar Novo Profissional
-            </DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Adicione um novo barbeiro ou recepcionista à sua equipe
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
-                Nome completo *
-              </Label>
-              <Input
-                id="nome"
-                type="text"
-                value={formData.nome}
-                onChange={(e) => handleInputChange('nome', e.target.value)}
-                placeholder="Digite o nome completo"
-                className="w-full"
-                required
-              />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="email@exemplo.com"
-                className="w-full"
-                required
-              />
-            </div>
-
-            {/* Telefone */}
-            <div className="space-y-2">
-              <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
-                Telefone
-              </Label>
-              <Input
-                id="telefone"
-                type="tel"
-                value={formData.telefone}
-                onChange={(e) => handleInputChange('telefone', e.target.value)}
-                placeholder="(11) 99999-9999"
-                className="w-full"
-              />
-            </div>
-
-            {/* Senha */}
-            <div className="space-y-2">
-              <Label htmlFor="senha" className="text-sm font-medium text-gray-700">
-                Senha *
-              </Label>
-              <div className="relative">
-                <Input
-                  id="senha"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.senha}
-                  onChange={(e) => handleInputChange('senha', e.target.value)}
-                  placeholder="Digite uma senha segura"
-                  className="w-full pr-10"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Tipo de Profissional */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-gray-700">
-                Tipo de profissional *
-              </Label>
-              <RadioGroup 
-                value={formData.tipo} 
-                onValueChange={(value) => handleInputChange('tipo', value)}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <RadioGroupItem value="barbeiro" id="barbeiro" />
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <Label htmlFor="barbeiro" className="font-medium cursor-pointer">
-                        Barbeiro
-                      </Label>
-                      <p className="text-sm text-gray-500">Profissional que realiza serviços de corte e barbearia</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <RadioGroupItem value="recepcionista" id="recepcionista" />
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <UserCheck className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div>
-                      <Label htmlFor="recepcionista" className="font-medium cursor-pointer">
-                        Recepcionista
-                      </Label>
-                      <p className="text-sm text-gray-500">Profissional responsável pelo atendimento e agenda</p>
-                    </div>
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Botões */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                className="flex-1"
-                disabled={criarProfissional.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={criarProfissional.isPending}
-              >
-                {criarProfissional.isPending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Cadastrando...
-                  </>
-                ) : (
-                  'Cadastrar'
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
