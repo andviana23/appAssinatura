@@ -163,6 +163,14 @@ export default function ClientesPage() {
       .slice(0, 2);
   };
 
+  const calcularProximaCobranca = (ultimoPagamento?: string) => {
+    if (!ultimoPagamento) return null;
+    const dataUltimo = new Date(ultimoPagamento);
+    const proximaCobranca = new Date(dataUltimo);
+    proximaCobranca.setMonth(proximaCobranca.getMonth() + 1);
+    return proximaCobranca.toISOString().split('T')[0];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
