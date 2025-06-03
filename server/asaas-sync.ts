@@ -51,20 +51,20 @@ export async function syncAsaasData() {
           const customersData = await customersResponse.json();
           console.log(`${account.name}: ${customersData.totalCount || 0} clientes encontrados`);
 
-          // Buscar assinaturas ativas
-          const subscriptionsResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
+          // Buscar cobranças confirmadas
+          const paymentsResponse = await fetch('https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=100', {
             headers: {
               'access_token': account.apiKey,
               'Content-Type': 'application/json'
             }
           });
 
-          const subscriptionsData = subscriptionsResponse.ok ? await subscriptionsResponse.json() : { data: [] };
-          const activeSubscriptions = new Set(subscriptionsData.data?.map((s: any) => s.customer) || []);
+          const paymentsData = paymentsResponse.ok ? await paymentsResponse.json() : { data: [] };
+          const confirmedPayments = new Set(paymentsData.data?.map((p: any) => p.customer) || []);
 
           // Processar clientes
           for (const customer of customersData.data || []) {
-            const hasActiveSubscription = activeSubscriptions.has(customer.id);
+            const hasConfirmedPayment = confirmedPayments.has(customer.id);
             
             // Verificar se cliente já existe no banco local
             const existingCliente = await storage.getClienteByAsaasId(customer.id);
