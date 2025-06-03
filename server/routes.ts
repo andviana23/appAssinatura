@@ -1920,7 +1920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Buscar dados do cliente
                 const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
                   headers: {
-                    'access_token': asaasApiKey,
+                    'access_token': account.apiKey,
                     'Content-Type': 'application/json'
                   }
                 });
