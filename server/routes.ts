@@ -5295,6 +5295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('=== INICIANDO BUSCA DE CLIENTES COM COBRANÇAS CONFIRMADAS ===');
       
       const clientesConsolidados = [];
+      const clientesProcessados = new Set(); // Para evitar duplicatas
       const contas = [
         { nome: 'ASAAS_TRATO', apiKey: process.env.ASAAS_TRATO },
         { nome: 'ASAAS_ANDREY', apiKey: process.env.ASAAS_API_KEY_ANDREY }
@@ -5324,6 +5325,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Processar cada cobrança confirmada
             for (const payment of paymentsData.data || []) {
               try {
+                // Evitar duplicatas baseado no customer ID + conta
+                const clienteKey = `${payment.customer}_${conta.nome}`;
+                if (clientesProcessados.has(clienteKey)) {
+                  continue;
+                }
+                clientesProcessados.add(clienteKey);
+
                 // Buscar dados do cliente
                 const customerResponse = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
                   headers: {
@@ -5340,31 +5348,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const proximoVencimento = new Date(dataUltimaCobranca);
                   proximoVencimento.setDate(proximoVencimento.getDate() + 30);
                   
-                  // Verificar se ainda está dentro do prazo (máximo 31 dias)
+                  // Verificar status baseado no vencimento
                   const hoje = new Date();
                   const diasRestantes = Math.ceil((proximoVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
                   
-                  if (diasRestantes > -31) { // Cliente ainda válido (não passou mais de 31 dias)
-                    const cliente = {
-                      id: customer.id,
-                      nome: customer.name,
-                      email: customer.email,
-                      telefone: customer.mobilePhone || customer.phone || '',
-                      cpf: customer.cpfCnpj || '',
-                      origem: conta.nome,
-                      planoNome: payment.description || 'Plano Asaas',
-                      planoValor: parseFloat(payment.value),
-                      formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
-                                     payment.billingType === 'PIX' ? 'PIX' : 'Boleto',
-                      status: diasRestantes > 0 ? 'ATIVO' : 'VENCIDO',
-                      dataUltimaCobranca: dataUltimaCobranca.toISOString(),
-                      proximoVencimento: proximoVencimento.toISOString(),
-                      diasRestantes,
-                      valorUltimaCobranca: parseFloat(payment.value)
-                    };
-                    
-                    clientesConsolidados.push(cliente);
+                  let status = 'ATIVO';
+                  if (diasRestantes < 0) {
+                    status = 'VENCIDO';
                   }
+                  
+                  // Se tem cobrança confirmada, considerar ativo independente do vencimento
+                  if (payment.status === 'CONFIRMED') {
+                    status = 'ATIVO';
+                  }
+
+                  const cliente = {
+                    id: `${payment.customer}_${conta.nome}`, // ID único
+                    nomeCompleto: customer.name,
+                    email: customer.email || '',
+                    telefonePrincipal: customer.mobilePhone || customer.phone || '',
+                    numeroDocumento: customer.cpfCnpj || '',
+                    valorPlanoAtual: payment.value,
+                    statusAssinatura: status,
+                    dataUltimoPagamento: payment.paymentDate || payment.dueDate,
+                    origem: conta.nome,
+                    idAsaasPrincipal: conta.nome === 'ASAAS_TRATO' ? payment.customer : null,
+                    idAsaasAndrey: conta.nome === 'ASAAS_ANDREY' ? payment.customer : null,
+                    cidade: customer.city || '',
+                    estado: customer.state || '',
+                    createdAt: payment.dateCreated || new Date().toISOString(),
+                    formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                   payment.billingType === 'PIX' ? 'PIX' : 'Boleto',
+                    proximoVencimento: proximoVencimento.toISOString(),
+                    diasRestantes
+                  };
+                  
+                  clientesConsolidados.push(cliente);
                 }
               } catch (customerError) {
                 console.error(`Erro ao buscar dados do cliente ${payment.customer}:`, customerError);
