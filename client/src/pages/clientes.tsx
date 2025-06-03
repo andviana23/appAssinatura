@@ -51,11 +51,11 @@ export default function Clientes() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Buscar dados dos clientes com assinaturas
+  // Buscar dados dos clientes com assinaturas filtrados por mês
   const { data: dadosClientes, isLoading, error, refetch } = useQuery<ApiResponse>({
-    queryKey: ["/api/clientes/assinaturas"],
+    queryKey: ["/api/clientes/assinaturas", mesSelecionado],
     queryFn: async () => {
-      const response = await fetch("/api/clientes/assinaturas");
+      const response = await fetch(`/api/clientes/assinaturas?mes=${mesSelecionado}`);
       if (!response.ok) {
         throw new Error("Erro ao carregar dados dos clientes");
       }
@@ -212,6 +212,16 @@ export default function Clientes() {
         </div>
         
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="mes-filtro" className="text-sm font-medium">Mês:</label>
+            <Input
+              id="mes-filtro"
+              type="month"
+              value={mesSelecionado}
+              onChange={(e) => setMesSelecionado(e.target.value)}
+              className="w-40"
+            />
+          </div>
           <Button
             onClick={() => refetch()}
             variant="outline"
