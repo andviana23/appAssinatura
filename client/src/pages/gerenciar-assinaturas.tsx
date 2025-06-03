@@ -41,7 +41,7 @@ export default function GerenciarAssinaturas() {
       const response = await apiRequest("/api/assinatura/criar-plano", "POST", {
         nome: dados.nome,
         descricao: dados.descricao || `Assinatura ${dados.nome} - Renovação mensal automática`,
-        valorMensal: dados.valor,
+        valorMensal: dados.valor || dados.valorMensal,
         categoria: dados.categoria,
         servicosIncluidos: dados.servicosIncluidos || []
       });
