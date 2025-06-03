@@ -1396,7 +1396,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         dataCadastro: schema.profissionais.dataCadastro,
         ultimoLogin: schema.profissionais.ultimoLogin
       }).from(schema.profissionais)
-        .orderBy(schema.profissionais.nome);
+        .orderBy(schema.profissionais.dataCadastro);
 
       res.json({
         success: true,

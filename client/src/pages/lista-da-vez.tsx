@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,15 +18,68 @@ export default function ListaDaVez() {
   const [mesAtual] = useState(dayjs().format("YYYY-MM"));
   const [barbeiroSelecionado, setBarbeiroSelecionado] = useState<string>("");
 
-  // Buscar fila mensal
-  const { data: filaMensal = [], isLoading } = useQuery({
-    queryKey: ["/api/lista-da-vez/fila-mensal", mesAtual],
+  // Buscar barbeiros cadastrados da rota de profissionais
+  const { data: profissionaisResponse, isLoading: isLoadingProfissionais } = useQuery({
+    queryKey: ["/api/profissionais"],
     queryFn: async () => {
-      const response = await fetch(`/api/lista-da-vez/fila-mensal?mes=${mesAtual}`);
-      if (!response.ok) throw new Error('Erro ao carregar fila mensal');
+      const response = await fetch('/api/profissionais');
+      if (!response.ok) throw new Error('Erro ao carregar profissionais');
       return response.json();
     }
   });
+
+  // Buscar dados de atendimentos do mês atual
+  const { data: atendimentosResponse, isLoading: isLoadingAtendimentos } = useQuery({
+    queryKey: ["/api/lista-da-vez/fila-mensal", mesAtual],
+    queryFn: async () => {
+      const response = await fetch(`/api/lista-da-vez/fila-mensal?mes=${mesAtual}`);
+      if (!response.ok) throw new Error('Erro ao carregar atendimentos');
+      return response.json();
+    }
+  });
+
+  const isLoading = isLoadingProfissionais || isLoadingAtendimentos;
+
+  // Combinar dados dos profissionais com atendimentos, mantendo ordem de cadastro
+  const filaMensal = useMemo(() => {
+    if (!profissionaisResponse?.data || !atendimentosResponse) return [];
+    
+    // Filtrar apenas barbeiros ativos, ordenados por dataCadastro (ordem de cadastro)
+    const barbeiros = profissionaisResponse.data
+      .filter((prof: any) => prof.tipo === 'barbeiro' && prof.ativo)
+      .sort((a: any, b: any) => {
+        // Ordenar por dataCadastro (ordem crescente - mais antigos primeiro)
+        const dataA = new Date(a.dataCadastro || 0);
+        const dataB = new Date(b.dataCadastro || 0);
+        return dataA.getTime() - dataB.getTime();
+      });
+
+    // Mapear barbeiros com dados de atendimentos
+    return barbeiros.map((barbeiro: any) => {
+      // Buscar dados de atendimentos para este barbeiro
+      const atendimentoData = atendimentosResponse.find((item: any) => 
+        item.barbeiro?.id === barbeiro.id
+      );
+
+      return {
+        barbeiro: {
+          id: barbeiro.id,
+          nome: barbeiro.nome,
+          email: barbeiro.email,
+          ativo: barbeiro.ativo
+        },
+        totalAtendimentosMes: atendimentoData?.totalAtendimentosMes || 0,
+        diasPassouAVez: atendimentoData?.diasPassouAVez || 0
+      };
+    }).sort((a: any, b: any) => {
+      // Ordenação secundária: por quantidade de atendimentos (menor para maior)
+      // Quando empatados (principalmente quando todos têm 0), mantém ordem de cadastro
+      if (a.totalAtendimentosMes === b.totalAtendimentosMes) {
+        return 0; // Mantém ordem original (ordem de cadastro)
+      }
+      return a.totalAtendimentosMes - b.totalAtendimentosMes;
+    });
+  }, [profissionaisResponse, atendimentosResponse]);
 
   // Adicionar cliente automaticamente para o próximo da fila
   const adicionarCliente = useMutation({
