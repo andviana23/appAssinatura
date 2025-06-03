@@ -66,12 +66,12 @@ export class AsaasIntegrationService {
     const logId = await this.iniciarLogSync('ASAAS_PRINCIPAL', 'SYNC_CLIENTES');
     
     try {
-      const apiKey = process.env.ASAAS_API_KEY;
+      const apiKey = process.env.ASAAS_TRATO;
       console.log('🔑 API Key Principal (Trato de Barbados):', apiKey ? `${apiKey.substring(0, 20)}...` : 'NÃO DEFINIDA');
       
       if (!apiKey) {
-        console.error('❌ ERRO: ASAAS_API_KEY não configurada');
-        throw new Error('ASAAS_API_KEY não configurada');
+        console.error('❌ ERRO: ASAAS_TRATO não configurada');
+        throw new Error('ASAAS_TRATO não configurada');
       }
 
       console.log('🔍 Buscando assinaturas ativas da Conta Trato de Barbados...');

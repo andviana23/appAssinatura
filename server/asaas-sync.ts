@@ -21,7 +21,7 @@ export async function syncAsaasData() {
     // Configuração das duas contas Asaas
     const asaasAccounts = [
       {
-        apiKey: process.env.ASAAS_API_KEY,
+        apiKey: process.env.ASAAS_TRATO,
         name: 'ASAAS_PRINCIPAL'
       },
       {
