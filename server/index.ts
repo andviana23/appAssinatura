@@ -70,5 +70,49 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Iniciar sincronização automática com Asaas
+    iniciarSincronizacaoAutomatica();
   });
+
+  // Função para sincronização automática com Asaas
+  async function syncAsaasAutomatico() {
+    try {
+      console.log('🔄 Executando sincronização automática com Asaas...');
+      
+      const response = await fetch(`http://localhost:${port}/api/sync/clientes-asaas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ Sincronização automática concluída: ${result.total} clientes processados`);
+      } else {
+        console.log('❌ Erro na sincronização automática');
+      }
+    } catch (error) {
+      console.log('❌ Erro na sincronização automática:', error);
+    }
+  }
+
+  // Configurar sincronização automática
+  function iniciarSincronizacaoAutomatica() {
+    // Sincronizar 30 segundos após iniciar o servidor
+    setTimeout(() => {
+      syncAsaasAutomatico();
+    }, 30000);
+    
+    // Depois a cada 24 horas
+    setInterval(() => {
+      syncAsaasAutomatico();
+    }, 24 * 60 * 60 * 1000); // 24 horas
+    
+    console.log('⏰ Sincronização automática configurada para executar a cada 24 horas');
+  }
+
+  // Exportar função para usar após criação de assinaturas
+  global.triggerAsaasSync = syncAsaasAutomatico;
 })();

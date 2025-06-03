@@ -1,0 +1,89 @@
+Você deve implementar a integração de Webhook do Asaas para captar, automaticamente, os clientes que tiveram pagamento confirmado, cadastrando eles na lista de clientes do sistema da barbearia.
+
+1. O que é Webhook do Asaas e pra que serve aqui:
+O webhook do Asaas serve pra te avisar em tempo real quando um evento acontece, tipo pagamento confirmado, pagamento cancelado, ou status de cobrança alterado. Você precisa usar isso pra manter a lista de clientes da barbearia sempre atualizada, sem precisar buscar manualmente.
+
+2. URL do Webhook:
+Configure o webhook no Asaas para apontar para uma rota pública do seu sistema, exemplo:
+https://seusistema.com/api/webhook/asaas
+
+3. Eventos que você deve capturar:
+Segundo a documentação do Asaas (https://docs.asaas.com/docs/sobre-os-webhooks), os eventos que você deve prestar atenção são:
+
+PAYMENT_RECEIVED – Pagamento confirmado.
+
+PAYMENT_CONFIRMED – Pagamento aprovado.
+
+PAYMENT_DELETED – Pagamento excluído/cancelado.
+
+PAYMENT_REFUNDED – Pagamento estornado.
+
+PAYMENT_OVERDUE – Pagamento vencido e não pago.
+
+PAYMENT_UPDATED – Status do pagamento alterado.
+
+4. Dados que devem ser puxados do payload do Webhook:
+Quando o webhook for disparado, você precisa capturar do JSON que chega:
+
+customer (ID do cliente no Asaas)
+
+value (valor pago)
+
+status (status do pagamento: RECEIVED, CONFIRMED, DELETED, etc)
+
+paymentDate (data do pagamento)
+
+Dados do cliente:
+
+customer.name
+
+customer.email
+
+customer.cpfCnpj
+
+customer.phone
+
+Se precisar de mais informações do cliente, use o ID que veio no webhook pra buscar detalhes completos pelo endpoint de clientes do Asaas:
+GET /v3/customers/{customerId}
+
+5. O que fazer quando receber o evento:
+
+Se o status for pago (RECEIVED ou CONFIRMED):
+
+Verifique se o cliente já existe na base de dados do seu sistema.
+
+Se não existe, cadastre o cliente com os dados trazidos do Asaas.
+
+Se já existe, atualize o status dele para "Ativo" ou "Pagante".
+
+Cadastre ou atualize o pagamento na base, associando ao cliente.
+
+Se o status mudar pra cancelado, estornado ou vencido:
+
+Atualize o status desse cliente na base para "Inadimplente" ou "Cancelado" conforme o caso.
+
+Isso é fundamental pra não liberar agendamento ou acesso indevido pra quem não pagou.
+
+6. Manter a base sincronizada:
+Sempre que o Asaas mandar qualquer evento desses, o status do cliente na sua lista deve ser atualizado na hora.
+Nunca deixe o status desatualizado! Se não fizer isso, vai perder o controle de quem realmente pagou e o sistema vai virar zona.
+
+7. Uso dos clientes na plataforma:
+Os clientes cadastrados automaticamente pelo webhook do Asaas devem aparecer normalmente na lista de clientes da barbearia, podendo ser usados para agendamento, histórico, campanhas, etc.
+
+Resumo da lógica pro Replit:
+
+Crie uma rota que aceite POST dos webhooks do Asaas.
+
+Analise o evento recebido no payload.
+
+Busque/extrai os dados do cliente (nome, email, CPF, telefone) usando o próprio payload ou, se precisar, fazendo um GET no endpoint de clientes do Asaas.
+
+Cadastre/atualize o cliente na base local.
+
+Atualize o status do cliente conforme o status da cobrança.
+
+Repita esse processo pra qualquer novo evento que o Asaas mandar.
+
+Mensagem final pro Replit:
+Se não garantir que todo cliente pagante do Asaas está salvo na base local, com status atualizado, o sistema vai falhar no controle dos clientes ativos. Tem que ser automático, em tempo real, sem depender de conferência manual.

@@ -6155,6 +6155,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log('✅ PaymentBook criado (formato /i/):', paymentBookData.url);
             
             // Retornar dados completos
+            // Disparar sincronização automática após criação da assinatura
+            try {
+              console.log('🔄 Disparando sincronização automática após criação de assinatura...');
+              if (typeof global.triggerAsaasSync === 'function') {
+                global.triggerAsaasSync();
+              }
+            } catch (error) {
+              console.log('⚠️ Erro ao disparar sincronização automática:', error);
+            }
+
             res.json({
               success: true,
               customer: {
@@ -6380,35 +6390,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
 
-  // Webhook para receber eventos do Asaas
+  // Webhook do Asaas para capturar pagamentos confirmados automaticamente
   app.post('/webhook/asaas', async (req: Request, res: Response) => {
     try {
-      const evento = req.body.event;
-      const data = req.body;
+      console.log('🔔 Webhook Asaas recebido:', JSON.stringify(req.body, null, 2));
       
-      console.log('Webhook Asaas recebido:', evento, data);
+      const { event, payment } = req.body;
       
-      if (evento === "SUBSCRIPTION_CREATED") {
-        console.log('Nova assinatura criada:', data.subscription);
-        // Aqui você pode salvar os dados da assinatura no banco de dados
+      if (!event || !payment) {
+        console.log('❌ Webhook inválido: dados faltando');
+        return res.status(400).json({ error: 'Dados inválidos no webhook' });
+      }
+
+      console.log(`📋 Evento: ${event} | Pagamento: ${payment.id} | Cliente: ${payment.customer}`);
+
+      // Determinar qual API usar baseado no payment ou customer
+      let apiKey = process.env.ASAAS_API_KEY; // Padrão
+      let accountName = 'ASAAS_API_KEY';
+      
+      // Processar eventos de pagamento
+      if (['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'].includes(event)) {
+        console.log(`✅ Pagamento confirmado: ${payment.id} | Valor: R$ ${payment.value}`);
+        
+        await processarPagamentoConfirmado(payment, apiKey, accountName);
+        
+      } else if (['PAYMENT_DELETED', 'PAYMENT_REFUNDED', 'PAYMENT_OVERDUE'].includes(event)) {
+        console.log(`❌ Pagamento cancelado/estornado/vencido: ${payment.id}`);
+        
+        await processarPagamentoCancelado(payment);
+        
+      } else if (event === 'PAYMENT_UPDATED') {
+        console.log(`🔄 Status do pagamento atualizado: ${payment.id} | Status: ${payment.status}`);
+        
+        if (['RECEIVED', 'CONFIRMED'].includes(payment.status)) {
+          await processarPagamentoConfirmado(payment, apiKey, accountName);
+        } else if (['CANCELLED', 'REFUNDED', 'OVERDUE'].includes(payment.status)) {
+          await processarPagamentoCancelado(payment);
+        }
       }
       
-      if (evento === "PAYMENT_CREATED") {
-        console.log('Nova fatura gerada:', data.payment);
-        // Registrar nova fatura
-      }
+      res.json({ 
+        success: true, 
+        message: 'Webhook processado com sucesso',
+        event: event,
+        paymentId: payment.id
+      });
       
-      if (evento === "CHECKOUT_COMPLETED") {
-        console.log('Checkout completado:', data.checkout);
-        // Confirmar que o checkout foi finalizado
-      }
-      
-      res.status(200).send("OK");
     } catch (error) {
-      console.error('Erro no webhook:', error);
-      res.status(500).send("Erro");
+      console.error('💥 Erro no webhook Asaas:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Erro interno do servidor',
+        message: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
     }
   });
+
+  // Função para processar pagamento confirmado
+  async function processarPagamentoConfirmado(payment: any, apiKey: string, accountName: string) {
+    try {
+      const baseUrl = 'https://www.asaas.com/api/v3';
+      
+      // Buscar dados completos do cliente
+      let customer = null;
+      
+      // Tentar com a API principal
+      try {
+        const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+          headers: {
+            'access_token': apiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (customerResponse.ok) {
+          customer = await customerResponse.json();
+          console.log(`👤 Dados do cliente obtidos com ${accountName}:`, customer.name);
+        }
+      } catch (error) {
+        console.log(`⚠️ Erro ao buscar cliente com ${accountName}, tentando ASAAS_TRATO...`);
+      }
+
+      // Se não conseguiu com a primeira API, tentar com ASAAS_TRATO
+      if (!customer && process.env.ASAAS_TRATO) {
+        try {
+          const customerResponse = await fetch(`${baseUrl}/customers/${payment.customer}`, {
+            headers: {
+              'access_token': process.env.ASAAS_TRATO,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (customerResponse.ok) {
+            customer = await customerResponse.json();
+            accountName = 'ASAAS_TRATO';
+            console.log(`👤 Dados do cliente obtidos com ASAAS_TRATO:`, customer.name);
+          }
+        } catch (error) {
+          console.log(`❌ Erro ao buscar cliente com ASAAS_TRATO também`);
+        }
+      }
+
+      if (!customer) {
+        console.log(`❌ Não foi possível obter dados do cliente ${payment.customer}`);
+        return;
+      }
+
+      // Verificar se cliente já existe no sistema
+      const clientesExistentes = await storage.getAllClientes();
+      const clienteExistente = clientesExistentes.find(c => 
+        c.asaasCustomerId === payment.customer || 
+        (c.email && customer.email && c.email.toLowerCase() === customer.email.toLowerCase())
+      );
+
+      if (!clienteExistente) {
+        // Criar novo cliente
+        const dataVencimento = new Date();
+        dataVencimento.setDate(dataVencimento.getDate() + 30); // 30 dias de validade
+
+        const novoCliente = await storage.createCliente({
+          nome: customer.name || 'Cliente Asaas',
+          email: customer.email || `cliente-${payment.customer}@asaas.temp`,
+          telefone: customer.phone || null,
+          cpf: customer.cpfCnpj || null,
+          asaasCustomerId: payment.customer,
+          origem: accountName,
+          planoNome: payment.description || 'Pagamento Asaas',
+          planoValor: payment.value.toString(),
+          formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                         payment.billingType === 'PIX' ? 'PIX' : 
+                         payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+          statusAssinatura: 'ATIVO',
+          dataInicioAssinatura: new Date(payment.paymentDate || payment.dateCreated),
+          dataVencimentoAssinatura: dataVencimento
+        });
+        
+        console.log(`✅ Novo cliente criado via webhook: ${customer.name} (ID: ${novoCliente.id})`);
+        
+      } else {
+        // Atualizar cliente existente
+        const dataVencimento = new Date();
+        dataVencimento.setDate(dataVencimento.getDate() + 30);
+
+        await storage.updateCliente(clienteExistente.id, {
+          statusAssinatura: 'ATIVO',
+          dataVencimentoAssinatura: dataVencimento,
+          asaasCustomerId: payment.customer // Garantir que o ID Asaas está salvo
+        });
+        
+        console.log(`🔄 Cliente atualizado via webhook: ${customer.name} (ID: ${clienteExistente.id}) - Status: ATIVO`);
+      }
+      
+    } catch (error) {
+      console.error('💥 Erro ao processar pagamento confirmado:', error);
+    }
+  }
+
+  // Função para processar pagamento cancelado/estornado/vencido
+  async function processarPagamentoCancelado(payment: any) {
+    try {
+      // Buscar cliente pelo ID do Asaas
+      const clientesExistentes = await storage.getAllClientes();
+      const clienteExistente = clientesExistentes.find(c => c.asaasCustomerId === payment.customer);
+
+      if (clienteExistente) {
+        await storage.updateCliente(clienteExistente.id, {
+          statusAssinatura: 'CANCELADO'
+        });
+        
+        console.log(`❌ Cliente marcado como CANCELADO via webhook: ID ${clienteExistente.id}`);
+      } else {
+        console.log(`⚠️ Cliente não encontrado para cancelamento: ${payment.customer}`);
+      }
+      
+    } catch (error) {
+      console.error('💥 Erro ao processar pagamento cancelado:', error);
+    }
+  }
 
   app.post("/api/asaas/criar-cliente", async (req: Request, res: Response) => {
     try {
