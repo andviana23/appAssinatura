@@ -13,6 +13,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const asaasTrato = process.env.ASAAS_TRATO;
       const asaasAndrey = process.env.ASAAS_AND;
       
+      console.log('🔍 Debug - Variáveis de ambiente:');
+      console.log('ASAAS_TRATO:', asaasTrato ? `${asaasTrato.substring(0, 20)}...` : 'NÃO DEFINIDA');
+      console.log('ASAAS_AND:', asaasAndrey ? `${asaasAndrey.substring(0, 20)}...` : 'NÃO DEFINIDA');
+      
       const resultados = [];
 
       // Testar ASAAS_TRATO (sempre produção)
