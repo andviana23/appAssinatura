@@ -778,92 +778,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Local/Externos: ${clientesLocaisAtivos.length} clientes ativos, R$ ${receitaLocal.toFixed(2)} receita`);
       
-      // 2. Conta Principal - APENAS assinaturas com pagamentos CONFIRMADOS
+      // 2. Conta Principal - Assinaturas ATIVAS (status ACTIVE = pagamentos confirmados)
       let clientesAtivosPrincipal = 0;
       let receitaPrincipal = 0;
       
       try {
         const apiKey = process.env.ASAAS_API_KEY;
         if (apiKey) {
-          // Buscar assinaturas ativas com pagamentos confirmados
+          console.log("🔍 Buscando assinaturas ATIVAS da conta Principal...");
+          
           const subscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
           if (subscriptionsResponse.ok) {
             const subscriptionsData = await subscriptionsResponse.json();
+            console.log(`Principal API Response:`, {
+              totalCount: subscriptionsData.totalCount,
+              dataLength: subscriptionsData.data?.length
+            });
             
+            // Assinaturas ATIVAS já indicam pagamentos confirmados
             for (const subscription of subscriptionsData.data || []) {
-              // Para cada assinatura ativa, verificar se tem pagamento confirmado nos últimos 30 dias
-              const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?customer=${subscription.customer}&subscription=${subscription.id}&status=CONFIRMED&limit=10`, {
-                headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
-              });
-              
-              if (paymentsResponse.ok) {
-                const paymentsData = await paymentsResponse.json();
-                const hasRecentConfirmedPayment = paymentsData.data?.some((payment: any) => {
-                  if (payment.status === 'CONFIRMED' && payment.paymentDate) {
-                    const paymentDate = new Date(payment.paymentDate);
-                    const agora = new Date();
-                    const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
-                    return diasDesdeConfirmacao <= 30;
-                  }
-                  return false;
-                });
-                
-                if (hasRecentConfirmedPayment) {
-                  clientesAtivosPrincipal++;
-                  receitaPrincipal += parseFloat(subscription.value || '0');
-                }
+              if (subscription.status === 'ACTIVE') {
+                clientesAtivosPrincipal++;
+                receitaPrincipal += parseFloat(subscription.value || '0');
               }
             }
-            console.log(`Principal: ${clientesAtivosPrincipal} assinaturas com pagamentos CONFIRMADOS, R$ ${receitaPrincipal.toFixed(2)} receita`);
+            console.log(`Principal: ${clientesAtivosPrincipal} assinaturas ATIVAS, R$ ${receitaPrincipal.toFixed(2)} receita`);
+          } else {
+            console.log(`Principal API Error: ${subscriptionsResponse.status} - ${await subscriptionsResponse.text()}`);
           }
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Principal:", error);
       }
       
-      // 3. Conta Andrey - APENAS assinaturas com pagamentos CONFIRMADOS  
+      // 3. Conta Andrey - Assinaturas ATIVAS (status ACTIVE = pagamentos confirmados)
       let clientesAtivosAndrey = 0;
       let receitaAndrey = 0;
       
       try {
         const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjUwODNiMzE1LWJiMjktNDQwYi05NDVhLWNkZTNkZDhlZWI2OTo6JGFhY2hfOGM4M2UyNDEtNzk2NS00MDg5LTgyYzgtNjA4YWE5MWM0Y2Q5';
         
-        // Buscar assinaturas ativas com pagamentos confirmados
+        console.log("🔍 Buscando assinaturas ATIVAS da conta Andrey...");
+        
         const andreySubscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
         if (andreySubscriptionsResponse.ok) {
           const andreySubscriptionsData = await andreySubscriptionsResponse.json();
+          console.log(`Andrey API Response:`, {
+            totalCount: andreySubscriptionsData.totalCount,
+            dataLength: andreySubscriptionsData.data?.length
+          });
           
+          // Assinaturas ATIVAS já indicam pagamentos confirmados
           for (const subscription of andreySubscriptionsData.data || []) {
-            // Para cada assinatura ativa, verificar se tem pagamento confirmado nos últimos 30 dias
-            const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?customer=${subscription.customer}&subscription=${subscription.id}&status=CONFIRMED&limit=10`, {
-              headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
-            });
-            
-            if (paymentsResponse.ok) {
-              const paymentsData = await paymentsResponse.json();
-              const hasRecentConfirmedPayment = paymentsData.data?.some((payment: any) => {
-                if (payment.status === 'CONFIRMED' && payment.paymentDate) {
-                  const paymentDate = new Date(payment.paymentDate);
-                  const agora = new Date();
-                  const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
-                  return diasDesdeConfirmacao <= 30;
-                }
-                return false;
-              });
-              
-              if (hasRecentConfirmedPayment) {
-                clientesAtivosAndrey++;
-                receitaAndrey += parseFloat(subscription.value || '0');
-              }
+            if (subscription.status === 'ACTIVE') {
+              clientesAtivosAndrey++;
+              receitaAndrey += parseFloat(subscription.value || '0');
             }
           }
-          console.log(`Andrey: ${clientesAtivosAndrey} assinaturas com pagamentos CONFIRMADOS, R$ ${receitaAndrey.toFixed(2)} receita`);
+          console.log(`Andrey: ${clientesAtivosAndrey} assinaturas ATIVAS, R$ ${receitaAndrey.toFixed(2)} receita`);
+        } else {
+          console.log(`Andrey API Error: ${andreySubscriptionsResponse.status} - ${await andreySubscriptionsResponse.text()}`);
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Andrey:", error);

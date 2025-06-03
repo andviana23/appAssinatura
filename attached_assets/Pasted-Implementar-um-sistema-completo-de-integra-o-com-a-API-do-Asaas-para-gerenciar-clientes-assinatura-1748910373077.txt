@@ -1,0 +1,537 @@
+Implementar um sistema completo de integração com a API do Asaas para gerenciar clientes, assinaturas e dashboard financeiro no Replit.
+
+📋 ETAPA 1: Configuração Inicial e Limpeza de Dados
+1.1 Configuração do Ambiente
+bash
+# Instalar dependências necessárias
+npm install axios dotenv mysql2 express cors
+1.2 Configuração das Variáveis de Ambiente
+env
+# .env
+ASAAS_API_KEY_1=sua_primeira_chave_api_asaas
+ASAAS_API_KEY_2=sua_segunda_chave_api_asaas
+ASAAS_BASE_URL=https://www.asaas.com/api/v3
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=sua_senha
+DB_NAME=sistema_clientes
+1.3 Script de Limpeza de Clientes Inativos
+sql
+-- Criar procedure para deletar clientes inativos
+DELIMITER $$
+CREATE PROCEDURE LimparClientesInativos()
+BEGIN
+    -- Deletar clientes sem assinatura ativa há mais de 30 dias
+    DELETE FROM clientes 
+    WHERE status = 'inativo' 
+    AND ultima_atividade < DATE_SUB(NOW(), INTERVAL 30 DAY)
+    AND id NOT IN (
+        SELECT DISTINCT cliente_id 
+        FROM assinaturas 
+        WHERE status = 'ACTIVE'
+    );
+    
+    -- Log da operação
+    INSERT INTO logs_sistema (acao, descricao, data_hora) 
+    VALUES ('LIMPEZA', CONCAT('Clientes inativos removidos: ', ROW_COUNT()), NOW());
+END$$
+DELIMITER ;
+📋 ETAPA 2: Integração com API Asaas
+2.1 Classe de Integração Asaas
+javascript
+class AsaasIntegration {
+    constructor(apiKey) {
+        this.apiKey = apiKey;
+        this.baseURL = 'https://www.asaas.com/api/v3';
+        this.headers = {
+            'access_token': apiKey,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    async getActiveSubscriptions() {
+        try {
+            const response = await axios.get(`${this.baseURL}/subscriptions`, {
+                headers: this.headers,
+                params: {
+                    status: 'ACTIVE',
+                    limit: 100
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Erro ao buscar assinaturas:', error);
+            throw error;
+        }
+    }
+
+    async getCustomerById(customerId) {
+        try {
+            const response = await axios.get(`${this.baseURL}/customers/${customerId}`, {
+                headers: this.headers
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Erro ao buscar cliente:', error);
+            throw error;
+        }
+    }
+}
+2.2 Sincronização de Dados
+javascript
+async function sincronizarDadosAsaas() {
+    const api1 = new AsaasIntegration(process.env.ASAAS_API_KEY_1);
+    const api2 = new AsaasIntegration(process.env.ASAAS_API_KEY_2);
+    
+    try {
+        // Buscar assinaturas ativas das duas APIs
+        const [subscriptions1, subscriptions2] = await Promise.all([
+            api1.getActiveSubscriptions(),
+            api2.getActiveSubscriptions()
+        ]);
+        
+        console.log(`API 1: ${subscriptions1.data.length} assinaturas ativas`);
+        console.log(`API 2: ${subscriptions2.data.length} assinaturas ativas`);
+        
+        // Processar e inserir no banco
+        await processarAssinaturas([...subscriptions1.data, ...subscriptions2.data]);
+        
+        return {
+            success: true,
+            api1Count: subscriptions1.data.length,
+            api2Count: subscriptions2.data.length,
+            totalCount: subscriptions1.data.length + subscriptions2.data.length
+        };
+        
+    } catch (error) {
+        console.error('Erro na sincronização:', error);
+        throw error;
+    }
+}
+📋 ETAPA 3: Processamento e Cálculos
+3.1 Função de Processamento de Assinaturas
+javascript
+async function processarAssinaturas(subscriptions) {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    for (const subscription of subscriptions) {
+        try {
+            // Buscar dados do cliente
+            const customer = await getCustomerById(subscription.customer);
+            
+            // Inserir/Atualizar cliente
+            await connection.execute(`
+                INSERT INTO clientes (id_asaas, nome, email, status, data_atualizacao)
+                VALUES (?, ?, ?, 'ativo', NOW())
+                ON DUPLICATE KEY UPDATE
+                nome = VALUES(nome),
+                email = VALUES(email),
+                status = VALUES(status),
+                data_atualizacao = NOW()
+            `, [customer.id, customer.name, customer.email]);
+            
+            // Inserir/Atualizar assinatura
+            await connection.execute(`
+                INSERT INTO assinaturas (id_asaas, cliente_id, valor, status, plano, data_atualizacao)
+                VALUES (?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE
+                valor = VALUES(valor),
+                status = VALUES(status),
+                plano = VALUES(plano),
+                data_atualizacao = NOW()
+            `, [
+                subscription.id,
+                customer.id,
+                subscription.value,
+                subscription.status,
+                subscription.description
+            ]);
+            
+        } catch (error) {
+            console.error(`Erro ao processar assinatura ${subscription.id}:`, error);
+        }
+    }
+    
+    await connection.end();
+}
+3.2 Cálculo de Métricas para o Dashboard
+javascript
+async function calcularMetricasDashboard() {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    try {
+        // Receita total de assinaturas ativas
+        const [receitaResult] = await connection.execute(`
+            SELECT SUM(valor) as receita_total
+            FROM assinaturas 
+            WHERE status = 'ACTIVE'
+        `);
+        
+        // Total de clientes ativos
+        const [clientesResult] = await connection.execute(`
+            SELECT COUNT(DISTINCT cliente_id) as clientes_ativos
+            FROM assinaturas 
+            WHERE status = 'ACTIVE'
+        `);
+        
+        // Detalhamento por API
+        const [detalhamentoResult] = await connection.execute(`
+            SELECT 
+                api_origem,
+                COUNT(*) as total_assinaturas,
+                SUM(valor) as receita_api,
+                COUNT(DISTINCT cliente_id) as clientes_unicos
+            FROM assinaturas 
+            WHERE status = 'ACTIVE'
+            GROUP BY api_origem
+        `);
+        
+        return {
+            receitaTotal: receitaResult[0].receita_total || 0,
+            clientesAtivos: clientesResult[0].clientes_ativos || 0,
+            detalhamentoPorAPI: detalhamentoResult
+        };
+        
+    } finally {
+        await connection.end();
+    }
+}
+📋 ETAPA 4: Interface do Dashboard
+4.1 Componente de Cards de Métricas
+javascript
+function DashboardCards({ metricas }) {
+    return (
+        <div className="dashboard-cards">
+            <div className="card receita-card">
+                <h3>💰 Receita de Assinatura</h3>
+                <div className="valor">
+                    R$ {metricas.receitaTotal.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2
+                    })}
+                </div>
+                <div className="detalhes">
+                    {metricas.detalhamentoPorAPI.map(api => (
+                        <div key={api.api_origem}>
+                            API {api.api_origem}: R$ {api.receita_api.toFixed(2)}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            
+            <div className="card clientes-card">
+                <h3>👥 Clientes Ativos</h3>
+                <div className="valor">
+                    {metricas.clientesAtivos}
+                </div>
+                <div className="detalhes">
+                    Assinaturas ativas em ambas as APIs
+                </div>
+            </div>
+        </div>
+    );
+}
+4.2 Página de Clientes Melhorada
+javascript
+function PaginaClientes() {
+    const [clientes, setClientes] = useState([]);
+    const [filtros, setFiltros] = useState({
+        status: 'todos',
+        plano: 'todos',
+        apiOrigem: 'todas'
+    });
+    
+    return (
+        <div className="pagina-clientes">
+            <div className="filtros-container">
+                <select 
+                    value={filtros.status} 
+                    onChange={(e) => setFiltros({...filtros, status: e.target.value})}
+                >
+                    <option value="todos">Todos os Status</option>
+                    <option value="ACTIVE">Ativos</option>
+                    <option value="INACTIVE">Inativos</option>
+                </select>
+                
+                <select 
+                    value={filtros.apiOrigem} 
+                    onChange={(e) => setFiltros({...filtros, apiOrigem: e.target.value})}
+                >
+                    <option value="todas">Todas as APIs</option>
+                    <option value="api1">API 1</option>
+                    <option value="api2">API 2</option>
+                </select>
+            </div>
+            
+            <div className="clientes-grid">
+                {clientes.map(cliente => (
+                    <div key={cliente.id} className={`cliente-card ${cliente.status.toLowerCase()}`}>
+                        <div className="cliente-header">
+                            <h4>{cliente.nome}</h4>
+                            <span className={`status-badge ${cliente.status.toLowerCase()}`}>
+                                {cliente.status}
+                            </span>
+                        </div>
+                        
+                        <div className="cliente-info">
+                            <p>📧 {cliente.email}</p>
+                            <p>💳 {cliente.plano}</p>
+                            <p>💰 R$ {cliente.valor}</p>
+                        </div>
+                        
+                        <div className="assinatura-status">
+                            <div className={`assinatura-indicator ${cliente.assinatura_status}`}>
+                                {cliente.assinatura_status === 'ACTIVE' ? '✅' : '❌'}
+                            </div>
+                            <span>API: {cliente.api_origem}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+📋 ETAPA 5: Automatização e Monitoramento
+5.1 Cron Job para Sincronização Automática
+javascript
+const cron = require('node-cron');
+
+// Executar sincronização a cada 30 minutos
+cron.schedule('*/30 * * * *', async () => {
+    console.log('Iniciando sincronização automática...');
+    
+    try {
+        // Limpar clientes inativos
+        await executarLimpezaClientes();
+        
+        // Sincronizar dados do Asaas
+        const resultado = await sincronizarDadosAsaas();
+        
+        console.log('Sincronização concluída:', resultado);
+        
+        // Atualizar métricas do dashboard
+        await atualizarCacheDashboard();
+        
+    } catch (error) {
+        console.error('Erro na sincronização automática:', error);
+        // Enviar notificação de erro
+        await enviarNotificacaoErro(error);
+    }
+});
+5.2 Sistema de Logs e Monitoramento
+javascript
+class LoggerService {
+    static async log(nivel, acao, detalhes) {
+        const connection = await mysql.createConnection(dbConfig);
+        
+        await connection.execute(`
+            INSERT INTO logs_sistema (nivel, acao, detalhes, data_hora)
+            VALUES (?, ?, ?, NOW())
+        `, [nivel, acao, JSON.stringify(detalhes)]);
+        
+        await connection.end();
+        
+        // Log no console também
+        console.log(`[${nivel}] ${acao}:`, detalhes);
+    }
+    
+    static async logErro(error, contexto) {
+        await this.log('ERROR', contexto, {
+            message: error.message,
+            stack: error.stack
+        });
+    }
+}
+📋 ETAPA 6: Testes e Validação
+6.1 Testes de Integração
+javascript
+async function testarIntegracaoAsaas() {
+    console.log('🔄 Testando integração com Asaas...');
+    
+    try {
+        // Testar conexão com ambas as APIs
+        const api1 = new AsaasIntegration(process.env.ASAAS_API_KEY_1);
+        const api2 = new AsaasIntegration(process.env.ASAAS_API_KEY_2);
+        
+        const [test1, test2] = await Promise.all([
+            api1.getActiveSubscriptions(),
+            api2.getActiveSubscriptions()
+        ]);
+        
+        console.log('✅ API 1 conectada:', test1.data.length, 'assinaturas');
+        console.log('✅ API 2 conectada:', test2.data.length, 'assinaturas');
+        
+        // Testar cálculos
+        const metricas = await calcularMetricasDashboard();
+        console.log('✅ Métricas calculadas:', metricas);
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro nos testes:', error);
+        return false;
+    }
+}
+6.2 Validação dos Dados
+javascript
+async function validarDadosSincronizados() {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    try {
+        // Verificar consistência dos dados
+        const [inconsistencias] = await connection.execute(`
+            SELECT 
+                COUNT(*) as total_inconsistencias
+            FROM clientes c
+            LEFT JOIN assinaturas a ON c.id_asaas = a.cliente_id
+            WHERE a.cliente_id IS NULL
+        `);
+        
+        if (inconsistencias[0].total_inconsistencias > 0) {
+            console.warn(`⚠️  ${inconsistencias[0].total_inconsistencias} clientes sem assinatura encontrados`);
+        }
+        
+        // Verificar duplicatas
+        const [duplicatas] = await connection.execute(`
+            SELECT cliente_id, COUNT(*) as total
+            FROM assinaturas
+            WHERE status = 'ACTIVE'
+            GROUP BY cliente_id
+            HAVING COUNT(*) > 1
+        `);
+        
+        if (duplicatas.length > 0) {
+            console.warn(`⚠️  ${duplicatas.length} clientes com múltiplas assinaturas ativas`);
+        }
+        
+    } finally {
+        await connection.end();
+    }
+}
+📋 ETAPA 7: Implementação Final
+7.1 Arquivo Principal (app.js)
+javascript
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Rotas da API
+app.get('/api/dashboard', async (req, res) => {
+    try {
+        const metricas = await calcularMetricasDashboard();
+        res.json(metricas);
+    } catch (error) {
+        await LoggerService.logErro(error, 'DASHBOARD_API');
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+app.get('/api/clientes', async (req, res) => {
+    try {
+        const { status, plano, apiOrigem } = req.query;
+        const clientes = await buscarClientesFiltrados({ status, plano, apiOrigem });
+        res.json(clientes);
+    } catch (error) {
+        await LoggerService.logErro(error, 'CLIENTES_API');
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+app.post('/api/sincronizar', async (req, res) => {
+    try {
+        const resultado = await sincronizarDadosAsaas();
+        res.json(resultado);
+    } catch (error) {
+        await LoggerService.logErro(error, 'SINCRONIZACAO_MANUAL');
+        res.status(500).json({ error: 'Erro na sincronização' });
+    }
+});
+
+// Inicializar servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    
+    // Testar integração na inicialização
+    const testeOk = await testarIntegracaoAsaas();
+    if (testeOk) {
+        console.log('✅ Sistema inicializado com sucesso!');
+    } else {
+        console.error('❌ Problemas na inicialização detectados');
+    }
+});
+✅ CHECKLIST DE IMPLEMENTAÇÃO
+Pré-requisitos
+ Configurar variáveis de ambiente (.env)
+ Criar estrutura do banco de dados MySQL
+ Instalar todas as dependências NPM
+Desenvolvimento
+ Implementar classe AsaasIntegration
+ Criar funções de sincronização
+ Desenvolver sistema de cálculo de métricas
+ Implementar interface do dashboard
+ Melhorar UX/UI da página de clientes
+Testes
+ Testar conexão com ambas APIs Asaas
+ Validar sincronização de dados
+ Verificar cálculos de métricas
+ Testar filtros da página de clientes
+Finalização
+ Configurar cron jobs para automação
+ Implementar sistema de logs
+ Validar limpeza de clientes inativos
+ Documentar processo de deploy
+🎨 MELHORIAS DE UX/UI Sugeridas
+CSS para Página de Clientes
+css
+.cliente-card {
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.cliente-card:hover {
+    transform: translateY(-2px);
+}
+
+.cliente-card.active {
+    border-left: 4px solid #28a745;
+}
+
+.cliente-card.inactive {
+    border-left: 4px solid #dc3545;
+    opacity: 0.7;
+}
+
+.assinatura-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-badge.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+Este prompt deve ser implementado passo a passo no Replit, testando cada etapa antes de prosseguir para a próxima.
+
