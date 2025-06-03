@@ -180,14 +180,18 @@ export default function Planos() {
       
       // Criar assinatura recorrente com nova estrutura
       const response = await apiRequest("/api/create-customer-subscription", "POST", {
-        name: formData.nome,
-        email: formData.email,
-        phone: formData.telefone,
-        cpfCnpj: formData.cpf,
-        planName: planoSelecionado.nome,
-        value: planoSelecionado.valorMensal || planoSelecionado.valor,
-        description: planoSelecionado.descricao || 'Assinatura mensal',
-        subscriptionCycle: 'MONTHLY'
+        cliente: {
+          name: formData.nome,
+          email: formData.email,
+          phone: formData.telefone,
+          cpfCnpj: formData.cpf
+        },
+        assinatura: {
+          name: planoSelecionado.nome,
+          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
+          description: planoSelecionado.descricao || 'Assinatura mensal',
+          subscriptionCycle: 'MONTHLY'
+        }
       });
       
       const result = await response.json();
