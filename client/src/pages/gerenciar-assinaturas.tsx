@@ -23,8 +23,7 @@ export default function GerenciarAssinaturas() {
   const [formData, setFormData] = useState({
     nome: "",
     valor: "",
-    categoria: "",
-    dataVencimento: ""
+    categoria: ""
   });
 
   // Buscar planos existentes
@@ -100,13 +99,8 @@ export default function GerenciarAssinaturas() {
   const resetForm = () => {
     setFormData({
       nome: "",
-      descricao: "",
       valor: "",
-      categoria: "",
-      billingType: "CREDIT_CARD",
-      cycle: "MONTHLY",
-      limitesServicos: "",
-      beneficios: ""
+      categoria: ""
     });
     setEditingPlano(null);
   };
@@ -140,8 +134,7 @@ export default function GerenciarAssinaturas() {
     setFormData({
       nome: plano.nome,
       valor: plano.valorMensal?.toString() || plano.valor?.toString() || "",
-      categoria: plano.categoria,
-      dataVencimento: ""
+      categoria: plano.categoria
     });
     setIsDialogOpen(true);
   };
@@ -274,15 +267,7 @@ export default function GerenciarAssinaturas() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
-                  <Input
-                    id="dataVencimento"
-                    type="date"
-                    value={formData.dataVencimento}
-                    onChange={(e) => setFormData({...formData, dataVencimento: e.target.value})}
-                  />
-                </div>
+
               </div>
 
               <DialogFooter>
