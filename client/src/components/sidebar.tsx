@@ -155,24 +155,25 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   };
 
   return (
-    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300`}>
-      {/* Toggle Button - Only for desktop */}
+    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300 relative`}>
+      
+      {/* Toggle Button - Premium Style */}
       {!mobile && (
-        <div className="absolute -right-3 top-6 z-10">
+        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-4 border-b border-border/50`}>
           <button
             onClick={toggleCollapse}
-            className="bg-card border border-border rounded-full p-1.5 shadow-lg hover:bg-muted transition-colors"
+            className="bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             title={isCollapsed ? "Expandir menu" : "Recolher menu"}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5" />
             ) : (
-              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              <Menu className="h-5 w-5" />
             )}
           </button>
         </div>
       )}
-      
+
       {/* Logo */}
       <div className={`${isCollapsed ? 'p-4' : 'p-6'}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center mb-6' : 'space-x-4 mb-8'} pb-6 border-b border-border/50`}>
@@ -197,7 +198,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
         </div>
 
         {/* Navigation */}
-        <nav className={`space-y-3 ${isCollapsed ? 'space-y-2' : ''}`}>
+        <nav className={`space-y-1 ${isCollapsed ? 'space-y-3' : 'space-y-2'}`}>
           {navigationItems.map((item) => {
             const isActive = location === item.href || 
               (item.href === "/dashboard" && location === "/");
@@ -209,7 +210,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 className={cn(
                   "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
                   isCollapsed 
-                    ? "justify-center p-4 mx-2" 
+                    ? "justify-center p-5 mx-2" 
                     : "space-x-4 px-5 py-4",
                   isActive
                     ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
@@ -233,7 +234,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             className={cn(
               "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
               isCollapsed 
-                ? "justify-center p-4 mx-2" 
+                ? "justify-center p-5 mx-2" 
                 : "space-x-4 px-5 py-4",
               location === "/configuracoes"
                 ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
