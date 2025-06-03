@@ -2716,6 +2716,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para criar checkout link do Asaas
+  app.post('/api/asaas/checkout-link', async (req, res) => {
+    try {
+      const { customer, billingType, value, dueDate, description, externalReference } = req.body;
+      
+      if (!customer || !billingType || !value || !dueDate) {
+        return res.status(400).json({ 
+          error: 'Campos obrigatórios: customer, billingType, value, dueDate' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Chave da API Asaas não configurada' 
+        });
+      }
+
+      // Criar cobrança com checkout
+      const paymentData = {
+        customer,
+        billingType,
+        value: parseFloat(value),
+        dueDate,
+        description: description || 'Pagamento Trato de Barbados',
+        externalReference: externalReference || `payment_${Date.now()}`
+      };
+
+      console.log('🔄 Criando cobrança com checkout:', paymentData);
+
+      const response = await fetch('https://www.asaas.com/api/v3/payments', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentData)
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Erro ao criar cobrança:', responseData);
+        return res.status(response.status).json({
+          error: 'Erro ao criar cobrança no Asaas',
+          details: responseData
+        });
+      }
+
+      // Gerar link de checkout
+      const checkoutResponse = await fetch(`https://www.asaas.com/api/v3/payments/${responseData.id}/paymentBook`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const checkoutData = await checkoutResponse.json();
+
+      if (!checkoutResponse.ok) {
+        console.error('❌ Erro ao criar checkout:', checkoutData);
+        return res.status(checkoutResponse.status).json({
+          error: 'Erro ao criar checkout no Asaas',
+          details: checkoutData
+        });
+      }
+
+      console.log('✅ Checkout criado com sucesso:', checkoutData);
+
+      res.json({
+        success: true,
+        payment: responseData,
+        checkoutUrl: checkoutData.url,
+        message: 'Checkout criado com sucesso!'
+      });
+
+    } catch (error) {
+      console.error('❌ Erro interno ao criar checkout:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para criar link de pagamento personalizado do Asaas
   app.post('/api/asaas/checkout', async (req, res) => {
     try {

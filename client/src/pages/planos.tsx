@@ -181,17 +181,17 @@ export default function Planos() {
         throw new Error(clienteData.error || 'Erro ao criar cliente');
       }
       
-      // 2. Criar assinatura
+      // 2. Criar checkout link para pagamento
       const dataVencimento = new Date();
       dataVencimento.setDate(dataVencimento.getDate() + 30);
       
-      const response = await apiRequest("/api/asaas/criar-assinatura", "POST", {
+      const response = await apiRequest("/api/asaas/checkout-link", "POST", {
         customer: clienteData.customer.id,
         billingType: 'CREDIT_CARD',
         value: planoSelecionado.valorMensal || planoSelecionado.valor,
-        nextDueDate: dataVencimento.toISOString().split('T')[0],
+        dueDate: dataVencimento.toISOString().split('T')[0],
         description: `Assinatura ${planoSelecionado.nome}`,
-        cycle: 'MONTHLY'
+        externalReference: `checkout_${Date.now()}`
       });
       
       const result = await response.json();
