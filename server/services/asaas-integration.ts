@@ -111,9 +111,9 @@ export class AsaasIntegrationService {
     const logId = await this.iniciarLogSync('ASAAS_ANDREY', 'SYNC_CLIENTES');
     
     try {
-      const apiKey = process.env.ASAAS_ANDREY_API_KEY;
+      const apiKey = process.env.ASAAS_API_KEY_ANDREY;
       if (!apiKey) {
-        throw new Error('ASAAS_ANDREY_API_KEY não configurada');
+        throw new Error('ASAAS_API_KEY_ANDREY não configurada');
       }
 
       const subscriptions = await this.buscarAssinaturasAsaas(apiKey);
