@@ -47,6 +47,7 @@ interface ApiResponse {
 
 export default function Clientes() {
   const [busca, setBusca] = useState("");
+  const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

@@ -238,8 +238,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
                     valorPago = ultimoPagamento.value;
                     statusPagamento = ultimoPagamento.status;
                     
-                    // Se pagamento confirmado no mês atual, conta no faturamento
-                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesAtual)) {
+                    // Se pagamento confirmado no mês filtrado, conta no faturamento
+                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesFiltro)) {
                       totalFaturado += valorPago;
                       quantidadeAssinaturas++;
                     }
@@ -312,8 +312,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
                     valorPago = ultimoPagamento.value;
                     statusPagamento = ultimoPagamento.status;
                     
-                    // Se pagamento confirmado no mês atual, conta no faturamento
-                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesAtual)) {
+                    // Se pagamento confirmado no mês filtrado, conta no faturamento
+                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesFiltro)) {
                       totalFaturado += valorPago;
                       quantidadeAssinaturas++;
                     }
