@@ -213,14 +213,45 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const inadimplentes: any[] = [];
       const aguardandoPagamento: any[] = [];
 
-      // Combinar todos os clientes das duas contas
-      const todosClientes = [...clientesAtivos, ...clientesAtrasados];
+      // Buscar clientes externos e adicioná-los como ativos
+      let clientesExternos: any[] = [];
+      try {
+        const clientesDB = await db.select().from(schema.clientes)
+          .where(eq(schema.clientes.origem, 'EXTERNO'));
+
+        clientesExternos = clientesDB.map(cliente => ({
+          id: cliente.id,
+          nome: cliente.nome,
+          email: cliente.email,
+          telefone: cliente.telefone,
+          valor: parseFloat(cliente.planoValor),
+          plano: cliente.planoNome,
+          dataVencimento: cliente.dataVencimentoAssinatura,
+          dataInicio: cliente.dataInicioAssinatura,
+          status: 'ativo',
+          conta: 'PAGAMENTO_EXTERNO',
+          formaPagamento: cliente.formaPagamento
+        }));
+
+        console.log(`📊 PAGAMENTO_EXTERNO: ${clientesExternos.length} clientes encontrados`);
+      } catch (error) {
+        console.error('Erro ao buscar clientes externos:', error);
+      }
+
+      // Combinar todos os clientes das duas contas + externos
+      const todosClientes = [...clientesAtivos, ...clientesAtrasados, ...clientesExternos];
       
       console.log(`🔍 Analisando ${todosClientes.length} clientes para verificar status baseado em cobranças...`);
       
       // Processar cada cliente para verificar status baseado em cobranças
       for (const cliente of todosClientes) {
         try {
+          // Clientes externos são sempre ativos
+          if (cliente.conta === 'PAGAMENTO_EXTERNO') {
+            ativos.push({...cliente, status: 'ativo', origem: 'Pagamento Externo'});
+            continue;
+          }
+
           const apiKey = cliente.conta === 'ASAAS_TRATO' ? asaasTrato : asaasAndrey;
           if (apiKey) {
             const status = await verificarStatusCliente(cliente, apiKey);
@@ -401,6 +432,40 @@ export async function registerRoutes(app: Express): Promise<Express> {
         }
       } catch (error) {
         console.error('Erro ao buscar pagamentos ASAAS_AND:', error);
+      }
+
+      // Buscar clientes externos com pagamento confirmado no mês atual
+      try {
+        const clientesExternos = await db.select().from(schema.clientes)
+          .where(eq(schema.clientes.origem, 'EXTERNO'));
+
+        for (const cliente of clientesExternos) {
+          const dataInicio = new Date(cliente.dataInicioAssinatura);
+          const mesCliente = dataInicio.getFullYear() + '-' + String(dataInicio.getMonth() + 1).padStart(2, '0');
+          
+          if (mesCliente === mesAtual) {
+            clientesPagantes.push({
+              id: cliente.id,
+              nome: cliente.nome,
+              email: cliente.email,
+              telefone: cliente.telefone,
+              valorPago: parseFloat(cliente.planoValor),
+              dataPagamento: cliente.dataInicioAssinatura,
+              descricao: cliente.planoNome,
+              conta: 'PAGAMENTO_EXTERNO'
+            });
+            valorTotalPago += parseFloat(cliente.planoValor);
+          }
+        }
+
+        console.log(`📊 PAGAMENTO_EXTERNO: ${clientesExternos.filter(c => {
+          const dataInicio = new Date(c.dataInicioAssinatura);
+          const mesCliente = dataInicio.getFullYear() + '-' + String(dataInicio.getMonth() + 1).padStart(2, '0');
+          return mesCliente === mesAtual;
+        }).length} pagamentos externos encontrados`);
+
+      } catch (error) {
+        console.error('Erro ao buscar clientes externos:', error);
       }
 
       // Remover duplicatas baseado no ID + conta
