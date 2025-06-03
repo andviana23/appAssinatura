@@ -641,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dataLimite.setDate(dataLimite.getDate() - 30);
           const dataLimiteStr = dataLimite.toISOString().split('T')[0];
           
-          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
+          const paymentsResponse = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
@@ -663,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Buscar dados do cliente
                 try {
-                  const customerResponse = await fetch(`https://api.asaas.com/v3/customers/${payment.customer}`, {
+                  const customerResponse = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
                     headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
                   });
                   
@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
         
-        const andreyCustomersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        const andreyCustomersResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
@@ -713,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const andreyCustomersData = await andreyCustomersResponse.json();
           
           // Buscar assinaturas ativas da conta Andrey
-          const andreySubscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+          const andreySubscriptionsResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
             headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
           });
           
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (apiKey) {
           console.log("🔍 Buscando assinaturas ATIVAS da conta Principal...");
           
-          const subscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
+          const subscriptionsResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
@@ -1048,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log("🔍 Buscando assinaturas ATIVAS da conta Andrey...");
         
-        const andreySubscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
+        const andreySubscriptionsResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100`, {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
@@ -1130,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Buscando clientes da conta Trato de Barbados');
       
       // Buscar clientes
-      const customersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+      const customersResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
         headers: {
           'access_token': tratoBarbadosApiKey,
           'Content-Type': 'application/json'
@@ -1145,7 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📋 Encontrados ${customersData.totalCount || 0} clientes da conta Trato de Barbados`);
 
       // Buscar assinaturas ativas
-      const subscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+      const subscriptionsResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
         headers: {
           'access_token': tratoBarbadosApiKey,
           'Content-Type': 'application/json'
@@ -1194,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar clientes da API 1 Principal  
-      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+      const clientesResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
         headers: {
           'access_token': apiKey,
           'Content-Type': 'application/json'
@@ -1208,7 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesData = await clientesResponse.json();
 
       // Buscar assinaturas para identificar clientes ativos
-      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+      const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
         headers: {
           'access_token': apiKey,
           'Content-Type': 'application/json'
@@ -1596,7 +1596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjY4NGRiNmQ3LWJjZTMtNDQyZS1hM2FhLTE4ZDkyMDJjMTc3OTo6JGFhY2hfNWU5NTdkMzUtNzRiNS00YjU4LWJmYWItN2U4Y2ExZDAxMzBl";
 
       // Registrar cliente no Asaas
-      const asaasResponse = await fetch("https://api.asaas.com/v3/customers", {
+      const asaasResponse = await fetch("https://www.asaas.com/api/v3/customers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1678,8 +1678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnvironment === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       const response = await fetch(`${baseUrl}/pix/addressKeys`, {
         headers: {
@@ -1801,8 +1801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnvironment === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Buscar assinaturas ativas
       const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
@@ -1894,8 +1894,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Buscando clientes da conta: ${account.name}`);
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
-            ? 'https://api.asaas.com/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
+            ? 'https://www.asaas.com/api/v3' 
+            : 'https://www.asaas.com/api/v3';
 
           // Buscar cobranças confirmadas do mês atual
           const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
@@ -2177,8 +2177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (asaasApiKey) {
         try {
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
-            ? 'https://api.asaas.com/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
+            ? 'https://www.asaas.com/api/v3' 
+            : 'https://www.asaas.com/api/v3';
 
           // Buscar próximas cobranças (due date nos próximos 7 dias)
           const proximasCobranças = await fetch(`${baseUrl}/payments?status=PENDING&limit=100`, {
@@ -2676,8 +2676,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnvironment === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       const { nome, email, cpf, billingType, valorPlano, planoSelecionado } = req.body;
 
@@ -2822,8 +2822,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnvironment === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Lista de planos autorizados
       const planosAutorizados = [
@@ -2884,7 +2884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Buscar clientes
-      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+      const clientesResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
         headers: {
           'access_token': token,
           'Content-Type': 'application/json'
@@ -2901,7 +2901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📋 Encontrados ${clientesData.totalCount} clientes da conta Andrey`);
 
       // Buscar assinaturas ativas
-      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+      const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
         headers: {
           'access_token': token,
           'Content-Type': 'application/json'
@@ -2973,7 +2973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔄 Iniciando sincronização de clientes da segunda conta Asaas');
 
       // Buscar clientes da API Asaas Andrey
-      const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+      const clientesResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
         headers: {
           'access_token': tokenAndrey,
           'Content-Type': 'application/json'
@@ -2987,7 +2987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesData = await clientesResponse.json();
 
       // Buscar assinaturas ativas
-      const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+      const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
         headers: {
           'access_token': tokenAndrey,
           'Content-Type': 'application/json'
@@ -3078,7 +3078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar dados do cliente na API Andrey
       const token = process.env.ASAAS_API_KEY_ANDREY;
-      const customerResponse = await fetch(`https://api.asaas.com/v3/customers/${clienteId}`, {
+      const customerResponse = await fetch(`https://www.asaas.com/api/v3/customers/${clienteId}`, {
         headers: {
           'access_token': token,
           'Content-Type': 'application/json'
@@ -3138,7 +3138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ success: false, error: 'Token não encontrado' });
       }
       
-      const response = await fetch('https://api.asaas.com/v3/customers', {
+      const response = await fetch('https://www.asaas.com/api/v3/customers', {
         headers: {
           'access_token': token,
           'Content-Type': 'application/json'
@@ -3178,7 +3178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
       
       if (process.env.ASAAS_API_KEY_ANDREY) {
-        const baseUrl = 'https://api.asaas.com/v3';
+        const baseUrl = 'https://www.asaas.com/api/v3';
         const response = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=5`, {
           headers: {
             'access_token': process.env.ASAAS_API_KEY_ANDREY,
@@ -3275,7 +3275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🔍 INICIANDO busca da conta Asaas: ${account.name}`);
           console.log(`🔑 Token da API ${account.name}:`, account.apiKey ? account.apiKey.substring(0, 20) + '...' : 'VAZIO');
-          const baseUrl = 'https://api.asaas.com/v3';
+          const baseUrl = 'https://www.asaas.com/api/v3';
           
           // Para a conta ANDREY, buscar todos os clientes diretamente
           if (account.name === 'ANDREY') {
@@ -3480,8 +3480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnv === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Buscar apenas assinaturas ativas e inadimplentes do mês atual
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -3666,8 +3666,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnv === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Buscar assinaturas ativas
       const activeSubscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
@@ -3776,8 +3776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnv === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Se não especificar mês, usar mês atual
       const targetMonth = mes || new Date().toISOString().slice(0, 7);
@@ -3839,8 +3839,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = asaasEnv === 'production' 
-        ? 'https://api.asaas.com/v3' 
-        : 'https://sandbox.asaas.com/api/v3';
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
 
       // Buscar pagamentos confirmados dos últimos 30 dias
       const thirtyDaysAgo = new Date();
@@ -4266,7 +4266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const asaasToken = process.env.ASAAS_API_KEY;
         if (asaasToken) {
-          const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+          const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
             headers: {
               'access_token': asaasToken,
               'Content-Type': 'application/json'
@@ -4287,7 +4287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
         if (tokenAndrey) {
-          const assinaturasAndreyResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+          const assinaturasAndreyResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
             headers: {
               'access_token': tokenAndrey,
               'Content-Type': 'application/json'
@@ -4386,8 +4386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.ASAAS_API_KEY && process.env.ASAAS_ENVIRONMENT) {
         try {
           const asaasUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
-            ? 'https://api.asaas.com/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
+            ? 'https://www.asaas.com/api/v3' 
+            : 'https://www.asaas.com/api/v3';
           
           // Buscar pagamentos confirmados do mês atual
           const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
@@ -4498,7 +4498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('🔄 Sincronização automática: Verificando clientes da segunda conta Asaas');
 
           // Buscar clientes da API Asaas Andrey
-          const clientesResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+          const clientesResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
             headers: {
               'access_token': tokenAndrey,
               'Content-Type': 'application/json'
@@ -4509,7 +4509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const clientesData = await clientesResponse.json();
 
             // Buscar assinaturas ativas
-            const assinaturasResponse = await fetch('https://api.asaas.com/v3/subscriptions?limit=100&status=ACTIVE', {
+            const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
               headers: {
                 'access_token': tokenAndrey,
                 'Content-Type': 'application/json'
@@ -4634,7 +4634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const asaasApiKey = process.env.ASAAS_API_KEY;
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
             ? 'https://www.asaas.com/api/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
+            : 'https://www.asaas.com/api/v3';
 
           // Buscar todos os pagamentos recentes para encontrar clientes ativos
           const paymentsResponse = await fetch(`${baseUrl}/payments?status=RECEIVED&limit=100`, {
@@ -4768,8 +4768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (asaasApiKey) {
         try {
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
-            ? 'https://api.asaas.com/v3' 
-            : 'https://sandbox.asaas.com/api/v3';
+            ? 'https://www.asaas.com/api/v3' 
+            : 'https://www.asaas.com/api/v3';
 
           // Buscar pagamentos confirmados do mês atual
           const inicioMesStr = inicioMes.toISOString().split('T')[0];

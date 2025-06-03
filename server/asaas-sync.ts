@@ -40,7 +40,7 @@ export async function syncAsaasData() {
         console.log(`📡 Buscando dados da conta: ${account.name}`);
         
         // Buscar clientes da conta
-        const customersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+        const customersResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
           headers: {
             'access_token': account.apiKey,
             'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ export async function syncAsaasData() {
           console.log(`${account.name}: ${customersData.totalCount || 0} clientes encontrados`);
 
           // Buscar assinaturas ativas
-          const subscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+          const subscriptionsResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
             headers: {
               'access_token': account.apiKey,
               'Content-Type': 'application/json'

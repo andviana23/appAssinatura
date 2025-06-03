@@ -151,7 +151,7 @@ export class AsaasIntegrationService {
 
   // Buscar assinaturas ativas da API Asaas
   private async buscarAssinaturasAsaas(apiKey: string): Promise<AsaasSubscription[]> {
-    const response = await fetch('https://sandbox.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
+    const response = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
       headers: {
         'access_token': apiKey,
         'Content-Type': 'application/json'
@@ -169,7 +169,7 @@ export class AsaasIntegrationService {
   // Buscar dados completos do cliente
   private async buscarClienteAsaas(apiKey: string, customerId: string): Promise<AsaasCustomer | null> {
     try {
-      const response = await fetch(`https://sandbox.asaas.com/api/v3/customers/${customerId}`, {
+      const response = await fetch(`https://www.asaas.com/api/v3/customers/${customerId}`, {
         headers: {
           'access_token': apiKey,
           'Content-Type': 'application/json'
