@@ -632,53 +632,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clientesUnificados.push(...clientesLocais);
       console.log(`✅ ${clientesLocais.length} clientes locais adicionados`);
       
-      // 2. Buscar clientes da conta Principal Asaas (não sincronizados)
+      // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal (últimos 30 dias)
       try {
         const apiKey = process.env.ASAAS_API_KEY;
         if (apiKey) {
-          const customersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+          // Buscar pagamentos confirmados dos últimos 30 dias
+          const dataLimite = new Date();
+          dataLimite.setDate(dataLimite.getDate() - 30);
+          const dataLimiteStr = dataLimite.toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
-          if (customersResponse.ok) {
-            const customersData = await customersResponse.json();
-            
-            // Buscar assinaturas ativas da conta principal
-            const subscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
-              headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
-            });
-            
-            const subscriptionsData = subscriptionsResponse.ok ? await subscriptionsResponse.json() : { data: [] };
-            const activeSubscriptions = new Set(subscriptionsData.data?.map((s: any) => s.customer) || []);
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            const clientesComPagamentoConfirmado = new Set();
             
             // Verificar quais clientes ainda não estão no banco local
             const emailsLocais = new Set(clientesLocais.map(c => c.email.toLowerCase()));
             
-            for (const customer of customersData.data || []) {
-              if (!emailsLocais.has(customer.email.toLowerCase())) {
-                const hasActiveSubscription = activeSubscriptions.has(customer.id);
+            for (const payment of paymentsData.data || []) {
+              // Verificar se o pagamento foi confirmado nos últimos 30 dias
+              const paymentDate = new Date(payment.paymentDate || payment.confirmedDate);
+              const agora = new Date();
+              const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (diasDesdeConfirmacao <= 30 && !clientesComPagamentoConfirmado.has(payment.customer)) {
+                clientesComPagamentoConfirmado.add(payment.customer);
                 
-                clientesUnificados.push({
-                  id: `principal_${customer.id}`,
-                  nome: customer.name,
-                  email: customer.email,
-                  telefone: customer.phone || customer.mobilePhone,
-                  cpf: customer.cpfCnpj,
-                  origem: 'ASAAS_PRINCIPAL',
-                  asaasCustomerId: customer.id,
-                  planoNome: hasActiveSubscription ? 'Assinatura Ativa' : 'Cliente Cadastrado',
-                  planoValor: hasActiveSubscription ? '50.00' : '0.00',
-                  formaPagamento: hasActiveSubscription ? 'CREDIT_CARD' : 'N/A',
-                  statusAssinatura: hasActiveSubscription ? 'ATIVO' : 'INATIVO',
-                  dataInicioAssinatura: new Date(customer.dateCreated),
-                  dataVencimentoAssinatura: hasActiveSubscription ? 
-                    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : 
-                    new Date(customer.dateCreated),
-                  createdAt: new Date(customer.dateCreated)
-                });
+                // Buscar dados do cliente
+                try {
+                  const customerResponse = await fetch(`https://api.asaas.com/v3/customers/${payment.customer}`, {
+                    headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
+                  });
+                  
+                  if (customerResponse.ok) {
+                    const customer = await customerResponse.json();
+                    
+                    if (!emailsLocais.has(customer.email.toLowerCase())) {
+                      clientesUnificados.push({
+                        id: `principal_${customer.id}`,
+                        nome: customer.name,
+                        email: customer.email,
+                        telefone: customer.phone || customer.mobilePhone,
+                        cpf: customer.cpfCnpj,
+                        origem: 'ASAAS_PRINCIPAL',
+                        asaasCustomerId: customer.id,
+                        planoNome: 'Assinatura Ativa',
+                        planoValor: payment.value.toString(),
+                        formaPagamento: payment.billingType || 'CREDIT_CARD',
+                        statusAssinatura: 'ATIVO',
+                        dataInicioAssinatura: new Date(payment.dateCreated),
+                        dataVencimentoAssinatura: new Date(paymentDate.getTime() + 30 * 24 * 60 * 60 * 1000),
+                        createdAt: new Date(customer.dateCreated)
+                      });
+                    }
+                  }
+                } catch (customerError) {
+                  console.warn(`Erro ao buscar cliente ${payment.customer}:`, customerError);
+                }
               }
             }
-            console.log(`✅ Clientes da conta Principal verificados`);
+            console.log(`✅ Clientes da conta Principal com pagamentos confirmados verificados`);
           }
         }
       } catch (error) {
@@ -764,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Local: ${totalClientesLocais} clientes, R$ ${receitaLocal.toFixed(2)} receita`);
       
-      // 2. Buscar clientes da conta Principal Asaas
+      // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal
       let totalClientesPrincipal = 0;
       let receitaPrincipal = 0;
       let clientesAtivosPrincipal = 0;
@@ -772,23 +788,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const apiKey = process.env.ASAAS_API_KEY;
         if (apiKey) {
-          const principalResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+          // Buscar pagamentos confirmados dos últimos 30 dias
+          const dataLimite = new Date();
+          dataLimite.setDate(dataLimite.getDate() - 30);
+          const dataLimiteStr = dataLimite.toISOString().split('T')[0];
+          
+          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
-          if (principalResponse.ok) {
-            const principalData = await principalResponse.json();
-            totalClientesPrincipal = principalData.totalCount || 0;
-            receitaPrincipal = principalData.data?.reduce((sum: number, sub: any) => sum + parseFloat(sub.value || '0'), 0) || 0;
-            clientesAtivosPrincipal = principalData.data?.length || 0;
-            console.log(`Principal: ${totalClientesPrincipal} clientes, R$ ${receitaPrincipal.toFixed(2)} receita`);
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            const clientesAtivos = new Set();
+            let receitaConfirmada = 0;
+            
+            for (const payment of paymentsData.data || []) {
+              // Verificar se o pagamento foi confirmado nos últimos 30 dias
+              const paymentDate = new Date(payment.paymentDate || payment.confirmedDate);
+              const agora = new Date();
+              const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (diasDesdeConfirmacao <= 30) {
+                clientesAtivos.add(payment.customer);
+                receitaConfirmada += parseFloat(payment.value || '0');
+              }
+            }
+            
+            totalClientesPrincipal = clientesAtivos.size;
+            receitaPrincipal = receitaConfirmada;
+            clientesAtivosPrincipal = clientesAtivos.size;
+            console.log(`Principal: ${totalClientesPrincipal} clientes ativos (pagamentos confirmados), R$ ${receitaPrincipal.toFixed(2)} receita`);
           }
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Principal:", error);
       }
       
-      // 3. Buscar clientes da conta Asaas Andrey
+      // 3. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Asaas Andrey
       let totalClientesAndrey = 0;
       let receitaAndrey = 0;
       let clientesAtivosAndrey = 0;
@@ -796,16 +832,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
         
-        const andreyResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+        // Buscar pagamentos confirmados dos últimos 30 dias
+        const dataLimite = new Date();
+        dataLimite.setDate(dataLimite.getDate() - 30);
+        const dataLimiteStr = dataLimite.toISOString().split('T')[0];
+        
+        const andreyPaymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
-        if (andreyResponse.ok) {
-          const andreyData = await andreyResponse.json();
-          totalClientesAndrey = andreyData.totalCount || 0;
-          receitaAndrey = andreyData.data?.reduce((sum: number, sub: any) => sum + parseFloat(sub.value || '0'), 0) || 0;
-          clientesAtivosAndrey = andreyData.data?.length || 0;
-          console.log(`Andrey: ${totalClientesAndrey} clientes, R$ ${receitaAndrey.toFixed(2)} receita`);
+        if (andreyPaymentsResponse.ok) {
+          const andreyPaymentsData = await andreyPaymentsResponse.json();
+          const clientesAtivosAndreySet = new Set();
+          let receitaConfirmadaAndrey = 0;
+          
+          for (const payment of andreyPaymentsData.data || []) {
+            // Verificar se o pagamento foi confirmado nos últimos 30 dias
+            const paymentDate = new Date(payment.paymentDate || payment.confirmedDate);
+            const agora = new Date();
+            const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (diasDesdeConfirmacao <= 30) {
+              clientesAtivosAndreySet.add(payment.customer);
+              receitaConfirmadaAndrey += parseFloat(payment.value || '0');
+            }
+          }
+          
+          totalClientesAndrey = clientesAtivosAndreySet.size;
+          receitaAndrey = receitaConfirmadaAndrey;
+          clientesAtivosAndrey = clientesAtivosAndreySet.size;
+          console.log(`Andrey: ${totalClientesAndrey} clientes ativos (pagamentos confirmados), R$ ${receitaAndrey.toFixed(2)} receita`);
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Andrey:", error);
