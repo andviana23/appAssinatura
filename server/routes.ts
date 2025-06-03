@@ -6198,6 +6198,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const paymentUrl = firstPayment.invoiceUrl || `https://www.asaas.com/i/${firstPayment.id}`;
           console.log('✅ Usando URL da primeira cobrança:', paymentUrl);
           
+          // Disparar sincronização automática após criação da assinatura
+          try {
+            console.log('🔄 Disparando sincronização automática após criação de assinatura...');
+            if (typeof global.triggerAsaasSync === 'function') {
+              global.triggerAsaasSync();
+            }
+          } catch (error) {
+            console.log('⚠️ Erro ao disparar sincronização automática:', error);
+          }
+
           res.json({
             success: true,
             customer: {
