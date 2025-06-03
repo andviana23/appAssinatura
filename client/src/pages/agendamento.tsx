@@ -623,20 +623,12 @@ export default function Agendamento() {
                         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                           <DialogTrigger asChild>
                             <button
-                              className="w-full h-full hover:bg-muted/50 flex items-center justify-center transition-all duration-200 rounded-md border-2 border-dashed border-muted hover:border-primary/50 group"
+                              className="w-full h-full hover:bg-muted/50 transition-all duration-200"
                               onClick={() => {
                                 setSelectedHour(timeSlot);
                                 setSelectedBarbeiro(barbeiro.id.toString());
                               }}
                             >
-                              <div className="flex flex-col items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <div className="h-6 w-6 rounded-full bg-muted group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                                  <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                                </div>
-                                <span className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
-                                  Agendar
-                                </span>
-                              </div>
                             </button>
                           </DialogTrigger>
                         </Dialog>
