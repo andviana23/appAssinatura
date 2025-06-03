@@ -1,0 +1,144 @@
+Prompt para Sistema de Cadastro de Clientes - Replit
+Objetivo Principal
+Desenvolver uma estrutura completa de banco de dados SQL para cadastro e gerenciamento de clientes integrados via API Asaas, seguindo princípios de Clean Code e boas práticas de SQL.
+1. Análise e Planejamento da Estrutura
+1.1 Mapeamento dos Dados da API Asaas
+
+Identifique todos os campos retornados pelas duas APIs do Asaas
+Documente os tipos de dados de cada campo
+Analise quais campos são obrigatórios e opcionais
+Determine relacionamentos entre diferentes entidades
+
+1.2 Normalização dos Dados
+
+Aplique as formas normais do SQL (1NF, 2NF, 3NF)
+Identifique chaves primárias e estrangeiras
+Elimine redundâncias desnecessárias
+Planeje índices para otimização de consultas
+
+2. Design da Tabela Principal de Clientes
+2.1 Estrutura Base
+
+Defina a chave primária com auto-incremento
+Implemente campo para ID do cliente Asaas (convertido para números)
+Estabeleça campos para dados essenciais: nome, email, telefone, documento
+Configure campos para informações do plano/produto
+
+2.2 Campos Complementares
+
+Adicione timestamps para controle de criação e atualização
+Implemente campos de status e flags de controle
+Configure campos para endereço completo
+Estabeleça campos para dados financeiros relevantes
+
+2.3 Constraints e Validações
+
+Implemente NOT NULL para campos obrigatórios
+Configure UNIQUE para campos que não podem se repetir
+Estabeleça CHECK constraints para validações específicas
+Configure DEFAULT values apropriados
+
+3. Tabelas Auxiliares e Relacionamentos
+3.1 Tabelas de Apoio
+
+Crie tabela para tipos de planos/produtos
+Implemente tabela para status de clientes
+Configure tabela para tipos de documento
+Estabeleça tabela para categorias de clientes
+
+3.2 Relacionamentos
+
+Configure Foreign Keys entre tabelas relacionadas
+Implemente CASCADE ou RESTRICT conforme necessário
+Estabeleça índices para chaves estrangeiras
+Configure relacionamentos muitos-para-muitos quando necessário
+
+4. Preparação para Integração com Agendamentos
+4.1 Estrutura Extensível
+
+Projete a tabela pensando em futuras integrações
+Mantenha flexibilidade para novos campos
+Configure estrutura para suportar relacionamentos com agendamentos
+Implemente campos de controle para diferentes módulos do sistema
+
+4.2 Padronização de IDs
+
+Estabeleça função para conversão de ID Asaas para numérico
+Implemente validação de formato de IDs
+Configure mapeamento entre IDs internos e externos
+Mantenha histórico de conversões quando necessário
+
+5. Implementação seguindo Clean Code
+5.1 Nomenclatura
+
+Use nomes descritivos e em português para tabelas e campos
+Siga padrão consistente de nomenclatura (snake_case)
+Evite abreviações desnecessárias
+Mantenha clareza na identificação de propósito de cada campo
+
+5.2 Documentação
+
+Comente tabelas e campos complexos
+Documente regras de negócio implementadas
+Mantenha histórico de alterações na estrutura
+Configure metadados descritivos
+
+5.3 Organização do Código SQL
+
+Separe DDL (criação) de DML (manipulação)
+Organize scripts por funcionalidade
+Implemente scripts de rollback
+Configure scripts de inicialização com dados padrão
+
+6. Otimização e Performance
+6.1 Índices
+
+Crie índices para campos de busca frequente
+Implemente índices compostos quando necessário
+Configure índices únicos para constraints
+Monitore performance de consultas
+
+6.2 Particionamento (se necessário)
+
+Avalie necessidade de particionamento por data
+Configure partições por volume de dados
+Implemente estratégia de manutenção de partições
+
+7. Validação e Testes
+7.1 Scripts de Teste
+
+Desenvolva scripts para inserção de dados de teste
+Implemente validações de integridade referencial
+Configure testes de performance básicos
+Valide funcionamento de todas as constraints
+
+7.2 Procedimentos de Migração
+
+Desenvolva scripts para migração de dados existentes
+Implemente validação de dados migrados
+Configure rollback de migrações
+Teste procedimentos em ambiente de desenvolvimento
+
+8. Documentação Final
+8.1 Documentação Técnica
+
+Documente estrutura completa das tabelas
+Mantenha diagrama ER atualizado
+Configure manual de uso da estrutura
+Implemente guias de manutenção
+
+8.2 Procedimentos Operacionais
+
+Configure rotinas de backup específicas
+Implemente procedimentos de manutenção
+Estabeleça rotinas de monitoramento
+Configure alertas para problemas de integridade
+
+Critérios de Sucesso
+
+Estrutura escalável e flexível
+Conformidade com princípios de Clean Code
+Performance otimizada para operações CRUD
+Integração eficiente com APIs do Asaas
+Preparação adequada para módulo de agendamentos
+Documentação completa e clara
