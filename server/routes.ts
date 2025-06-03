@@ -61,50 +61,44 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
 
-      // Buscar cobranças vencidas não pagas
-      const cobrancasVencidas = cobrancas.filter((cobranca: any) => {
+      // Separar cobranças por status
+      const cobrancasPagas = cobrancas.filter((c: any) => c.status === 'RECEIVED');
+      const cobrancasPendentes = cobrancas.filter((c: any) => c.status !== 'RECEIVED');
+      
+      // Verificar se existe cobrança vencida não paga
+      const cobrancasVencidasNaoPagas = cobrancasPendentes.filter((cobranca: any) => {
         const dataVencimento = new Date(cobranca.dueDate);
-        dataVencimento.setHours(0, 0, 0, 0);
-        return dataVencimento < hoje && cobranca.status !== 'RECEIVED';
+        dataVencimento.setHours(23, 59, 59, 999); // Final do dia de vencimento
+        return dataVencimento < hoje;
       });
 
       // Se tem cobrança vencida não paga = inadimplente
-      if (cobrancasVencidas.length > 0) {
+      if (cobrancasVencidasNaoPagas.length > 0) {
+        console.log(`Cliente ${cliente.id} inadimplente: ${cobrancasVencidasNaoPagas.length} cobrança(s) vencida(s)`);
         return 'inadimplente';
       }
 
-      // Buscar última cobrança paga
-      const ultimaCobrancaPaga = cobrancas.find((cobranca: any) => cobranca.status === 'RECEIVED');
-      
-      if (!ultimaCobrancaPaga) {
-        // Se não tem nenhuma cobrança paga, verificar se tem cobrança pendente não vencida
-        const cobrancasPendentes = cobrancas.filter((cobranca: any) => {
-          const dataVencimento = new Date(cobranca.dueDate);
-          dataVencimento.setHours(0, 0, 0, 0);
-          return dataVencimento >= hoje && cobranca.status !== 'RECEIVED';
-        });
-        
-        return cobrancasPendentes.length > 0 ? 'ativo' : 'ativo';
-      }
-
-      // Verificar se a próxima cobrança ainda não venceu
-      const proximaCobranca = cobrancas.find((cobranca: any) => {
+      // Verificar se tem cobrança pendente dentro do prazo
+      const cobrancasPendentesNoPrazo = cobrancasPendentes.filter((cobranca: any) => {
         const dataVencimento = new Date(cobranca.dueDate);
-        dataVencimento.setHours(0, 0, 0, 0);
-        return dataVencimento >= hoje && cobranca.status !== 'RECEIVED';
+        dataVencimento.setHours(23, 59, 59, 999);
+        return dataVencimento >= hoje;
       });
 
-      if (proximaCobranca) {
-        const dataVencimentoProxima = new Date(proximaCobranca.dueDate);
-        dataVencimentoProxima.setHours(0, 0, 0, 0);
-        
-        // Se próxima cobrança ainda não venceu = ativo
-        if (dataVencimentoProxima >= hoje) {
-          return 'ativo';
-        }
+      // Se tem cobrança pendente no prazo = ativo
+      if (cobrancasPendentesNoPrazo.length > 0) {
+        console.log(`Cliente ${cliente.id} ativo: cobrança pendente ainda no prazo`);
+        return 'ativo';
       }
 
-      // Por padrão, considera ativo
+      // Se tem pelo menos uma cobrança paga e não tem pendentes vencidas = ativo
+      if (cobrancasPagas.length > 0) {
+        console.log(`Cliente ${cliente.id} ativo: tem cobranças pagas e sem pendências vencidas`);
+        return 'ativo';
+      }
+
+      // Cliente novo sem cobranças = ativo
+      console.log(`Cliente ${cliente.id} ativo: sem cobranças ou cliente novo`);
       return 'ativo';
       
     } catch (error) {
