@@ -1310,6 +1310,442 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // SISTEMA DE PROFISSIONAIS (BARBEIROS E RECEPCIONISTAS)
+  // =====================================================
+
+  // Cadastrar novo profissional
+  app.post('/api/profissionais', async (req: Request, res: Response) => {
+    try {
+      const validation = schema.insertProfissionalSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dados inválidos',
+          errors: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
+      }
+
+      const { nome, telefone, email, senha, tipo, ativo } = validation.data;
+
+      // Verificar se email já existe
+      const emailExistente = await db.select()
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.email, email))
+        .limit(1);
+
+      if (emailExistente.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email já está em uso por outro profissional'
+        });
+      }
+
+      // Hash da senha com bcrypt
+      const bcrypt = require('bcrypt');
+      const saltRounds = 12;
+      const senhaHash = await bcrypt.hash(senha, saltRounds);
+
+      // Inserir profissional no banco
+      const novoProfissional = await db.insert(schema.profissionais).values({
+        nome,
+        telefone,
+        email,
+        senha: senhaHash,
+        tipo,
+        ativo: ativo ?? true
+      }).returning({
+        id: schema.profissionais.id,
+        nome: schema.profissionais.nome,
+        telefone: schema.profissionais.telefone,
+        email: schema.profissionais.email,
+        tipo: schema.profissionais.tipo,
+        ativo: schema.profissionais.ativo,
+        dataCadastro: schema.profissionais.dataCadastro
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Profissional cadastrado com sucesso',
+        data: novoProfissional[0]
+      });
+
+    } catch (error) {
+      console.error('Erro ao cadastrar profissional:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Listar todos os profissionais
+  app.get('/api/profissionais', async (req: Request, res: Response) => {
+    try {
+      const profissionais = await db.select({
+        id: schema.profissionais.id,
+        nome: schema.profissionais.nome,
+        telefone: schema.profissionais.telefone,
+        email: schema.profissionais.email,
+        tipo: schema.profissionais.tipo,
+        ativo: schema.profissionais.ativo,
+        dataCadastro: schema.profissionais.dataCadastro,
+        ultimoLogin: schema.profissionais.ultimoLogin
+      }).from(schema.profissionais)
+        .orderBy(schema.profissionais.nome);
+
+      res.json({
+        success: true,
+        data: profissionais,
+        total: profissionais.length
+      });
+
+    } catch (error) {
+      console.error('Erro ao listar profissionais:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Buscar profissional por ID
+  app.get('/api/profissionais/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do profissional inválido'
+        });
+      }
+
+      const profissional = await db.select({
+        id: schema.profissionais.id,
+        nome: schema.profissionais.nome,
+        telefone: schema.profissionais.telefone,
+        email: schema.profissionais.email,
+        tipo: schema.profissionais.tipo,
+        ativo: schema.profissionais.ativo,
+        dataCadastro: schema.profissionais.dataCadastro,
+        ultimoLogin: schema.profissionais.ultimoLogin
+      }).from(schema.profissionais)
+        .where(eq(schema.profissionais.id, parseInt(id)))
+        .limit(1);
+
+      if (profissional.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profissional não encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: profissional[0]
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar profissional:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Atualizar dados do profissional
+  app.put('/api/profissionais/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do profissional inválido'
+        });
+      }
+
+      const validation = schema.updateProfissionalSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dados inválidos',
+          errors: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
+      }
+
+      // Verificar se profissional existe
+      const profissionalExistente = await db.select()
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.id, parseInt(id)))
+        .limit(1);
+
+      if (profissionalExistente.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profissional não encontrado'
+        });
+      }
+
+      // Se email foi alterado, verificar se já existe
+      if (validation.data.email && validation.data.email !== profissionalExistente[0].email) {
+        const emailExistente = await db.select()
+          .from(schema.profissionais)
+          .where(eq(schema.profissionais.email, validation.data.email))
+          .limit(1);
+
+        if (emailExistente.length > 0) {
+          return res.status(409).json({
+            success: false,
+            message: 'Email já está em uso por outro profissional'
+          });
+        }
+      }
+
+      // Atualizar profissional
+      const profissionalAtualizado = await db.update(schema.profissionais)
+        .set({
+          ...validation.data,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.profissionais.id, parseInt(id)))
+        .returning({
+          id: schema.profissionais.id,
+          nome: schema.profissionais.nome,
+          telefone: schema.profissionais.telefone,
+          email: schema.profissionais.email,
+          tipo: schema.profissionais.tipo,
+          ativo: schema.profissionais.ativo,
+          dataCadastro: schema.profissionais.dataCadastro,
+          updatedAt: schema.profissionais.updatedAt
+        });
+
+      res.json({
+        success: true,
+        message: 'Profissional atualizado com sucesso',
+        data: profissionalAtualizado[0]
+      });
+
+    } catch (error) {
+      console.error('Erro ao atualizar profissional:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Alterar senha do profissional (requer autenticação)
+  app.patch('/api/profissionais/:id/alterar-senha', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do profissional inválido'
+        });
+      }
+
+      const validation = schema.alterarSenhaSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dados inválidos',
+          errors: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
+      }
+
+      const { senhaAtual, novaSenha } = validation.data;
+
+      // Buscar profissional
+      const profissional = await db.select()
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.id, parseInt(id)))
+        .limit(1);
+
+      if (profissional.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profissional não encontrado'
+        });
+      }
+
+      // Verificar senha atual
+      const bcrypt = require('bcrypt');
+      const senhaValida = await bcrypt.compare(senhaAtual, profissional[0].senha);
+
+      if (!senhaValida) {
+        return res.status(401).json({
+          success: false,
+          message: 'Senha atual incorreta'
+        });
+      }
+
+      // Hash da nova senha
+      const saltRounds = 12;
+      const novaSenhaHash = await bcrypt.hash(novaSenha, saltRounds);
+
+      // Atualizar senha
+      await db.update(schema.profissionais)
+        .set({
+          senha: novaSenhaHash,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.profissionais.id, parseInt(id)));
+
+      res.json({
+        success: true,
+        message: 'Senha alterada com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Login do profissional
+  app.post('/api/profissionais/login', async (req: Request, res: Response) => {
+    try {
+      const { email, senha } = req.body;
+
+      if (!email || !senha) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email e senha são obrigatórios'
+        });
+      }
+
+      // Buscar profissional por email
+      const profissional = await db.select()
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.email, email))
+        .limit(1);
+
+      if (profissional.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'Email ou senha incorretos'
+        });
+      }
+
+      // Verificar se profissional está ativo
+      if (!profissional[0].ativo) {
+        return res.status(401).json({
+          success: false,
+          message: 'Profissional inativo. Entre em contato com o administrador.'
+        });
+      }
+
+      // Verificar senha
+      const bcrypt = require('bcrypt');
+      const senhaValida = await bcrypt.compare(senha, profissional[0].senha);
+
+      if (!senhaValida) {
+        return res.status(401).json({
+          success: false,
+          message: 'Email ou senha incorretos'
+        });
+      }
+
+      // Atualizar último login
+      await db.update(schema.profissionais)
+        .set({
+          ultimoLogin: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(schema.profissionais.id, profissional[0].id));
+
+      // Retornar dados do profissional (sem senha)
+      const { senha: _, ...profissionalDados } = profissional[0];
+
+      res.json({
+        success: true,
+        message: 'Login realizado com sucesso',
+        data: profissionalDados
+      });
+
+    } catch (error) {
+      console.error('Erro no login:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Deletar profissional (soft delete - marca como inativo)
+  app.delete('/api/profissionais/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do profissional inválido'
+        });
+      }
+
+      // Verificar se profissional existe
+      const profissionalExistente = await db.select()
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.id, parseInt(id)))
+        .limit(1);
+
+      if (profissionalExistente.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profissional não encontrado'
+        });
+      }
+
+      // Marcar como inativo (soft delete)
+      await db.update(schema.profissionais)
+        .set({
+          ativo: false,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.profissionais.id, parseInt(id)));
+
+      res.json({
+        success: true,
+        message: 'Profissional removido com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao deletar profissional:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // =====================================================
   // CANCELAR E DELETAR CLIENTES
   // =====================================================
 

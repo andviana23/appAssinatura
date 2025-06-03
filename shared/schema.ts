@@ -559,3 +559,67 @@ export type InsertOrigemDados = z.infer<typeof insertOrigemDadosSchema>;
 
 export type ClienteHistorico = typeof clientesHistorico.$inferSelect;
 export type SyncLog = typeof syncLog.$inferSelect;
+
+// =====================================================
+// TABELA DE PROFISSIONAIS (BARBEIROS E RECEPCIONISTAS)
+// =====================================================
+
+export const profissionais = pgTable("profissionais", {
+  id: serial("id").primaryKey(),
+  nome: text("nome").notNull(),
+  telefone: text("telefone"),
+  email: text("email").notNull().unique(),
+  senha: text("senha").notNull(), // Hash da senha com bcrypt
+  tipo: text("tipo").notNull(), // 'barbeiro' ou 'recepcionista'
+  ativo: boolean("ativo").notNull().default(true),
+  dataCadastro: timestamp("data_cadastro").defaultNow().notNull(),
+  ultimoLogin: timestamp("ultimo_login"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Schema de inserção para profissionais
+export const insertProfissionalSchema = createInsertSchema(profissionais).omit({
+  id: true,
+  dataCadastro: true,
+  createdAt: true,
+  updatedAt: true,
+  ultimoLogin: true,
+}).extend({
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  email: z.string().email("Email inválido"),
+  tipo: z.enum(["barbeiro", "recepcionista"], {
+    errorMap: () => ({ message: "Tipo deve ser 'barbeiro' ou 'recepcionista'" })
+  }),
+});
+
+// Schema para atualização de profissional
+export const updateProfissionalSchema = createInsertSchema(profissionais).omit({
+  id: true,
+  dataCadastro: true,
+  createdAt: true,
+  updatedAt: true,
+  ultimoLogin: true,
+  senha: true, // Senha não pode ser atualizada por este schema
+}).extend({
+  email: z.string().email("Email inválido").optional(),
+  tipo: z.enum(["barbeiro", "recepcionista"], {
+    errorMap: () => ({ message: "Tipo deve ser 'barbeiro' ou 'recepcionista'" })
+  }).optional(),
+});
+
+// Schema para mudança de senha
+export const alterarSenhaSchema = z.object({
+  senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
+  novaSenha: z.string().min(6, "Nova senha deve ter pelo menos 6 caracteres"),
+  confirmarSenha: z.string().min(6, "Confirmação de senha deve ter pelo menos 6 caracteres"),
+}).refine((data) => data.novaSenha === data.confirmarSenha, {
+  message: "Nova senha e confirmação devem ser iguais",
+  path: ["confirmarSenha"],
+});
+
+// Tipos para profissionais
+export type Profissional = typeof profissionais.$inferSelect;
+export type InsertProfissional = z.infer<typeof insertProfissionalSchema>;
+export type UpdateProfissional = z.infer<typeof updateProfissionalSchema>;
+export type AlterarSenha = z.infer<typeof alterarSenhaSchema>;

@@ -33,9 +33,11 @@ export default function Profissionais() {
     tipo: 'barbeiro'
   });
 
-  const { data: profissionais = [], isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ["/api/profissionais"],
   });
+
+  const profissionais = response?.data || [];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
