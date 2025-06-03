@@ -294,9 +294,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
       let clientesPagantes: any[] = [];
       let valorTotalPago = 0;
 
-      // Buscar pagamentos da conta ASAAS_TRATO
+      // Buscar pagamentos CONFIRMED da conta ASAAS_TRATO do mês vigente
       try {
-        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=RECEIVED,CONFIRMED&receivedInCashDate[ge]=${mesAtual}-01&receivedInCashDate[le]=${mesAtual}-31&limit=100`, {
+        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=100`, {
           headers: {
             'access_token': asaasTrato,
             'Content-Type': 'application/json'
@@ -305,7 +305,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
         if (responseTrato.ok) {
           const dataTrato = await responseTrato.json();
+          console.log(`📊 ASAAS_TRATO: ${dataTrato.data.length} pagamentos CONFIRMED encontrados`);
+          
           for (const pagamento of dataTrato.data || []) {
+            // Buscar dados do cliente apenas se necessário
             const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
               headers: {
                 'access_token': asaasTrato,
@@ -321,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
                 email: dadosCliente.email,
                 telefone: dadosCliente.mobilePhone,
                 valorPago: pagamento.value,
-                dataPagamento: pagamento.paymentDate || pagamento.clientPaymentDate,
+                dataPagamento: pagamento.confirmedDate,
                 descricao: pagamento.description,
                 conta: 'ASAAS_TRATO'
               });
@@ -333,9 +336,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
         console.error('Erro ao buscar pagamentos ASAAS_TRATO:', error);
       }
 
-      // Buscar pagamentos da conta ASAAS_AND
+      // Buscar pagamentos CONFIRMED da conta ASAAS_AND do mês vigente
       try {
-        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=RECEIVED,CONFIRMED&receivedInCashDate[ge]=${mesAtual}-01&receivedInCashDate[le]=${mesAtual}-31&limit=100`, {
+        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=100`, {
           headers: {
             'access_token': asaasAndrey,
             'Content-Type': 'application/json'
@@ -344,7 +347,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
         if (responseAndrey.ok) {
           const dataAndrey = await responseAndrey.json();
+          console.log(`📊 ASAAS_AND: ${dataAndrey.data.length} pagamentos CONFIRMED encontrados`);
+          
           for (const pagamento of dataAndrey.data || []) {
+            // Buscar dados do cliente apenas se necessário
             const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
               headers: {
                 'access_token': asaasAndrey,
@@ -360,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
                 email: dadosCliente.email,
                 telefone: dadosCliente.mobilePhone,
                 valorPago: pagamento.value,
-                dataPagamento: pagamento.paymentDate || pagamento.clientPaymentDate,
+                dataPagamento: pagamento.confirmedDate,
                 descricao: pagamento.description,
                 conta: 'ASAAS_AND'
               });
