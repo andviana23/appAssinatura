@@ -197,7 +197,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
         </div>
 
         {/* Navigation */}
-        <nav className={`space-y-3 ${collapsed ? 'space-y-2' : ''}`}>
+        <nav className={`space-y-3 ${isCollapsed ? 'space-y-2' : ''}`}>
           {navigationItems.map((item) => {
             const isActive = location === item.href || 
               (item.href === "/dashboard" && location === "/");
@@ -208,20 +208,21 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 href={item.href}
                 className={cn(
                   "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
-                  collapsed 
+                  isCollapsed 
                     ? "justify-center p-3 mx-2" 
                     : "space-x-4 px-5 py-4",
                   isActive
                     ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:scale-[1.02]"
                 )}
-                title={collapsed ? item.name : undefined}
+                title={isCollapsed ? item.name : undefined}
               >
                 <item.icon className={cn(
-                  "h-7 w-7 transition-all duration-200",
+                  isCollapsed ? "h-[18px] w-[18px]" : "h-6 w-6",
+                  "transition-all duration-200",
                   isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
                 )} />
-                {!collapsed && <span>{item.name}</span>}
+                {!isCollapsed && <span>{item.name}</span>}
               </Link>
             );
           })}
@@ -231,20 +232,21 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             href="/configuracoes"
             className={cn(
               "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
-              collapsed 
+              isCollapsed 
                 ? "justify-center p-3 mx-2" 
                 : "space-x-4 px-5 py-4",
               location === "/configuracoes"
                 ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60 hover:scale-[1.02]"
             )}
-            title={collapsed ? "Configurações" : undefined}
+            title={isCollapsed ? "Configurações" : undefined}
           >
             <Settings className={cn(
-              "h-7 w-7 transition-all duration-200",
+              isCollapsed ? "h-[18px] w-[18px]" : "h-6 w-6",
+              "transition-all duration-200",
               location === "/configuracoes" ? "text-white" : "text-muted-foreground group-hover:text-accent"
             )} />
-            {!collapsed && <span>Configurações</span>}
+            {!isCollapsed && <span>Configurações</span>}
           </Link>
         </nav>
       </div>
