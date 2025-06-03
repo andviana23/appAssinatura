@@ -82,10 +82,8 @@ export function Layout({ children }: LayoutProps) {
           showMenuButton={false}
           onMenuToggle={() => {}}
         />
-        <main className={`flex-1 overflow-y-auto container-responsive ${isTablet ? 'py-4' : 'py-6'}`}>
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto">
+          {children}
         </main>
       </div>
     </div>

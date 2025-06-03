@@ -517,9 +517,9 @@ export default function Agendamento() {
       </div>
 
       {/* Área Principal da Agenda - Dark Mode Premium */}
-      <div className="flex-1 bg-background">
+      <div className="flex-1 bg-background flex flex-col h-full">
         {/* Cabeçalho Premium Dark */}
-        <div className="bg-card border border-border rounded-lg m-2 p-6 shadow-2xl">
+        <div className="bg-card border-b border-border p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -582,7 +582,7 @@ export default function Agendamento() {
         </div>
 
         {/* Grade da Agenda Dark Mode - Inspirada nas imagens de referência */}
-        <div className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden mx-2 mb-2 relative">
+        <div className="bg-card border-t border-border overflow-hidden relative flex-1">
           {/* Timeline Indicator - Current Time Line */}
           {isTodaySelected && timelinePosition !== null && (
             <div
@@ -630,7 +630,7 @@ export default function Agendamento() {
           </div>
 
           {/* Linhas de horário - Dark Mode Premium */}
-          <div className="max-h-[80vh] overflow-y-auto">
+          <div className="h-full overflow-y-auto">
             {timeSlots.map((timeSlot) => (
               <div 
                 key={timeSlot} 
