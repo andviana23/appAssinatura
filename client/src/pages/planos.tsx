@@ -26,6 +26,19 @@ const formatPhone = (value: string) => {
   return value;
 };
 
+// Função para máscara de CPF
+const formatCPF = (value: string) => {
+  if (!value) return '';
+  const numericValue = value.replace(/\D/g, '');
+  if (numericValue.length <= 11) {
+    return numericValue
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2');
+  }
+  return value;
+};
+
 interface PlanoAsaas {
   id: string;
   nome: string;
@@ -50,6 +63,7 @@ export default function Planos() {
     nome: '',
     email: '',
     telefone: '',
+    cpf: '',
     planoSelecionado: null as any,
     formaPagamento: 'CREDIT_CARD'
   });
@@ -169,7 +183,7 @@ export default function Planos() {
         name: formData.nome,
         email: formData.email,
         phone: formData.telefone,
-        cpfCnpj: '',
+        cpfCnpj: formData.cpf,
         planName: planoSelecionado.nome,
         value: planoSelecionado.valorMensal || planoSelecionado.valor,
         description: planoSelecionado.descricao || 'Assinatura mensal',
@@ -258,10 +272,10 @@ export default function Planos() {
   };
 
   const handleSubmitCheckout = () => {
-    if (!checkoutData.nome || !checkoutData.email || !checkoutData.telefone) {
+    if (!checkoutData.nome || !checkoutData.email || !checkoutData.telefone || !checkoutData.cpf) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha nome, email e telefone",
+        description: "Preencha nome, email, telefone e CPF",
         variant: "destructive"
       });
       return;
@@ -421,6 +435,16 @@ export default function Planos() {
                   value={checkoutData.telefone}
                   onChange={(e) => setCheckoutData({...checkoutData, telefone: formatPhone(e.target.value)})}
                   placeholder="(11) 99999-9999"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input
+                  id="cpf"
+                  value={checkoutData.cpf}
+                  onChange={(e) => setCheckoutData({...checkoutData, cpf: formatCPF(e.target.value)})}
+                  placeholder="000.000.000-00"
                 />
               </div>
 
