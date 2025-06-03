@@ -293,10 +293,37 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       let clientesPagantes: any[] = [];
       let valorTotalPago = 0;
+      const cacheClientes = new Map(); // Cache para evitar requisições duplicadas
+
+      // Função otimizada para buscar dados do cliente com cache
+      const buscarDadosCliente = async (customerId: string, apiKey: string) => {
+        const chaveCache = `${customerId}-${apiKey}`;
+        if (cacheClientes.has(chaveCache)) {
+          return cacheClientes.get(chaveCache);
+        }
+
+        try {
+          const response = await fetch(`https://www.asaas.com/api/v3/customers/${customerId}`, {
+            headers: {
+              'access_token': apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const dadosCliente = await response.json();
+            cacheClientes.set(chaveCache, dadosCliente);
+            return dadosCliente;
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar cliente ${customerId}:`, error);
+        }
+        return null;
+      };
 
       // Buscar pagamentos CONFIRMED da conta ASAAS_TRATO do mês vigente
       try {
-        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=100`, {
+        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=50`, {
           headers: {
             'access_token': asaasTrato,
             'Content-Type': 'application/json'
@@ -307,18 +334,11 @@ export async function registerRoutes(app: Express): Promise<Express> {
           const dataTrato = await responseTrato.json();
           console.log(`📊 ASAAS_TRATO: ${dataTrato.data.length} pagamentos CONFIRMED encontrados`);
           
-          for (const pagamento of dataTrato.data || []) {
-            // Buscar dados do cliente apenas se necessário
-            const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
-              headers: {
-                'access_token': asaasTrato,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (cliente.ok) {
-              const dadosCliente = await cliente.json();
-              clientesPagantes.push({
+          // Processar pagamentos em lote para melhor performance
+          const promessasClientes = dataTrato.data.map(async (pagamento: any) => {
+            const dadosCliente = await buscarDadosCliente(pagamento.customer, asaasTrato);
+            if (dadosCliente) {
+              return {
                 id: dadosCliente.id,
                 nome: dadosCliente.name,
                 email: dadosCliente.email,
@@ -327,10 +347,16 @@ export async function registerRoutes(app: Express): Promise<Express> {
                 dataPagamento: pagamento.confirmedDate,
                 descricao: pagamento.description,
                 conta: 'ASAAS_TRATO'
-              });
-              valorTotalPago += pagamento.value;
+              };
             }
-          }
+            return null;
+          });
+
+          const resultadosTrato = await Promise.all(promessasClientes);
+          const clientesValidosTrato = resultadosTrato.filter(cliente => cliente !== null);
+          
+          clientesPagantes.push(...clientesValidosTrato);
+          valorTotalPago += dataTrato.data.reduce((sum: number, p: any) => sum + p.value, 0);
         }
       } catch (error) {
         console.error('Erro ao buscar pagamentos ASAAS_TRATO:', error);
@@ -338,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       // Buscar pagamentos CONFIRMED da conta ASAAS_AND do mês vigente
       try {
-        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=100`, {
+        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&confirmedDate[ge]=${mesAtual}-01&confirmedDate[le]=${mesAtual}-31&limit=50`, {
           headers: {
             'access_token': asaasAndrey,
             'Content-Type': 'application/json'
@@ -349,18 +375,11 @@ export async function registerRoutes(app: Express): Promise<Express> {
           const dataAndrey = await responseAndrey.json();
           console.log(`📊 ASAAS_AND: ${dataAndrey.data.length} pagamentos CONFIRMED encontrados`);
           
-          for (const pagamento of dataAndrey.data || []) {
-            // Buscar dados do cliente apenas se necessário
-            const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
-              headers: {
-                'access_token': asaasAndrey,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (cliente.ok) {
-              const dadosCliente = await cliente.json();
-              clientesPagantes.push({
+          // Processar pagamentos em lote para melhor performance
+          const promessasClientes = dataAndrey.data.map(async (pagamento: any) => {
+            const dadosCliente = await buscarDadosCliente(pagamento.customer, asaasAndrey);
+            if (dadosCliente) {
+              return {
                 id: dadosCliente.id,
                 nome: dadosCliente.name,
                 email: dadosCliente.email,
@@ -369,10 +388,16 @@ export async function registerRoutes(app: Express): Promise<Express> {
                 dataPagamento: pagamento.confirmedDate,
                 descricao: pagamento.description,
                 conta: 'ASAAS_AND'
-              });
-              valorTotalPago += pagamento.value;
+              };
             }
-          }
+            return null;
+          });
+
+          const resultadosAndrey = await Promise.all(promessasClientes);
+          const clientesValidosAndrey = resultadosAndrey.filter(cliente => cliente !== null);
+          
+          clientesPagantes.push(...clientesValidosAndrey);
+          valorTotalPago += dataAndrey.data.reduce((sum: number, p: any) => sum + p.value, 0);
         }
       } catch (error) {
         console.error('Erro ao buscar pagamentos ASAAS_AND:', error);
