@@ -1879,12 +1879,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Configuração das duas contas Asaas
       const asaasAccounts = [
         {
-          apiKey: process.env.ASAAS_API_KEY,
-          name: 'ASAAS_PRINCIPAL'
+          apiKey: process.env.ASAAS_TRATO,
+          name: 'ASAAS_TRATO'
         },
         {
-          apiKey: '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj',
-          name: 'ASAAS_ANDREY'
+          apiKey: process.env.ASAAS_API_KEY,
+          name: 'ASAAS_API_KEY'
         }
       ];
 
@@ -1898,11 +1898,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
 
-          // Buscar cobranças confirmadas do mês atual
-          const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-          const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
+          // Buscar todas as cobranças confirmadas (últimos 6 meses para performance)
+          const seiseMesesAtras = new Date();
+          seiseMesesAtras.setMonth(seiseMesesAtras.getMonth() - 6);
+          const dataInicio = seiseMesesAtras.toISOString().split('T')[0];
           
-          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`, {
+          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${dataInicio}&limit=500`, {
             headers: {
               'access_token': account.apiKey,
               'Content-Type': 'application/json'
@@ -1952,6 +1953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
                                        payment.billingType === 'PIX' ? 'PIX' : 
                                        payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                        origem: account.name,
                         statusAssinatura: 'ATIVO',
                         dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
                         dataVencimentoAssinatura: dataValidade
@@ -5595,6 +5597,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sincronização Asaas Andrey
+  // Endpoint para sincronizar todos os clientes do Asaas
+  app.post("/api/sync/clientes-asaas", async (req: Request, res: Response) => {
+    try {
+      const clientesSincronizados = [];
+      
+      // Configuração das duas contas Asaas
+      const asaasAccounts = [
+        {
+          apiKey: process.env.ASAAS_TRATO,
+          name: 'ASAAS_TRATO'
+        },
+        {
+          apiKey: process.env.ASAAS_API_KEY,
+          name: 'ASAAS_API_KEY'
+        }
+      ];
+
+      const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+        ? 'https://www.asaas.com/api/v3' 
+        : 'https://www.asaas.com/api/v3';
+
+      // Buscar todos os clientes existentes
+      const clientesExistentes = await storage.getAllClientes();
+      
+      for (const account of asaasAccounts) {
+        if (!account.apiKey) {
+          console.log(`❌ API Key não encontrada para ${account.name}`);
+          continue;
+        }
+        
+        console.log(`🔄 Sincronizando clientes da conta: ${account.name}`);
+        
+        // Buscar todos os pagamentos confirmados dos últimos 12 meses
+        const umAnoAtras = new Date();
+        umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+        const dataInicio = umAnoAtras.toISOString().split('T')[0];
+        
+        let offset = 0;
+        const limit = 100;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const paymentsResponse = await fetch(`${baseUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${dataInicio}&limit=${limit}&offset=${offset}`, {
+            headers: {
+              'access_token': account.apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!paymentsResponse.ok) {
+            console.log(`❌ Erro ao buscar pagamentos de ${account.name}:`, paymentsResponse.status);
+            break;
+          }
+
+          const paymentsData = await paymentsResponse.json();
+          const payments = paymentsData.data || [];
+          
+          if (payments.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          // Processar pagamentos únicos por cliente
+          const clientesUnicos = new Map();
+          
+          for (const payment of payments) {
+            if (!clientesUnicos.has(payment.customer)) {
+              clientesUnicos.set(payment.customer, payment);
+            }
+          }
+
+          // Buscar dados dos clientes e criar/atualizar no banco
+          for (const [customerId, payment] of clientesUnicos) {
+            try {
+              // Buscar dados do cliente
+              const customerResponse = await fetch(`${baseUrl}/customers/${customerId}`, {
+                headers: {
+                  'access_token': account.apiKey,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (customerResponse.ok) {
+                const customer = await customerResponse.json();
+                
+                // Verificar se cliente já existe
+                const clienteExistente = clientesExistentes.find(c => 
+                  c.asaasCustomerId === customerId || 
+                  (c.email && customer.email && c.email.toLowerCase() === customer.email.toLowerCase())
+                );
+
+                if (!clienteExistente) {
+                  // Calcular data de vencimento (30 dias após último pagamento)
+                  const dataVencimento = new Date(payment.paymentDate || payment.confirmedDate);
+                  dataVencimento.setDate(dataVencimento.getDate() + 30);
+
+                  const novoCliente = await storage.createCliente({
+                    nome: customer.name || 'Cliente Asaas',
+                    email: customer.email || `cliente-${customerId}@asaas.temp`,
+                    telefone: customer.phone || null,
+                    cpf: customer.cpfCnpj || null,
+                    asaasCustomerId: customerId,
+                    origem: account.name,
+                    planoNome: payment.description || 'Cobrança Asaas',
+                    planoValor: payment.value.toString(),
+                    formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                   payment.billingType === 'PIX' ? 'PIX' : 
+                                   payment.billingType === 'BOLETO' ? 'Boleto' : payment.billingType,
+                    statusAssinatura: 'ATIVO',
+                    dataInicioAssinatura: new Date(payment.paymentDate || payment.confirmedDate),
+                    dataVencimentoAssinatura: dataVencimento
+                  });
+                  
+                  clientesSincronizados.push({
+                    ...novoCliente,
+                    conta: account.name,
+                    acao: 'CRIADO'
+                  });
+                  
+                  console.log(`✅ Cliente criado: ${customer.name} (${account.name})`);
+                } else {
+                  // Atualizar dados se necessário
+                  if (!clienteExistente.asaasCustomerId) {
+                    await storage.updateCliente(clienteExistente.id, {
+                      asaasCustomerId: customerId
+                    });
+                    
+                    clientesSincronizados.push({
+                      ...clienteExistente,
+                      conta: account.name,
+                      acao: 'ATUALIZADO'
+                    });
+                    
+                    console.log(`🔄 Cliente atualizado: ${customer.name} (${account.name})`);
+                  }
+                }
+              }
+            } catch (error) {
+              console.log(`❌ Erro ao processar cliente ${customerId}:`, error);
+            }
+          }
+
+          offset += limit;
+          
+          // Se retornou menos que o limite, não há mais dados
+          if (payments.length < limit) {
+            hasMore = false;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Sincronização concluída. ${clientesSincronizados.length} clientes processados.`,
+        clientes: clientesSincronizados,
+        total: clientesSincronizados.length
+      });
+
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   app.post("/api/v2/sync/asaas-andrey", async (req: Request, res: Response) => {
     try {
       const asaasService = new AsaasIntegrationService();

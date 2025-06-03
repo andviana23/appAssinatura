@@ -160,6 +160,33 @@ export default function ClientesPage() {
     }
   });
 
+  // Mutation para sincronização completa de todos os clientes Asaas
+  const syncTodosClientesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/sync/clientes-asaas", {
+        method: "POST"
+      });
+      if (!response.ok) throw new Error("Erro na sincronização completa");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unified"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes-externos"] });
+      toast({
+        title: "Sincronização completa concluída",
+        description: `${data.total} clientes processados das APIs Asaas.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro na sincronização completa",
+        description: "Não foi possível sincronizar todos os clientes.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Consolidar todos os clientes
   const todosClientes = useMemo(() => {
     const clientes: Cliente[] = [];
@@ -315,6 +342,16 @@ export default function ClientesPage() {
             </div>
             
             <div className="flex gap-2">
+              <Button
+                onClick={() => syncTodosClientesMutation.mutate()}
+                disabled={syncTodosClientesMutation.isPending}
+                variant="default"
+                size="sm"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+              >
+                <Database className={`h-4 w-4 mr-2 ${syncTodosClientesMutation.isPending ? 'animate-spin' : ''}`} />
+                Sincronizar Todos os Clientes
+              </Button>
               <Button
                 onClick={() => syncPrincipalMutation.mutate()}
                 disabled={syncPrincipalMutation.isPending}
