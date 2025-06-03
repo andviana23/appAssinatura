@@ -209,7 +209,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 className={cn(
                   "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
                   isCollapsed 
-                    ? "justify-center p-3 mx-2" 
+                    ? "justify-center p-4 mx-2" 
                     : "space-x-4 px-5 py-4",
                   isActive
                     ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
@@ -218,8 +218,8 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 title={isCollapsed ? item.name : undefined}
               >
                 <item.icon className={cn(
-                  isCollapsed ? "h-[18px] w-[18px]" : "h-6 w-6",
-                  "transition-all duration-200",
+                  isCollapsed ? "h-10 w-10" : "h-6 w-6",
+                  "transition-all duration-300",
                   isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
                 )} />
                 {!isCollapsed && <span>{item.name}</span>}
@@ -233,7 +233,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             className={cn(
               "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
               isCollapsed 
-                ? "justify-center p-3 mx-2" 
+                ? "justify-center p-4 mx-2" 
                 : "space-x-4 px-5 py-4",
               location === "/configuracoes"
                 ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
@@ -242,8 +242,8 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             title={isCollapsed ? "Configurações" : undefined}
           >
             <Settings className={cn(
-              isCollapsed ? "h-[18px] w-[18px]" : "h-6 w-6",
-              "transition-all duration-200",
+              isCollapsed ? "h-10 w-10" : "h-6 w-6",
+              "transition-all duration-300",
               location === "/configuracoes" ? "text-white" : "text-muted-foreground group-hover:text-accent"
             )} />
             {!isCollapsed && <span>Configurações</span>}
