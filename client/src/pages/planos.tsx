@@ -185,13 +185,13 @@ export default function Planos() {
       const dataVencimento = new Date();
       dataVencimento.setDate(dataVencimento.getDate() + 30);
       
-      const response = await apiRequest("/api/asaas/checkout-link", "POST", {
+      const response = await apiRequest("/api/asaas/criar-assinatura", "POST", {
         customer: clienteData.customer.id,
         billingType: 'CREDIT_CARD',
         value: planoSelecionado.valorMensal || planoSelecionado.valor,
-        dueDate: dataVencimento.toISOString().split('T')[0],
+        nextDueDate: dataVencimento.toISOString().split('T')[0],
         description: `Assinatura ${planoSelecionado.nome}`,
-        externalReference: `checkout_${Date.now()}`
+        cycle: 'MONTHLY'
       });
       
       const result = await response.json();
@@ -205,13 +205,20 @@ export default function Planos() {
           title: "Cliente cadastrado!",
           description: "Agora escolha o método de pagamento externo.",
         });
-      } else if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank');
+      } else if (data.success && data.subscription) {
+        // A assinatura foi criada com sucesso
         toast({
-          title: "Checkout criado!",
-          description: "Redirecionando para pagamento...",
+          title: "Assinatura criada!",
+          description: "Assinatura ativa no Asaas. O cliente receberá a cobrança por email.",
         });
         setShowCheckoutModal(false);
+        setLocation('/clientes');
+      } else {
+        toast({
+          title: "Erro",
+          description: "Não foi possível processar o pagamento.",
+          variant: "destructive"
+        });
       }
     },
     onError: (error: any) => {

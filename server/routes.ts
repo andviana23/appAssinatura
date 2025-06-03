@@ -2756,7 +2756,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify(paymentData)
       });
 
-      const responseData = await response.json();
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        const responseText = await response.text();
+        console.error('❌ Erro ao fazer parse da resposta do Asaas:', responseText);
+        return res.status(500).json({
+          error: 'Erro na resposta da API do Asaas',
+          details: `Status: ${response.status}, Response: ${responseText.substring(0, 200)}...`
+        });
+      }
 
       if (!response.ok) {
         console.error('❌ Erro ao criar cobrança:', responseData);
@@ -2775,7 +2785,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      const checkoutData = await checkoutResponse.json();
+      let checkoutData;
+      try {
+        checkoutData = await checkoutResponse.json();
+      } catch (parseError) {
+        const checkoutText = await checkoutResponse.text();
+        console.error('❌ Erro ao fazer parse da resposta do checkout:', checkoutText);
+        return res.status(500).json({
+          error: 'Erro na resposta do checkout do Asaas',
+          details: `Status: ${checkoutResponse.status}, Response: ${checkoutText.substring(0, 200)}...`
+        });
+      }
 
       if (!checkoutResponse.ok) {
         console.error('❌ Erro ao criar checkout:', checkoutData);
