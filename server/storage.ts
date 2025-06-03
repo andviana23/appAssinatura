@@ -401,6 +401,11 @@ export class DatabaseStorage implements IStorage {
     return cliente;
   }
 
+  async createClienteExterno(clienteData: InsertCliente): Promise<Cliente> {
+    const [created] = await db.insert(clientes).values(clienteData).returning();
+    return created;
+  }
+
   async updateClienteExterno(id: number, cliente: Partial<InsertCliente>): Promise<Cliente | undefined> {
     const [updated] = await db.update(clientes).set(cliente).where(eq(clientes.id, id)).returning();
     return updated;

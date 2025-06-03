@@ -163,19 +163,35 @@ export default function Planos() {
         return { external: true, cliente: result };
       }
       
-      // Para cartão de crédito, criar checkout no Asaas
+      // Para cartão de crédito, primeiro criar cliente e depois assinatura
       const planoSelecionado = formData.planoSelecionado;
       if (!planoSelecionado) {
         throw new Error('Plano não selecionado');
       }
       
+      // 1. Criar cliente no Asaas
+      const clienteResponse = await apiRequest("/api/asaas/criar-cliente", "POST", {
+        name: formData.nome,
+        email: formData.email,
+        mobilePhone: formData.telefone
+      });
+      
+      const clienteData = await clienteResponse.json();
+      if (!clienteData.success) {
+        throw new Error(clienteData.error || 'Erro ao criar cliente');
+      }
+      
+      // 2. Criar assinatura
+      const dataVencimento = new Date();
+      dataVencimento.setDate(dataVencimento.getDate() + 30);
+      
       const response = await apiRequest("/api/asaas/criar-assinatura", "POST", {
-        customerName: formData.nome,
-        customerEmail: formData.email,
-        customerPhone: formData.telefone,
-        planName: planoSelecionado.nome,
-        planValue: planoSelecionado.valorMensal || planoSelecionado.valor,
-        billingType: 'CREDIT_CARD'
+        customer: clienteData.customer.id,
+        billingType: 'CREDIT_CARD',
+        value: planoSelecionado.valorMensal || planoSelecionado.valor,
+        nextDueDate: dataVencimento.toISOString().split('T')[0],
+        description: `Assinatura ${planoSelecionado.nome}`,
+        cycle: 'MONTHLY'
       });
       
       const result = await response.json();
