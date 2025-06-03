@@ -5913,8 +5913,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ Cliente cadastrado no Asaas:', customerId);
       }
       
-      // Etapa 3: Criar assinatura recorrente primeiro
-      console.log('🚀 Criando assinatura recorrente no Asaas:', JSON.stringify({
+      // Etapa 3: Criar cobrança recorrente única para gerar link /i/
+      console.log('🚀 Criando cobrança recorrente única no Asaas:', JSON.stringify({
         customer: customerId,
         name: planName,
         description,
@@ -5922,124 +5922,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionCycle
       }, null, 2));
       
-      const subscriptionData = {
+      const paymentData = {
         customer: customerId,
         billingType: "CREDIT_CARD",
         value: parseFloat(value.toString()),
-        nextDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        cycle: subscriptionCycle,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         description: `${planName} - ${description}`,
-        externalReference: `subscription_${Date.now()}`
+        cycle: subscriptionCycle,
+        installmentCount: 1,
+        totalValue: parseFloat(value.toString()),
+        externalReference: `recurring_payment_${Date.now()}`
       };
       
-      const subscriptionResponse = await fetch('https://www.asaas.com/api/v3/subscriptions', {
+      const paymentResponse = await fetch('https://www.asaas.com/api/v3/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'access_token': asaasApiKey
         },
-        body: JSON.stringify(subscriptionData)
+        body: JSON.stringify(paymentData)
       });
       
-      const subscriptionResponseData = await subscriptionResponse.json();
+      const paymentResponseData = await paymentResponse.json();
       
-      if (!subscriptionResponse.ok) {
-        console.error('❌ Erro ao criar assinatura:', subscriptionResponseData);
-        return res.status(subscriptionResponse.status).json({
-          error: 'Erro ao criar assinatura no Asaas',
-          asaasError: subscriptionResponseData
+      if (!paymentResponse.ok) {
+        console.error('❌ Erro ao criar cobrança:', paymentResponseData);
+        return res.status(paymentResponse.status).json({
+          error: 'Erro ao criar cobrança no Asaas',
+          asaasError: paymentResponseData
         });
       }
       
-      console.log('✅ Assinatura criada com sucesso:', subscriptionResponseData.id);
+      console.log('✅ Cobrança criada com sucesso:', paymentResponseData.id);
       
-      // Etapa 4: Buscar primeira cobrança da assinatura para gerar paymentBook
-      const paymentsResponse = await fetch(`https://www.asaas.com/api/v3/payments?subscription=${subscriptionResponseData.id}&limit=1`, {
+      // Etapa 4: Gerar paymentBook da cobrança para obter link formato /i/
+      const paymentBookResponse = await fetch(`https://www.asaas.com/api/v3/payments/${paymentResponseData.id}/paymentBook`, {
+        method: 'POST',
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
         }
       });
       
-      if (paymentsResponse.ok) {
-        const paymentsData = await paymentsResponse.json();
+      if (paymentBookResponse.ok) {
+        const paymentBookData = await paymentBookResponse.json();
+        console.log('✅ PaymentBook criado (formato /i/):', paymentBookData.url);
         
-        if (paymentsData.data && paymentsData.data.length > 0) {
-          const firstPayment = paymentsData.data[0];
-          console.log('✅ Primeira cobrança encontrada:', firstPayment.id);
-          
-          // Gerar paymentBook da primeira cobrança (formato /i/)
-          const paymentBookResponse = await fetch(`https://www.asaas.com/api/v3/payments/${firstPayment.id}/paymentBook`, {
-            method: 'POST',
-            headers: {
-              'access_token': asaasApiKey,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (paymentBookResponse.ok) {
-            const paymentBookData = await paymentBookResponse.json();
-            console.log('✅ PaymentBook criado (formato /i/):', paymentBookData.url);
-            
-            // Retornar dados completos
-            res.json({
-              success: true,
-              customer: {
-                id: customerId,
-                name: name,
-                email: email,
-                cpfCnpj: cpfCnpj,
-                phone: phone
-              },
-              subscription: {
-                id: subscriptionResponseData.id,
-                name: planName,
-                description: description,
-                value: value,
-                cycle: subscriptionCycle
-              },
-              paymentLink: {
-                id: firstPayment.id,
-                url: paymentBookData.url,
-                name: planName,
-                description: description,
-                value: value,
-                subscriptionCycle: subscriptionCycle
-              },
-              message: 'Cliente e assinatura recorrente criados com sucesso'
-            });
-            return;
-          }
-        }
-      }
-      
-      // Fallback: criar payment link direto com assinatura
-      console.log('🔄 Criando paymentLink direto para assinatura');
-      const linkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'access_token': asaasApiKey
-        },
-        body: JSON.stringify({
-          billingType: "CREDIT_CARD",
-          chargeType: "RECURRENT",
-          name: planName,
-          description: description,
-          value: parseFloat(value.toString()),
-          subscriptionCycle: subscriptionCycle,
-          customer: customerId,
-          subscription: subscriptionResponseData.id,
-          dueDateLimitDays: 7,
-          maxInstallmentCount: 1,
-          notificationEnabled: true
-        })
-      });
-      
-      if (linkResponse.ok) {
-        const linkData = await linkResponse.json();
-        console.log('✅ PaymentLink direto criado:', linkData.url);
-        
+        // Retornar dados completos
         res.json({
           success: true,
           customer: {
@@ -6049,29 +5978,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cpfCnpj: cpfCnpj,
             phone: phone
           },
-          subscription: {
-            id: subscriptionResponseData.id,
+          payment: {
+            id: paymentResponseData.id,
             name: planName,
             description: description,
             value: value,
             cycle: subscriptionCycle
           },
           paymentLink: {
-            id: linkData.id,
-            url: linkData.url,
+            id: paymentBookData.id,
+            url: paymentBookData.url,
             name: planName,
             description: description,
             value: value,
             subscriptionCycle: subscriptionCycle
           },
-          message: 'Cliente e assinatura recorrente criados com sucesso'
+          message: 'Cliente e cobrança recorrente criados com sucesso'
         });
         return;
       }
       
-      // Último fallback
-      const finalUrl = subscriptionResponseData.invoiceUrl || `https://www.asaas.com/subscriptions/${subscriptionResponseData.id}`;
-      console.log('✅ Usando URL da assinatura (último fallback):', finalUrl);
+      // Fallback: usar invoiceUrl se disponível na cobrança
+      const finalUrl = paymentResponseData.invoiceUrl || paymentResponseData.bankSlipUrl || `https://www.asaas.com/payments/${paymentResponseData.id}`;
+      console.log('✅ Usando URL da cobrança:', finalUrl);
       
       // Retornar dados completos com fallback
       res.json({
@@ -6083,22 +6012,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cpfCnpj: cpfCnpj,
           phone: phone
         },
-        subscription: {
-          id: subscriptionResponseData.id,
+        payment: {
+          id: paymentResponseData.id,
           name: planName,
           description: description,
           value: value,
           cycle: subscriptionCycle
         },
         paymentLink: {
-          id: subscriptionResponseData.id,
+          id: paymentResponseData.id,
           url: finalUrl,
           name: planName,
           description: description,
           value: value,
           subscriptionCycle: subscriptionCycle
         },
-        message: 'Cliente e assinatura recorrente criados com sucesso'
+        message: 'Cliente e cobrança recorrente criados com sucesso'
       });
       
     } catch (error) {
