@@ -148,14 +148,14 @@ export default function Planos() {
   const createCheckoutMutation = useMutation({
     mutationFn: async (formData: typeof checkoutData) => {
       if (formData.formaPagamento === 'EXTERNAL') {
-        // Para pagamento externo, apenas cadastrar cliente no sistema
-        const response = await apiRequest("/api/clientes-externos", "POST", {
+        // Para pagamento externo, cadastrar cliente no sistema
+        const response = await apiRequest("/api/clientes-externos/finalizar-pagamento", "POST", {
           nome: formData.nome,
           email: formData.email,
           telefone: formData.telefone,
           planoNome: formData.planoSelecionado?.nome || '',
           planoValor: formData.planoSelecionado?.valorMensal || formData.planoSelecionado?.valor || '0',
-          formaPagamento: 'EXTERNAL',
+          formaPagamento: formData.metodoPagamento || 'EXTERNAL',
           origem: 'checkout_externo'
         });
         
