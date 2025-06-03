@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useState } from "react";
 import {
   BarChart3,
   Users,
@@ -17,6 +18,9 @@ import {
   ListOrdered,
   ClipboardList,
   Crown,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const navigation = [
@@ -86,6 +90,7 @@ interface SidebarProps {
 export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps = {}) {
   const [location] = useLocation();
   const { user, logout, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(collapsed);
   
   // Navegação dinâmica baseada no perfil do usuário
   const getNavigationItems = () => {
@@ -143,17 +148,38 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   
   const navigationItems = getNavigationItems();
 
-  const sidebarWidth = collapsed ? "w-20" : mobile ? "w-80" : "w-72";
+  const sidebarWidth = isCollapsed ? "w-20" : mobile ? "w-80" : "w-72";
+  
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   return (
-    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'}`}>
+    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300`}>
+      {/* Toggle Button - Only for desktop */}
+      {!mobile && (
+        <div className="absolute -right-3 top-6 z-10">
+          <button
+            onClick={toggleCollapse}
+            className="bg-card border border-border rounded-full p-1.5 shadow-lg hover:bg-muted transition-colors"
+            title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        </div>
+      )}
+      
       {/* Logo */}
-      <div className={`${collapsed ? 'p-4' : 'p-6'}`}>
-        <div className={`flex items-center ${collapsed ? 'justify-center mb-6' : 'space-x-4 mb-8'} pb-6 border-b border-border/50`}>
-          <div className={`${collapsed ? 'h-12 w-12' : 'h-14 w-14'} bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg`}>
-            <span className={`text-white font-bold ${collapsed ? 'text-lg' : 'text-xl'}`}>TB</span>
+      <div className={`${isCollapsed ? 'p-4' : 'p-6'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center mb-6' : 'space-x-4 mb-8'} pb-6 border-b border-border/50`}>
+          <div className={`${isCollapsed ? 'h-12 w-12' : 'h-14 w-14'} bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg`}>
+            <span className={`text-white font-bold ${isCollapsed ? 'text-lg' : 'text-xl'}`}>TB</span>
           </div>
-          {!collapsed && (
+          {!isCollapsed && (
             <div>
               <h2 className="text-xl font-bold text-primary">Trato de Barbados</h2>
               <p className="text-sm text-muted-foreground font-medium">Sistema de Gestão</p>
