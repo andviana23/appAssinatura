@@ -3,6 +3,7 @@ import { Server } from 'http';
 import { db } from './db';
 import * as schema from '../shared/schema';
 import { eq } from 'drizzle-orm';
+import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Express> {
   
@@ -1345,7 +1346,6 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       // Hash da senha com bcrypt
-      const bcrypt = require('bcrypt');
       const saltRounds = 12;
       const senhaHash = await bcrypt.hash(senha, saltRounds);
 
@@ -1589,7 +1589,6 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       // Verificar senha atual
-      const bcrypt = require('bcrypt');
       const senhaValida = await bcrypt.compare(senhaAtual, profissional[0].senha);
 
       if (!senhaValida) {
@@ -1660,7 +1659,6 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       // Verificar senha
-      const bcrypt = require('bcrypt');
       const senhaValida = await bcrypt.compare(senha, profissional[0].senha);
 
       if (!senhaValida) {
