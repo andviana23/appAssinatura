@@ -117,9 +117,9 @@ export class AsaasIntegrationService {
     const logId = await this.iniciarLogSync('ASAAS_ANDREY', 'SYNC_CLIENTES');
     
     try {
-      const apiKey = process.env.ASAAS_API_KEY_ANDREY;
+      const apiKey = process.env.ASAAS_ANDREY;
       if (!apiKey) {
-        throw new Error('ASAAS_API_KEY_ANDREY não configurada');
+        throw new Error('ASAAS_ANDREY não configurada');
       }
 
       const payments = await this.buscarCobrancasConfirmadas(apiKey);
@@ -375,7 +375,7 @@ export class AsaasIntegrationService {
       // Estatísticas das APIs Asaas - usando cobranças confirmadas
       const [principalStats, andreyStats] = await Promise.all([
         this.getStatsCobrancasConfirmadas(process.env.ASAAS_TRATO, 'ASAAS_TRATO'),
-        this.getStatsCobrancasConfirmadas(process.env.ASAAS_API_KEY_ANDREY, 'ASAAS_ANDREY')
+        this.getStatsCobrancasConfirmadas(process.env.ASAAS_ANDREY, 'ASAAS_ANDREY')
       ]);
 
       return {

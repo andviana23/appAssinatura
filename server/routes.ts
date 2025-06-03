@@ -635,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal (últimos 30 dias)
       try {
-        const apiKey = process.env.ASAAS_API_KEY;
+        const apiKey = process.env.ASAAS_ANDREY;
         if (apiKey) {
           // Buscar pagamentos confirmados dos últimos 30 dias
           const dataLimite = new Date();
@@ -1013,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let receitaPrincipal = 0;
       
       try {
-        const apiKey = process.env.ASAAS_API_KEY;
+        const apiKey = process.env.ASAAS_ANDREY;
         if (apiKey) {
           console.log("🔍 Buscando assinaturas ATIVAS da conta Principal...");
           
@@ -1193,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== ROTA DA API 1 CLIENTE PRINCIPAL (CORRIGIDA) =====
   app.get("/api/clientes", requireAuth, async (req, res) => {
     try {
-      const apiKey = process.env.ASAAS_API_KEY;
+      const apiKey = process.env.ASAAS_ANDREY;
       if (!apiKey) {
         return res.status(500).json({ message: "Chave API principal não configurada" });
       }
@@ -1597,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { nome, email } = req.body;
       
-      const ASAAS_API_KEY = process.env.ASAAS_API_KEY || 
+      const ASAAS_ANDREY = process.env.ASAAS_ANDREY || 
         "aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjY4NGRiNmQ3LWJjZTMtNDQyZS1hM2FhLTE4ZDkyMDJjMTc3OTo6JGFhY2hfNWU5NTdkMzUtNzRiNS00YjU4LWJmYWItN2U4Y2ExZDAxMzBl";
 
       // Registrar cliente no Asaas
@@ -1605,7 +1605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "access_token": ASAAS_API_KEY,
+          "access_token": ASAAS_ANDREY,
         },
         body: JSON.stringify({
           name: nome,
@@ -1675,7 +1675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para verificar chaves PIX disponíveis
   app.get('/api/asaas/pix-keys', async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -1794,7 +1794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verificar se existem clientes com assinaturas ativas via API do Asaas
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnvironment = process.env.ASAAS_ENVIRONMENT;
       
       if (!asaasApiKey) {
@@ -1883,8 +1883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'ASAAS_TRATO'
         },
         {
-          apiKey: process.env.ASAAS_API_KEY,
-          name: 'ASAAS_API_KEY'
+          apiKey: process.env.ASAAS_ANDREY,
+          name: 'ASAAS_ANDREY'
         }
       ];
 
@@ -2176,7 +2176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar assinaturas do Asaas próximas do vencimento
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       if (asaasApiKey) {
         try {
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
@@ -2829,7 +2829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para criar link de pagamento personalizado do Asaas
   app.post('/api/asaas/checkout', async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -2975,7 +2975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para buscar planos autorizados via API Asaas
   app.get('/api/asaas/planos', async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -3039,7 +3039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔍 Buscando clientes da conta Asaas Andrey');
       
-      const token = process.env.ASAAS_API_KEY_ANDREY;
+      const token = process.env.ASAAS_ANDREY;
       if (!token) {
         return res.status(400).json({ success: false, error: 'Token da segunda API não encontrado' });
       }
@@ -3126,7 +3126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para sincronizar clientes da segunda conta com o banco local
   app.post("/api/clientes-asaas-andrey/sync", requireAuth, async (req, res) => {
     try {
-      const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+      const tokenAndrey = process.env.ASAAS_ANDREY;
       if (!tokenAndrey) {
         return res.status(400).json({ message: 'Token da segunda conta Asaas não configurado' });
       }
@@ -3238,7 +3238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados do cliente na API Andrey
-      const token = process.env.ASAAS_API_KEY_ANDREY;
+      const token = process.env.ASAAS_ANDREY;
       const customerResponse = await fetch(`https://www.asaas.com/api/v3/customers/${clienteId}`, {
         headers: {
           'access_token': token,
@@ -3292,7 +3292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🧪 TESTE: Testando segunda API isoladamente');
       
-      const token = process.env.ASAAS_API_KEY_ANDREY;
+      const token = process.env.ASAAS_ANDREY;
       console.log('🔑 Token da segunda API:', token ? token.substring(0, 20) + '...' : 'VAZIO');
       
       if (!token) {
@@ -3335,14 +3335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/test-segunda-integracao", requireAuth, async (req, res) => {
     try {
       console.log('=== TESTE SEGUNDA INTEGRAÇÃO ===');
-      console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
-      console.log('ASAAS_API_KEY_ANDREY existe:', !!process.env.ASAAS_API_KEY_ANDREY);
+      console.log('ASAAS_ANDREY existe:', !!process.env.ASAAS_ANDREY);
+      console.log('ASAAS_ANDREY existe:', !!process.env.ASAAS_ANDREY);
       
-      if (process.env.ASAAS_API_KEY_ANDREY) {
+      if (process.env.ASAAS_ANDREY) {
         const baseUrl = 'https://www.asaas.com/api/v3';
         const response = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=5`, {
           headers: {
-            'access_token': process.env.ASAAS_API_KEY_ANDREY,
+            'access_token': process.env.ASAAS_ANDREY,
             'Content-Type': 'application/json'
           }
         });
@@ -3416,14 +3416,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'PRINCIPAL'
         },
         {
-          apiKey: process.env.ASAAS_API_KEY,
+          apiKey: process.env.ASAAS_ANDREY,
           name: 'ANDREY'
         }
       ];
 
       console.log('=== INÍCIO BUSCA CLIENTES UNIFICADOS ===');
       console.log('ASAAS_TRATO existe:', !!process.env.ASAAS_TRATO);
-      console.log('ASAAS_API_KEY existe:', !!process.env.ASAAS_API_KEY);
+      console.log('ASAAS_ANDREY existe:', !!process.env.ASAAS_ANDREY);
       console.log('Clientes externos encontrados:', clientesExternos.length);
 
       // Buscar clientes de ambas as contas Asaas
@@ -3645,7 +3645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Asaas API Integration - Cobranças Recorrentes (manter o endpoint original para compatibilidade)
   app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -3831,7 +3831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/asaas/stats", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -3941,7 +3941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/asaas/faturamento-mensal", requireAuth, async (req, res) => {
     try {
       const { mes } = req.query; // formato YYYY-MM
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -4004,7 +4004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dados de faturamento diário para gráfico
   app.get("/api/asaas/faturamento-diario", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
       
       if (!asaasApiKey) {
@@ -4437,7 +4437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Somar receita da primeira conta Asaas
       try {
-        const asaasToken = process.env.ASAAS_API_KEY;
+        const asaasToken = process.env.ASAAS_ANDREY;
         if (asaasToken) {
           const assinaturasResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
             headers: {
@@ -4458,7 +4458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Somar receita da segunda conta Asaas (Andrey)
       try {
-        const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+        const tokenAndrey = process.env.ASAAS_ANDREY;
         if (tokenAndrey) {
           const assinaturasAndreyResponse = await fetch('https://www.asaas.com/api/v3/subscriptions?limit=100&status=ACTIVE', {
             headers: {
@@ -4556,7 +4556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 2. Buscar clientes do Asaas APENAS com assinaturas ativas e pagamentos confirmados
-      if (process.env.ASAAS_API_KEY && process.env.ASAAS_ENVIRONMENT) {
+      if (process.env.ASAAS_ANDREY && process.env.ASAAS_ENVIRONMENT) {
         try {
           const asaasUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
             ? 'https://www.asaas.com/api/v3' 
@@ -4570,7 +4570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `${asaasUrl}/payments?status=CONFIRMED&receivedInCashDate[ge]=${inicioMes}&receivedInCashDate[le]=${fimMes}&limit=100`, 
             {
               headers: {
-                'access_token': process.env.ASAAS_API_KEY,
+                'access_token': process.env.ASAAS_ANDREY,
                 'Content-Type': 'application/json'
               }
             }
@@ -4587,7 +4587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Buscar dados do cliente
                   const customerResponse = await fetch(`${asaasUrl}/customers/${payment.customer}`, {
                     headers: {
-                      'access_token': process.env.ASAAS_API_KEY,
+                      'access_token': process.env.ASAAS_ANDREY,
                       'Content-Type': 'application/json'
                     }
                   });
@@ -4598,7 +4598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Buscar assinatura ativa
                     const subscriptionResponse = await fetch(`${asaasUrl}/subscriptions/${payment.subscription}`, {
                       headers: {
-                        'access_token': process.env.ASAAS_API_KEY,
+                        'access_token': process.env.ASAAS_ANDREY,
                         'Content-Type': 'application/json'
                       }
                     });
@@ -4666,7 +4666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SINCRONIZAÇÃO AUTOMÁTICA: Buscar e sincronizar clientes da segunda conta Asaas
       try {
-        const tokenAndrey = process.env.ASAAS_API_KEY_ANDREY;
+        const tokenAndrey = process.env.ASAAS_ANDREY;
         if (tokenAndrey) {
           console.log('🔄 Sincronização automática: Verificando clientes da segunda conta Asaas');
 
@@ -4802,9 +4802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar clientes da API do Asaas (mesma lógica do endpoint unificado)
-      if (process.env.ASAAS_API_KEY) {
+      if (process.env.ASAAS_ANDREY) {
         try {
-          const asaasApiKey = process.env.ASAAS_API_KEY;
+          const asaasApiKey = process.env.ASAAS_ANDREY;
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
@@ -4937,7 +4937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados adicionais do Asaas para pagamentos do mês atual
-      const asaasApiKey = process.env.ASAAS_API_KEY;
+      const asaasApiKey = process.env.ASAAS_ANDREY;
       if (asaasApiKey) {
         try {
           const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
@@ -5467,7 +5467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientesProcessados = new Set(); // Para evitar duplicatas
       const contas = [
         { nome: 'ASAAS_TRATO', apiKey: process.env.ASAAS_TRATO },
-        { nome: 'ASAAS_ANDREY', apiKey: process.env.ASAAS_API_KEY_ANDREY }
+        { nome: 'ASAAS_ANDREY', apiKey: process.env.ASAAS_ANDREY }
       ];
 
       for (const conta of contas) {
@@ -5621,8 +5621,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'ASAAS_TRATO'
         },
         {
-          apiKey: process.env.ASAAS_API_KEY,
-          name: 'ASAAS_API_KEY'
+          apiKey: process.env.ASAAS_ANDREY,
+          name: 'ASAAS_ANDREY'
         }
       ];
 
@@ -6335,14 +6335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: 'ASAAS_TRATO'
         },
         {
-          apiKey: process.env.ASAAS_API_KEY,
-          name: 'ASAAS_API_KEY'
+          apiKey: process.env.ASAAS_ANDREY,
+          name: 'ASAAS_ANDREY'
         }
       ];
 
       console.log('🧪 TESTE: Verificando chaves API...');
       console.log(`🧪 ASAAS_TRATO: ${process.env.ASAAS_TRATO ? 'CONFIGURADA' : 'NÃO CONFIGURADA'}`);
-      console.log(`🧪 ASAAS_API_KEY: ${process.env.ASAAS_API_KEY ? 'CONFIGURADA' : 'NÃO CONFIGURADA'}`);
+      console.log(`🧪 ASAAS_ANDREY: ${process.env.ASAAS_ANDREY ? 'CONFIGURADA' : 'NÃO CONFIGURADA'}`);
 
       // Buscar clientes de ambas as contas Asaas
       for (const account of asaasAccounts) {
@@ -6391,7 +6391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clientes: clientesUnificados.slice(0, 5), // Retorna apenas os primeiros 5 para teste
         apiKeys: {
           ASAAS_TRATO: !!process.env.ASAAS_TRATO,
-          ASAAS_API_KEY: !!process.env.ASAAS_API_KEY
+          ASAAS_ANDREY: !!process.env.ASAAS_ANDREY
         }
       });
 
@@ -6531,8 +6531,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📋 Evento: ${event} | Pagamento: ${payment.id} | Cliente: ${payment.customer}`);
 
       // Determinar qual API usar baseado no payment ou customer
-      let apiKey = process.env.ASAAS_API_KEY; // Padrão
-      let accountName = 'ASAAS_API_KEY';
+      let apiKey = process.env.ASAAS_ANDREY; // Padrão
+      let accountName = 'ASAAS_ANDREY';
       
       // Processar eventos de pagamento
       if (['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'].includes(event)) {
