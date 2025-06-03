@@ -28,10 +28,12 @@ export const servicos = pgTable("servicos", {
 export const planosAssinatura = pgTable("planos_assinatura", {
   id: serial("id").primaryKey(),
   nome: text("nome").notNull(),
-  valorMensal: decimal("valor_mensal", { precision: 10, scale: 2 }).notNull(),
+  valorMensal: text("valor_mensal").notNull(),
   descricao: text("descricao"),
   categoria: text("categoria"),
   servicosIncluidos: json("servicos_incluidos").$type<number[]>().notNull(),
+  asaasPaymentLinkId: text("asaas_payment_link_id"),
+  asaasPaymentLinkUrl: text("asaas_payment_link_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

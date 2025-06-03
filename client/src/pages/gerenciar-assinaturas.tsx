@@ -35,14 +35,23 @@ export default function GerenciarAssinaturas() {
     }
   });
 
-  // Criar nova assinatura
+  // Criar nova assinatura e gerar paymentLink automaticamente
   const criarAssinatura = useMutation({
     mutationFn: async (dados) => {
-      const response = await apiRequest("/api/planos-assinatura", "POST", dados);
+      const response = await apiRequest("/api/assinatura/criar-plano", "POST", {
+        nome: dados.nome,
+        descricao: dados.descricao || `Assinatura ${dados.nome} - Renovação mensal automática`,
+        valorMensal: dados.valor,
+        categoria: dados.categoria,
+        servicosIncluidos: dados.servicosIncluidos || []
+      });
       return await response.json();
     },
-    onSuccess: () => {
-      toast({ title: "Assinatura criada com sucesso!" });
+    onSuccess: (data) => {
+      toast({ 
+        title: "Plano criado com sucesso!", 
+        description: `PaymentLink gerado: ${data.checkoutUrl}` 
+      });
       setIsDialogOpen(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/planos-assinatura"] });

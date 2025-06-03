@@ -5715,8 +5715,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Criar cliente no Asaas (necessário antes de criar assinatura)
-  // Nova rota para checkout simplificado usando link de pagamento
+  // Endpoint para criar plano de assinatura e gerar paymentLink automaticamente
+  app.post("/api/assinatura/criar-plano", async (req: Request, res: Response) => {
+    try {
+      const { nome, descricao, valorMensal, categoria, servicosIncluidos } = req.body;
+
+      if (!nome || !valorMensal) {
+        return res.status(400).json({ 
+          error: 'Nome e valor mensal são obrigatórios' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Chave da API Asaas não configurada' 
+        });
+      }
+
+      // 1. Salvar plano no banco de dados
+      const novoPlano = await db.insert(planosAssinatura).values({
+        nome,
+        descricao,
+        valorMensal,
+        categoria,
+        servicosIncluidos: servicosIncluidos || []
+      }).returning();
+
+      const plano = novoPlano[0];
+      
+      // 2. Criar paymentLink no Asaas usando dados do plano
+      const payload = {
+        billingType: "CREDIT_CARD",
+        chargeType: "RECURRENT",
+        name: plano.nome,
+        description: plano.descricao || `Assinatura ${plano.nome} - Renovação mensal automática`,
+        value: parseFloat(plano.valorMensal),
+        subscriptionCycle: "MONTHLY",
+        dueDateLimitDays: 7,
+        maxInstallmentCount: 1,
+        notificationEnabled: true
+      };
+
+      console.log('Criando paymentLink para plano:', plano.nome, payload);
+
+      const paymentLinkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!paymentLinkResponse.ok) {
+        const errorData = await paymentLinkResponse.json();
+        console.error('Erro ao criar paymentLink:', errorData);
+        
+        // Remover plano do banco se falhou no Asaas
+        await db.delete(planosAssinatura).where(eq(planosAssinatura.id, plano.id));
+        
+        return res.status(400).json({ 
+          error: 'Erro ao criar link de pagamento no Asaas',
+          details: errorData
+        });
+      }
+
+      const paymentLinkData = await paymentLinkResponse.json();
+      console.log('✅ PaymentLink criado:', paymentLinkData.url);
+
+      // 3. Atualizar plano com URL do paymentLink
+      await db.update(planosAssinatura)
+        .set({ 
+          asaasPaymentLinkId: paymentLinkData.id,
+          asaasPaymentLinkUrl: paymentLinkData.url 
+        })
+        .where(eq(planosAssinatura.id, plano.id));
+
+      res.json({
+        success: true,
+        plano: {
+          ...plano,
+          asaasPaymentLinkId: paymentLinkData.id,
+          asaasPaymentLinkUrl: paymentLinkData.url
+        },
+        checkoutUrl: paymentLinkData.url
+      });
+
+    } catch (error) {
+      console.error('Erro ao criar plano:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor' 
+      });
+    }
+  });
+
+  // Checkout simplificado usando plano existente
   app.post("/api/asaas/criar-checkout-recorrente", async (req: Request, res: Response) => {
     try {
       const { nome, email, telefone, planoSelecionado } = req.body;

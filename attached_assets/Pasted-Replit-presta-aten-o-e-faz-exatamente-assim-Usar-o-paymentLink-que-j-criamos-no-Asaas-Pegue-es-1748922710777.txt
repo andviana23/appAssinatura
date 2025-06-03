@@ -1,0 +1,97 @@
+Replit, presta atenção e faz exatamente assim:
+
+Usar o paymentLink que já criamos no Asaas
+
+Pegue esse ID/URL do link de pagamento que eu gerei: COLA_AQUI_O_PAYMENT_LINK_URL
+
+O cliente vai ser redirecionado direto para esse link onde ele insere CPF + cartão.
+
+Dados da assinatura vêm do plano novo
+
+Quando eu criar um “Plano de Assinatura” no meu sistema (no painel administrativo, banco de dados, seja lá onde for), os campos desse plano (nome, descrição e valor) devem alimentar exatamente o payload que a gente envia pro Asaas.
+
+Não hardcode valores. Leia do registro do plano recém-criado:
+
+plano.nome → vai virar name no payload do Asaas
+
+plano.descricao → vai virar description
+
+plano.valor → vai virar value
+
+plano.ciclo (ex: “MONTHLY”) → subscriptionCycle
+
+Fluxo completo de implementação
+
+No endpoint /assinatura/criar-plano (ou equivalente), assim que eu salvar o plano no banco, pegue o ID desse plano e gere o payload:
+
+js
+Copiar
+Editar
+const payload = {
+  billingType: "CREDIT_CARD",
+  chargeType: "RECURRENT",
+  name: plano.nome,                // puxar direto do novo plano
+  description: plano.descricao,    // idem
+  value: parseFloat(plano.valor),  // idem
+  subscriptionCycle: plano.ciclo    // “MONTHLY” ou o que definir
+};
+Chame POST https://api.asaas.com/v3/paymentLinks com esse payload e o cabeçalho access_token apontando pra process.env.ASAAS_API_KEY.
+
+Receba data.url (ou data.paymentLinkUrl, como vier no JSON) e salve no banco associado ao plano.id.
+
+Retorne essa URL pro front-end (JSON: { checkoutUrl: data.url }).
+
+No frontend
+
+Assim que o backend retornar { checkoutUrl }, faça window.location.href = checkoutUrl;.
+
+Isso vai levar o cliente direto pro formulário do Asaas, onde ele preenche CPF + cartão.
+
+Callbacks/Webhooks
+
+Mantenha a mesma lógica: se eu configurar callbacks (successUrl, cancelUrl e expiredUrl) nas configurações do meu domínio no painel Asaas, use essas rotas no meu Express para capturar eventos.
+
+Mas, como é um paymentLink recorrente, o Asaas só cria a assinatura quando o cliente concluir o checkout.
+
+Continue tratando SUBSCRIPTION_CREATED e PAYMENT_CREATED no webhook /webhook/asaas pra atualizar status no banco:
+
+js
+Copiar
+Editar
+app.post("/webhook/asaas", express.json(), (req, res) => {
+  const event = req.body.event;
+  const payloadDoEvento = req.body;
+  if (event === "SUBSCRIPTION_CREATED") {
+    // marca a assinatura do plano como ativa
+  }
+  if (event === "PAYMENT_CREATED") {
+    // registra que a fatura mensal foi gerada
+  }
+  res.status(200).end();
+});
+Pontos de atenção – segue a real
+
+Certifica que o domínio cadastrado no Asaas bate exatamente com os successUrl, cancelUrl e expiredUrl. Se tiver qualquer diferença (“www.” a mais, “http” em vez de “https”), o Asaas vai continuar reclamando.
+
+Não insira CPF no payload do seu sistema. O CPF é sempre preenchido pelo cliente lá no Asaas.
+
+Os dados do plano (nome, descrição, valor, ciclo) precisam sair direto do registro que eu criar. Se você fizer qualquer gambiarra e digitar “Assinatura X” diretamente no código, vai falhar quando eu mudar a descrição ou o valor no painel. Mantém tudo dinâmico.
+
+Teste e devolutiva
+
+Depois de implementar, cria um plano de teste (pode ser “Plano Teste R$1,00/mês”) e gera um paymentLink.
+
+Acesse a URL, complete com um cartão de teste e CPF válido.
+
+Verifique no painel do Asaas: se a assinatura foi criada (com ciclo mensal e valor correto), se o próximo vencimento está na data certa.
+
+Veja no log do Replit se o webhook chegou (SUBSCRIPTION_CREATED e PAYMENT_CREATED). Se não chegar, retruca que algo tá errado na rota ou no JSON do webhook.
+
+Sem desculpas: faz certinho
+
+Se o link não for criado, imprime o console.error(data.errors) pra eu ver o que o Asaas tá falando.
+
+Se o webhook não bater, habilita console.log(req.body) pra debugar.
+
+Não inventa campo extra nem muda nome de variável: segue o padrão exato da documentação do Asaas.
+
