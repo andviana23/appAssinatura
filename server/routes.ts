@@ -766,148 +766,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stats unificados (para Dashboard) - INCLUINDO TODAS AS FONTES
+  // Stats unificados APENAS com pagamentos CONFIRMADOS do Asaas + receitas externas ativas
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
-      console.log("📊 Calculando estatísticas unificadas de todas as fontes...");
+      console.log("📊 Calculando estatísticas APENAS com pagamentos CONFIRMADOS...");
       
-      // 1. Clientes do banco local (incluindo sincronizados e externos)
+      // 1. Clientes locais/externos ATIVOS (incluindo pagamentos externos confirmados)
       const clientesLocais = await storage.getAllClientes();
-      const totalClientesLocais = clientesLocais.length;
+      const clientesLocaisAtivos = clientesLocais.filter(c => c.statusAssinatura === 'ATIVO');
+      const receitaLocal = clientesLocaisAtivos.reduce((sum, c) => sum + parseFloat(c.planoValor || '0'), 0);
       
-      // Calcular receita de clientes locais ATIVOS (incluindo externos)
-      const receitaLocal = clientesLocais
-        .filter(c => c.statusAssinatura === 'ATIVO')
-        .reduce((sum, c) => sum + parseFloat(c.planoValor || '0'), 0);
+      console.log(`Local/Externos: ${clientesLocaisAtivos.length} clientes ativos, R$ ${receitaLocal.toFixed(2)} receita`);
       
-      console.log(`Local: ${totalClientesLocais} clientes, R$ ${receitaLocal.toFixed(2)} receita`);
-      
-      // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal (últimos 30 dias)
-      let totalClientesPrincipal = 0;
-      let receitaPrincipal = 0;
+      // 2. Conta Principal - APENAS assinaturas com pagamentos CONFIRMADOS
       let clientesAtivosPrincipal = 0;
+      let receitaPrincipal = 0;
       
       try {
         const apiKey = process.env.ASAAS_API_KEY;
         if (apiKey) {
-          // Buscar apenas pagamentos CONFIRMED dos últimos 30 dias
-          const dataLimite = new Date();
-          dataLimite.setDate(dataLimite.getDate() - 30);
-          const dataLimiteStr = dataLimite.toISOString().split('T')[0];
-          
-          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&paymentDate[ge]=${dataLimiteStr}&limit=100`, {
+          // Buscar assinaturas ativas com pagamentos confirmados
+          const subscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
-          if (paymentsResponse.ok) {
-            const paymentsData = await paymentsResponse.json();
-            const clientesAtivos = new Set();
-            let receitaConfirmada = 0;
+          if (subscriptionsResponse.ok) {
+            const subscriptionsData = await subscriptionsResponse.json();
             
-            for (const payment of paymentsData.data || []) {
-              // Apenas pagamentos com status CONFIRMED e data válida
-              if (payment.status === 'CONFIRMED' && payment.paymentDate) {
-                const paymentDate = new Date(payment.paymentDate);
-                const agora = new Date();
-                const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+            for (const subscription of subscriptionsData.data || []) {
+              // Para cada assinatura ativa, verificar se tem pagamento confirmado nos últimos 30 dias
+              const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?customer=${subscription.customer}&subscription=${subscription.id}&status=CONFIRMED&limit=10`, {
+                headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
+              });
+              
+              if (paymentsResponse.ok) {
+                const paymentsData = await paymentsResponse.json();
+                const hasRecentConfirmedPayment = paymentsData.data?.some((payment: any) => {
+                  if (payment.status === 'CONFIRMED' && payment.paymentDate) {
+                    const paymentDate = new Date(payment.paymentDate);
+                    const agora = new Date();
+                    const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+                    return diasDesdeConfirmacao <= 30;
+                  }
+                  return false;
+                });
                 
-                if (diasDesdeConfirmacao <= 30) {
-                  clientesAtivos.add(payment.customer);
-                  receitaConfirmada += parseFloat(payment.value || '0');
+                if (hasRecentConfirmedPayment) {
+                  clientesAtivosPrincipal++;
+                  receitaPrincipal += parseFloat(subscription.value || '0');
                 }
               }
             }
-            
-            totalClientesPrincipal = clientesAtivos.size;
-            receitaPrincipal = receitaConfirmada;
-            clientesAtivosPrincipal = clientesAtivos.size;
-            console.log(`Principal: ${totalClientesPrincipal} clientes ativos (pagamentos CONFIRMED), R$ ${receitaPrincipal.toFixed(2)} receita`);
+            console.log(`Principal: ${clientesAtivosPrincipal} assinaturas com pagamentos CONFIRMADOS, R$ ${receitaPrincipal.toFixed(2)} receita`);
           }
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Principal:", error);
       }
       
-      // 3. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Asaas Andrey
-      let totalClientesAndrey = 0;
-      let receitaAndrey = 0;
+      // 3. Conta Andrey - APENAS assinaturas com pagamentos CONFIRMADOS  
       let clientesAtivosAndrey = 0;
+      let receitaAndrey = 0;
       
       try {
-        const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
+        const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjUwODNiMzE1LWJiMjktNDQwYi05NDVhLWNkZTNkZDhlZWI2OTo6JGFhY2hfOGM4M2UyNDEtNzk2NS00MDg5LTgyYzgtNjA4YWE5MWM0Y2Q5';
         
-        // Buscar apenas pagamentos CONFIRMED dos últimos 30 dias  
-        const dataLimite = new Date();
-        dataLimite.setDate(dataLimite.getDate() - 30);
-        const dataLimiteStr = dataLimite.toISOString().split('T')[0];
-        
-        const andreyPaymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&paymentDate[ge]=${dataLimiteStr}&limit=100`, {
+        // Buscar assinaturas ativas com pagamentos confirmados
+        const andreySubscriptionsResponse = await fetch(`https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100`, {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
-        if (andreyPaymentsResponse.ok) {
-          const andreyPaymentsData = await andreyPaymentsResponse.json();
-          const clientesAtivosAndreySet = new Set();
-          let receitaConfirmadaAndrey = 0;
+        if (andreySubscriptionsResponse.ok) {
+          const andreySubscriptionsData = await andreySubscriptionsResponse.json();
           
-          for (const payment of andreyPaymentsData.data || []) {
-            // Apenas pagamentos com status CONFIRMED e data válida
-            if (payment.status === 'CONFIRMED' && payment.paymentDate) {
-              const paymentDate = new Date(payment.paymentDate);
-              const agora = new Date();
-              const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+          for (const subscription of andreySubscriptionsData.data || []) {
+            // Para cada assinatura ativa, verificar se tem pagamento confirmado nos últimos 30 dias
+            const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?customer=${subscription.customer}&subscription=${subscription.id}&status=CONFIRMED&limit=10`, {
+              headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
+            });
+            
+            if (paymentsResponse.ok) {
+              const paymentsData = await paymentsResponse.json();
+              const hasRecentConfirmedPayment = paymentsData.data?.some((payment: any) => {
+                if (payment.status === 'CONFIRMED' && payment.paymentDate) {
+                  const paymentDate = new Date(payment.paymentDate);
+                  const agora = new Date();
+                  const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+                  return diasDesdeConfirmacao <= 30;
+                }
+                return false;
+              });
               
-              if (diasDesdeConfirmacao <= 30) {
-                clientesAtivosAndreySet.add(payment.customer);
-                receitaConfirmadaAndrey += parseFloat(payment.value || '0');
+              if (hasRecentConfirmedPayment) {
+                clientesAtivosAndrey++;
+                receitaAndrey += parseFloat(subscription.value || '0');
               }
             }
           }
-          
-          totalClientesAndrey = clientesAtivosAndreySet.size;
-          receitaAndrey = receitaConfirmadaAndrey;
-          clientesAtivosAndrey = clientesAtivosAndreySet.size;
-          console.log(`Andrey: ${totalClientesAndrey} clientes ativos (pagamentos CONFIRMED), R$ ${receitaAndrey.toFixed(2)} receita`);
+          console.log(`Andrey: ${clientesAtivosAndrey} assinaturas com pagamentos CONFIRMADOS, R$ ${receitaAndrey.toFixed(2)} receita`);
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Andrey:", error);
       }
       
-      // 4. Calcular totais consolidados
-      const totalClientes = totalClientesLocais + totalClientesPrincipal + totalClientesAndrey;
-      const receitaTotal = receitaLocal + receitaPrincipal + receitaAndrey;
-      const clientesAtivos = clientesLocais.filter(c => c.statusAssinatura === 'ATIVO').length + 
-                           clientesAtivosPrincipal + clientesAtivosAndrey;
+      // 4. Totais consolidados APENAS com pagamentos confirmados
+      const totalClientesAtivos = clientesLocaisAtivos.length + clientesAtivosPrincipal + clientesAtivosAndrey;
+      const receitaTotalConfirmada = receitaLocal + receitaPrincipal + receitaAndrey;
       
-      console.log(`🎯 TOTAL CONSOLIDADO: ${totalClientes} clientes, R$ ${receitaTotal.toFixed(2)} receita, ${clientesAtivos} ativos`);
+      console.log(`🎯 TOTAL CONFIRMADO: ${totalClientesAtivos} clientes ativos, R$ ${receitaTotalConfirmada.toFixed(2)} receita confirmada`);
       
       // 5. Estatísticas por origem
-      const clientesPorOrigem = await storage.getClientesPorOrigem();
-      clientesPorOrigem.push(
-        { origem: 'ASAAS_PRINCIPAL', total: totalClientesPrincipal },
-        { origem: 'ASAAS_ANDREY', total: totalClientesAndrey }
-      );
+      const clientesPorOrigem = [
+        { origem: 'LOCAL_EXTERNO', total: clientesLocaisAtivos.length },
+        { origem: 'ASAAS_PRINCIPAL', total: clientesAtivosPrincipal },
+        { origem: 'ASAAS_ANDREY', total: clientesAtivosAndrey }
+      ];
       
       res.json({
         success: true,
-        total: totalClientes,
+        total: totalClientesAtivos,
         origem: clientesPorOrigem,
-        valorTotalAssinaturas: receitaTotal,
-        clientesAtivos: clientesAtivos,
+        valorTotalAssinaturas: receitaTotalConfirmada,
+        clientesAtivos: totalClientesAtivos,
         stats: {
-          totalClientes,
-          valorTotalAssinaturas: receitaTotal,
-          clientesAtivos,
+          totalClientes: totalClientesAtivos,
+          valorTotalAssinaturas: receitaTotalConfirmada,
+          clientesAtivos: totalClientesAtivos,
           clientesPorOrigem,
           breakdown: {
-            local: { total: totalClientesLocais, receita: receitaLocal },
-            principal: { total: totalClientesPrincipal, receita: receitaPrincipal },
-            andrey: { total: totalClientesAndrey, receita: receitaAndrey }
+            local: { total: clientesLocaisAtivos.length, receita: receitaLocal },
+            principal: { total: clientesAtivosPrincipal, receita: receitaPrincipal },
+            andrey: { total: clientesAtivosAndrey, receita: receitaAndrey }
           }
         }
       });
     } catch (error) {
-      console.error("Erro ao buscar estatísticas unificadas:", error);
+      console.error("Erro ao buscar estatísticas confirmadas:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
