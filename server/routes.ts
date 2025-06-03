@@ -5719,99 +5719,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Nova rota para checkout simplificado usando link de pagamento
   app.post("/api/asaas/criar-checkout-recorrente", async (req: Request, res: Response) => {
     try {
-      const { planoNome, planoDescricao, planoValor, clienteNome, clienteEmail, clienteTelefone, clienteCpf } = req.body;
-      const asaasApiKey = process.env.ASAAS_TRATO;
+      const { nome, email, telefone, planoSelecionado } = req.body;
 
+      if (!nome || !email || !telefone || !planoSelecionado) {
+        return res.status(400).json({ 
+          error: 'Todos os campos são obrigatórios: nome, email, telefone e plano' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
       if (!asaasApiKey) {
         return res.status(500).json({ 
-          success: false, 
-          message: 'Chave da API do Asaas não configurada' 
+          error: 'Chave da API Asaas não configurada' 
         });
       }
 
-      // 1. Primeiro criar cliente no Asaas
-      const customerData = {
-        name: clienteNome,
-        email: clienteEmail,
-        mobilePhone: clienteTelefone,
-        cpfCnpj: clienteCpf || ""
-      };
-
-      console.log('🔄 Criando cliente para checkout:', customerData);
-
-      const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
-        method: 'POST',
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(customerData)
-      });
-
-      if (!customerResponse.ok) {
-        const errorText = await customerResponse.text();
-        console.error('❌ Erro ao criar cliente:', errorText);
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Erro ao criar cliente no Asaas',
-          details: errorText
-        });
-      }
-
-      const customer = await customerResponse.json();
-      console.log('✅ Cliente criado:', customer.id);
-
-      // 2. Criar link de pagamento mensal
-      const paymentLinkData = {
-        name: planoNome,
-        description: planoDescricao || `Assinatura mensal ${planoNome}`,
-        billingType: "CREDIT_CARD",
-        chargeType: "RECURRENT",
-        value: parseFloat(planoValor.toString()),
-        dueDateLimitDays: 1,
-        subscriptionCycle: "MONTHLY",
-        maxInstallmentCount: 1
-      };
-
-      console.log('🔄 Criando link de pagamento:', paymentLinkData);
-
-      const linkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
-        method: 'POST',
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(paymentLinkData)
-      });
-
-      if (!linkResponse.ok) {
-        const errorText = await linkResponse.text();
-        console.error('❌ Erro ao criar link de pagamento:', errorText);
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Erro ao criar link de pagamento',
-          details: errorText
-        });
-      }
-
-      const paymentLink = await linkResponse.json();
-      console.log('✅ Link de pagamento criado:', paymentLink);
+      // Calcular datas
+      const hoje = new Date();
+      const proximoMes = new Date(hoje);
+      proximoMes.setMonth(proximoMes.getMonth() + 1);
       
+      const umAnoDepois = new Date(hoje);
+      umAnoDepois.setFullYear(umAnoDepois.getFullYear() + 1);
+
+      // Payload para checkout recorrente seguindo o modelo fornecido
+      const checkoutPayload = {
+        billingTypes: ["CREDIT_CARD"],
+        chargeTypes: ["RECURRENT"],
+        minutesToExpire: 60,
+        callback: {
+          cancelUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/cancelado`,
+          expiredUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/expirado`,
+          successUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/sucesso`
+        },
+        items: [{
+          description: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome}`,
+          name: planoSelecionado.nome,
+          quantity: 1,
+          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor)
+        }],
+        customerData: {
+          email: email,
+          name: nome,
+          phone: telefone.replace(/\D/g, '')
+          // NÃO ENVIAR cpfCnpj - cliente preenche no checkout do Asaas
+        },
+        subscription: {
+          cycle: "MONTHLY",
+          endDate: umAnoDepois.toISOString().slice(0, 19).replace('T', ' '),
+          nextDueDate: proximoMes.toISOString().slice(0, 19).replace('T', ' ')
+        }
+      };
+
+      console.log('Criando checkout recorrente:', JSON.stringify(checkoutPayload, null, 2));
+
+      const response = await fetch('https://api.asaas.com/v3/checkout', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkoutPayload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Erro na API do Asaas:', result);
+        return res.status(400).json({ 
+          error: result.errors?.[0]?.description || 'Erro ao criar checkout no Asaas',
+          details: result
+        });
+      }
+
+      console.log('Checkout criado com sucesso:', result);
+
       res.json({
         success: true,
-        paymentLink: paymentLink,
-        checkoutUrl: paymentLink.url,
-        customer: customer,
-        message: 'Link de pagamento criado com sucesso!'
+        checkoutUrl: result.checkoutUrl,
+        checkoutId: result.id
       });
 
     } catch (error) {
-      console.error('❌ Erro interno ao criar checkout:', error);
+      console.error('Erro ao criar checkout recorrente:', error);
       res.status(500).json({ 
-        success: false, 
-        message: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+        error: 'Erro interno do servidor' 
       });
+    }
+  });
+
+  // Rotas de callback para o checkout do Asaas
+  app.get('/pagamento/sucesso', (req: Request, res: Response) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Pagamento Realizado</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f0f8ff; }
+          .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
+          .message { color: #666; margin-bottom: 30px; }
+          .btn { background: #365e78; color: white; padding: 12px 24px; border: none; border-radius: 5px; text-decoration: none; display: inline-block; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success">✅ Pagamento Realizado com Sucesso!</div>
+          <div class="message">Sua assinatura foi ativada. Você receberá um e-mail de confirmação em breve.</div>
+          <a href="/" class="btn">Voltar ao Site</a>
+        </div>
+      </body>
+      </html>
+    `);
+  });
+
+  app.get('/pagamento/cancelado', (req: Request, res: Response) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Pagamento Cancelado</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fff5f5; }
+          .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .cancelled { color: #dc3545; font-size: 24px; margin-bottom: 20px; }
+          .message { color: #666; margin-bottom: 30px; }
+          .btn { background: #365e78; color: white; padding: 12px 24px; border: none; border-radius: 5px; text-decoration: none; display: inline-block; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="cancelled">❌ Pagamento Cancelado</div>
+          <div class="message">Você cancelou o pagamento. Tente novamente quando estiver pronto.</div>
+          <a href="/" class="btn">Voltar ao Site</a>
+        </div>
+      </body>
+      </html>
+    `);
+  });
+
+  app.get('/pagamento/expirado', (req: Request, res: Response) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Checkout Expirado</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #fffbf0; }
+          .container { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          .expired { color: #ffc107; font-size: 24px; margin-bottom: 20px; }
+          .message { color: #666; margin-bottom: 30px; }
+          .btn { background: #365e78; color: white; padding: 12px 24px; border: none; border-radius: 5px; text-decoration: none; display: inline-block; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="expired">⏰ Checkout Expirado</div>
+          <div class="message">O tempo para completar o pagamento expirou. Tente novamente.</div>
+          <a href="/" class="btn">Voltar ao Site</a>
+        </div>
+      </body>
+      </html>
+    `);
+  });
+
+  // Webhook para receber eventos do Asaas
+  app.post('/webhook/asaas', async (req: Request, res: Response) => {
+    try {
+      const evento = req.body.event;
+      const data = req.body;
+      
+      console.log('Webhook Asaas recebido:', evento, data);
+      
+      if (evento === "SUBSCRIPTION_CREATED") {
+        console.log('Nova assinatura criada:', data.subscription);
+        // Aqui você pode salvar os dados da assinatura no banco de dados
+      }
+      
+      if (evento === "PAYMENT_CREATED") {
+        console.log('Nova fatura gerada:', data.payment);
+        // Registrar nova fatura
+      }
+      
+      if (evento === "CHECKOUT_COMPLETED") {
+        console.log('Checkout completado:', data.checkout);
+        // Confirmar que o checkout foi finalizado
+      }
+      
+      res.status(200).send("OK");
+    } catch (error) {
+      console.error('Erro no webhook:', error);
+      res.status(500).send("Erro");
     }
   });
 

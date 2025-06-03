@@ -163,36 +163,18 @@ export default function Planos() {
         return { external: true, cliente: result };
       }
       
-      // Para cartão de crédito, primeiro criar cliente e depois assinatura
+      // Para cartão de crédito, criar checkout recorrente diretamente
       const planoSelecionado = formData.planoSelecionado;
       if (!planoSelecionado) {
         throw new Error('Plano não selecionado');
       }
       
-      // 1. Criar cliente no Asaas
-      const clienteResponse = await apiRequest("/api/asaas/criar-cliente", "POST", {
-        name: formData.nome,
-        email: formData.email,
-        mobilePhone: formData.telefone
-      });
-      
-      const clienteData = await clienteResponse.json();
-      if (!clienteData.success) {
-        throw new Error(clienteData.error || 'Erro ao criar cliente');
-      }
-      
-      // 2. Criar checkout link para pagamento
-      const dataVencimento = new Date();
-      dataVencimento.setDate(dataVencimento.getDate() + 30);
-      
+      // Criar checkout recorrente com nova estrutura
       const response = await apiRequest("/api/asaas/criar-checkout-recorrente", "POST", {
-        planoNome: planoSelecionado.nome,
-        planoDescricao: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome}`,
-        planoValor: parseFloat(planoSelecionado.valorMensal) || parseFloat(planoSelecionado.valor),
-        clienteNome: formData.nome,
-        clienteEmail: formData.email,
-        clienteTelefone: formData.telefone,
-        clienteCpf: ""
+        nome: formData.nome,
+        email: formData.email,
+        telefone: formData.telefone,
+        planoSelecionado: planoSelecionado
       });
       
       const result = await response.json();
