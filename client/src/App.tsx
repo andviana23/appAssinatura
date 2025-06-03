@@ -55,7 +55,7 @@ function AuthenticatedRoutes() {
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/agendamento" component={Agendamento} />
-          <Route path="/distribuicao" component={DistribuicaoNova} />
+          <Route path="/comissao" component={DistribuicaoNova} />
           <Route path="/relatorio" component={TotalServicos} />
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />

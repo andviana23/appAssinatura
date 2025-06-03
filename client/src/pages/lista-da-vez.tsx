@@ -191,32 +191,32 @@ export default function ListaDaVez() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg hover:shadow-xl"
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-all duration-200 hover:scale-105 bg-card/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg hover:shadow-xl border border-border/50"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-semibold">Voltar</span>
             </button>
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg">
                 <Calendar className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">Lista da Vez</h1>
-                <p className="text-gray-600 mt-1">Controle mensal de atendimentos</p>
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Lista da Vez</h1>
+                <p className="text-muted-foreground mt-1">Controle mensal de atendimentos</p>
               </div>
             </div>
           </div>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
-            <div className="flex items-center space-x-4 text-sm bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
-              <Calendar className="h-4 w-4 text-[#365e78]" />
-              <span className="font-medium text-[#365e78]">{dayjs().format("MMMM [de] YYYY")}</span>
+            <div className="flex items-center space-x-4 text-sm bg-card/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg border border-border/50">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="font-medium text-primary">{dayjs().format("MMMM [de] YYYY")}</span>
             </div>
             {(isAdmin || isRecepcionista) && (
               <div className="flex flex-col lg:flex-row gap-3">
@@ -231,7 +231,7 @@ export default function ListaDaVez() {
                 
                 <div className="flex gap-2">
                   <Select value={barbeiroSelecionado} onValueChange={setBarbeiroSelecionado}>
-                    <SelectTrigger className="w-48 bg-white/90 backdrop-blur-sm border-2 border-[#365e78]/20 shadow-lg">
+                    <SelectTrigger className="w-48 bg-card/90 backdrop-blur-sm border-2 border-primary/20 shadow-lg">
                       <SelectValue placeholder="Escolher barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
