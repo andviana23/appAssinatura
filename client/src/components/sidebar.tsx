@@ -35,6 +35,11 @@ const navigation = [
     icon: UserCheck,
   },
   {
+    name: "Clientes Status",
+    href: "/clientes-status",
+    icon: ListOrdered,
+  },
+  {
     name: "Serviços",
     href: "/servicos",
     icon: Scissors,
