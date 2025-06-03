@@ -99,8 +99,8 @@ export default function ClientesPage() {
         cliente.numeroDocumento?.includes(searchTerm);
       
       const matchStatus = filterStatus === "todos" || 
-        (filterStatus === "ativo" && cliente.statusAssinatura === "ATIVO") ||
-        (filterStatus === "inativo" && cliente.statusAssinatura !== "ATIVO");
+        (filterStatus === "ativo" && (cliente.statusAssinatura === "ATIVO" || cliente.statusDescricao === "Cliente Ativo")) ||
+        (filterStatus === "inativo" && (cliente.statusAssinatura !== "ATIVO" && cliente.statusDescricao !== "Cliente Ativo"));
       
       const matchOrigem = filterOrigem === "todas" || 
         (filterOrigem === "local" && cliente.origem === "LOCAL") ||
