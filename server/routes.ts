@@ -61,14 +61,30 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
 
-      // Separar cobranças por status
+      // Buscar a última cobrança paga
       const cobrancasPagas = cobrancas.filter((c: any) => c.status === 'RECEIVED');
+      const ultimaCobrancaPaga = cobrancasPagas.sort((a: any, b: any) => 
+        new Date(b.paymentDate || b.dueDate).getTime() - new Date(a.paymentDate || a.dueDate).getTime()
+      )[0];
+
+      // Verificar se cliente tem período ativo baseado na última cobrança paga
+      if (ultimaCobrancaPaga) {
+        const dataPagamento = new Date(ultimaCobrancaPaga.paymentDate || ultimaCobrancaPaga.dueDate);
+        const dataVencimentoAssinatura = new Date(dataPagamento);
+        dataVencimentoAssinatura.setDate(dataPagamento.getDate() + 30); // Adiciona 30 dias
+        
+        // Se ainda está dentro do período de 30 dias = ativo
+        if (hoje <= dataVencimentoAssinatura) {
+          console.log(`Cliente ${cliente.id} ativo: dentro do período de 30 dias da última cobrança paga`);
+          return 'ativo';
+        }
+      }
+
+      // Verificar se tem cobrança pendente vencida
       const cobrancasPendentes = cobrancas.filter((c: any) => c.status !== 'RECEIVED');
-      
-      // Verificar se existe cobrança vencida não paga
       const cobrancasVencidasNaoPagas = cobrancasPendentes.filter((cobranca: any) => {
         const dataVencimento = new Date(cobranca.dueDate);
-        dataVencimento.setHours(23, 59, 59, 999); // Final do dia de vencimento
+        dataVencimento.setHours(23, 59, 59, 999);
         return dataVencimento < hoje;
       });
 
@@ -91,14 +107,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return 'ativo';
       }
 
-      // Se tem pelo menos uma cobrança paga e não tem pendentes vencidas = ativo
-      if (cobrancasPagas.length > 0) {
-        console.log(`Cliente ${cliente.id} ativo: tem cobranças pagas e sem pendências vencidas`);
-        return 'ativo';
-      }
-
-      // Cliente novo sem cobranças = ativo
-      console.log(`Cliente ${cliente.id} ativo: sem cobranças ou cliente novo`);
+      // Por padrão, considera ativo (clientes novos ou sem cobranças)
+      console.log(`Cliente ${cliente.id} ativo: cliente novo ou sem cobranças pendentes`);
       return 'ativo';
       
     } catch (error) {
