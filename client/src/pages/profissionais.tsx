@@ -1,535 +1,396 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useParams, useSearch } from "wouter";
-import { ArrowLeft, Plus, User, UserCheck, Edit, Trash2, Save, Eye, EyeOff } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { ArrowLeft, Plus, User, UserCheck, Edit, Trash2, Eye, EyeOff, Phone, Mail, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Profissional {
   id: number;
   nome: string;
   email: string;
+  telefone?: string;
   ativo: boolean;
   tipo: string;
 }
 
 export default function Profissionais() {
   const [location, setLocation] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const searchParams = new URLSearchParams(useSearch());
-  const params = useParams();
-  
-  // Detectar se estamos em modo de cadastro ou edição
-  const isNovo = location.includes('/novo');
-  const isEdicao = location.includes('/editar');
-  const profissionalId = params.id ? parseInt(params.id) : null;
-  const tipoProfissional = searchParams.get('tipo') || 'barbeiro';
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Estado do formulário
   const [formData, setFormData] = useState({
     nome: '',
+    telefone: '',
     email: '',
     senha: '',
-    telefone: '',
-    endereco: '',
-    comissao: 50,
-    ativo: true,
-    role: tipoProfissional === 'recepcionista' ? 'recepcionista' : 'barbeiro'
+    tipo: 'barbeiro'
   });
-  const [showPassword, setShowPassword] = useState(false);
 
-  const { data: barbeiros = [], isLoading } = useQuery({
+  const { data: profissionais = [], isLoading } = useQuery({
     queryKey: ["/api/profissionais"],
-    enabled: !isNovo && !isEdicao, // Só carregar lista se não estiver em formulário
   });
 
-  // Carregar dados do profissional para edição
-  const { data: profissionalData, isLoading: loadingProfissional, error: errorProfissional } = useQuery({
-    queryKey: [`/api/barbeiros/${profissionalId}`],
-    enabled: isEdicao && !!profissionalId,
-    refetchOnWindowFocus: false,
-  });
-
-
-
-  // Limpar formulário ao navegar ou carregar dados para edição
-  useEffect(() => {
-    if (isNovo) {
-      // Resetar formulário para novo cadastro
-      setFormData({
-        nome: '',
-        email: '',
-        senha: '',
-        telefone: '',
-        endereco: '',
-        comissao: 50,
-        ativo: true,
-        role: tipoProfissional === 'recepcionista' ? 'recepcionista' : 'barbeiro'
-      });
-    }
-  }, [isNovo, tipoProfissional]);
-
-  // Efeito separado para carregar dados na edição
-  useEffect(() => {
-    if (isEdicao && profissionalData && !loadingProfissional) {
-      console.log('Carregando dados para edição:', profissionalData);
-      setFormData({
-        nome: profissionalData.nome || '',
-        email: profissionalData.email || '',
-        senha: '',
-        telefone: profissionalData.telefone || '',
-        endereco: profissionalData.endereco || '',
-        comissao: Number(profissionalData.comissao) || 50,
-        ativo: profissionalData.ativo !== false,
-        role: profissionalData.role || 'barbeiro'
-      });
-    }
-  }, [profissionalData, isEdicao, loadingProfissional]);
-
-  const criarProfissional = useMutation({
-    mutationFn: async (data: any) => {
-      try {
-        console.log("Dados sendo enviados:", data);
-        if (formData.role === 'barbeiro') {
-          // Para barbeiros, remover campos desnecessários
-          const { senha, role, ...dadosBarbeiro } = data;
-          return await apiRequest("/api/barbeiros", "POST", dadosBarbeiro);
-        } else {
-          return await apiRequest("/api/users", "POST", { ...data, role: 'recepcionista' });
-        }
-      } catch (error) {
-        console.error("Erro na requisição:", error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
-      toast({ title: "Profissional cadastrado com sucesso!" });
-      setLocation("/profissionais");
-    },
-    onError: (error: any) => {
-      console.error("Erro detalhado ao cadastrar profissional:", error);
-      toast({ 
-        title: "Erro ao cadastrar profissional", 
-        description: error.message || error.error || "Verifique os dados e tente novamente",
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const atualizarProfissional = useMutation({
-    mutationFn: (data: any) => {
-      if (formData.role === 'barbeiro') {
-        return apiRequest(`/api/barbeiros/${profissionalId}`, "PUT", data);
-      } else {
-        return apiRequest(`/api/users/${profissionalId}`, "PUT", data);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
-      toast({ title: "Profissional atualizado com sucesso!" });
-      setLocation("/profissionais");
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Erro ao atualizar profissional", 
-        description: error.message || "Tente novamente",
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const deleteProfissional = useMutation({
-    mutationFn: (id: number) => fetch(`/api/barbeiros/${id}`, {
-      method: "DELETE",
-    }).then(res => {
-      if (!res.ok) throw new Error("Erro ao excluir profissional");
-      return res.json();
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/barbeiros"] });
-      toast({ title: "Profissional excluído com sucesso" });
-    },
-    onError: (error) => {
-      console.error("Erro ao excluir profissional:", error);
-      toast({ 
-        title: "Não foi possível excluir este profissional", 
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const handleDelete = (profissional: Profissional) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o profissional ${profissional.nome}?`)) {
-      return;
-    }
-    deleteProfissional.mutate(profissional.id);
-  };
-
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     // Validações básicas
-    if (!formData.nome.trim()) {
-      toast({ title: "Nome é obrigatório", variant: "destructive" });
+    if (!formData.nome.trim() || !formData.email.trim() || !formData.senha.trim()) {
+      alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
-    if (!formData.email.trim()) {
-      toast({ title: "Email é obrigatório", variant: "destructive" });
-      return;
-    }
-    if (!isEdicao && !formData.senha.trim()) {
-      toast({ title: "Senha é obrigatória", variant: "destructive" });
-      return;
-    }
-
-    const dadosEnvio = { ...formData };
-    if (isEdicao && !formData.senha.trim()) {
-      // Se estamos editando e senha está vazia, não enviar senha
-      delete dadosEnvio.senha;
-    }
-
-    if (isEdicao) {
-      atualizarProfissional.mutate(dadosEnvio);
-    } else {
-      criarProfissional.mutate(dadosEnvio);
-    }
+    
+    console.log('Dados do formulário:', formData);
+    // Aqui será implementada a integração com o backend futuramente
+    alert('Formulário enviado! (Integração será implementada)');
+    
+    // Resetar formulário e fechar modal
+    setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
+    setIsModalOpen(false);
   };
 
-  // Renderizar formulário se estivermos em modo de cadastro ou edição
-  if (isNovo || isEdicao) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="p-6 max-w-4xl mx-auto">
-          {/* Botão Voltar */}
-          <button
-            onClick={() => setLocation("/profissionais")}
-            className="flex items-center gap-2 mb-6 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105"
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "16px",
-            }}
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Voltar
-          </button>
-
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
-                  {isEdicao ? "Editar" : "Cadastrar"} {tipoProfissional === 'recepcionista' ? 'Recepcionista' : 'Barbeiro'}
-                </h1>
-                <p className="text-gray-600 text-lg">
-                  {isEdicao ? "Edite os dados do profissional" : "Preencha os dados para cadastrar um novo profissional"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="nome">Nome Completo *</Label>
-                  <Input
-                    id="nome"
-                    value={formData.nome}
-                    onChange={(e) => handleInputChange('nome', e.target.value)}
-                    placeholder="Digite o nome completo"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Digite o email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="senha">
-                    Senha {isEdicao ? "(deixe em branco para manter atual)" : "*"}
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="senha"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.senha}
-                      onChange={(e) => handleInputChange('senha', e.target.value)}
-                      placeholder={isEdicao ? "Nova senha (opcional)" : "Digite a senha"}
-                      required={!isEdicao}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    value={formData.telefone}
-                    onChange={(e) => handleInputChange('telefone', e.target.value)}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label htmlFor="endereco">Endereço</Label>
-                  <Input
-                    id="endereco"
-                    value={formData.endereco}
-                    onChange={(e) => handleInputChange('endereco', e.target.value)}
-                    placeholder="Endereço completo"
-                  />
-                </div>
-
-                {formData.role === 'barbeiro' && (
-                  <div>
-                    <Label htmlFor="comissao">Comissão (%)</Label>
-                    <Input
-                      id="comissao"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.comissao}
-                      onChange={(e) => handleInputChange('comissao', parseInt(e.target.value) || 0)}
-                      placeholder="50"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <Label htmlFor="tipo">Tipo de Profissional</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) => handleInputChange('role', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="barbeiro">Barbeiro</SelectItem>
-                      <SelectItem value="recepcionista">Recepcionista</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="ativo"
-                    checked={formData.ativo}
-                    onCheckedChange={(checked) => handleInputChange('ativo', checked)}
-                  />
-                  <Label htmlFor="ativo">Profissional ativo</Label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLocation("/profissionais")}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-[#365e78] hover:bg-[#2a4a5e] text-white"
-                  disabled={criarProfissional.isPending || atualizarProfissional.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isEdicao ? "Salvar Alterações" : "Cadastrar Profissional"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        </div>
-      </div>
-    );
-  }
+  const handleCancel = () => {
+    setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
+    setIsModalOpen(false);
+  };
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
-          <div className="grid gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando profissionais...</p>
         </div>
       </div>
     );
   }
 
-  // Renderizar listagem de profissionais
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Botão Voltar */}
-        <button
-          onClick={() => setLocation("/")}
-          className="flex items-center gap-2 mb-6 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105"
-          style={{
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Voltar
-        </button>
-
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Header com botão voltar */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
-              <UserCheck className="h-6 w-6 text-white" />
-            </div>
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Voltar ao Dashboard
+          </button>
+
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
-                Profissionais
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Gerenciar Profissionais
               </h1>
-              <p className="text-gray-600 text-lg">
-                Gerencie barbeiros e recepcionistas da barbearia
+              <p className="text-lg text-gray-600">
+                Administre a equipe de barbeiros e recepcionistas
               </p>
             </div>
+
+            {/* Botão principal de cadastro */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg px-8 py-3"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Cadastrar Profissional
+                </Button>
+              </DialogTrigger>
+
+              {/* Modal de Cadastro */}
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader className="text-center pb-4">
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    Novo Profissional
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    Preencha os dados para cadastrar um novo membro da equipe
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  
+                  {/* Nome */}
+                  <div className="space-y-2">
+                    <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                      Nome do profissional *
+                    </Label>
+                    <Input
+                      id="nome"
+                      type="text"
+                      value={formData.nome}
+                      onChange={(e) => handleInputChange('nome', e.target.value)}
+                      placeholder="Digite o nome completo"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+
+                  {/* Telefone */}
+                  <div className="space-y-2">
+                    <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
+                      Telefone
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="telefone"
+                        type="tel"
+                        value={formData.telefone}
+                        onChange={(e) => handleInputChange('telefone', e.target.value)}
+                        placeholder="(00) 00000-0000"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      E-mail *
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="email@exemplo.com"
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Senha */}
+                  <div className="space-y-2">
+                    <Label htmlFor="senha" className="text-sm font-medium text-gray-700">
+                      Senha *
+                    </Label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="senha"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.senha}
+                        onChange={(e) => handleInputChange('senha', e.target.value)}
+                        placeholder="Digite uma senha segura"
+                        className="pl-10 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      A senha será salva de forma segura. O profissional poderá alterá-la posteriormente.
+                    </p>
+                  </div>
+
+                  {/* Tipo de Profissional */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Tipo de profissional *
+                    </Label>
+                    <RadioGroup 
+                      value={formData.tipo} 
+                      onValueChange={(value) => handleInputChange('tipo', value)}
+                      className="space-y-3"
+                    >
+                      <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <RadioGroupItem value="barbeiro" id="barbeiro" />
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <Label htmlFor="barbeiro" className="font-medium cursor-pointer">
+                              Barbeiro
+                            </Label>
+                            <p className="text-sm text-gray-500">Profissional que realiza serviços de corte e barbearia</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <RadioGroupItem value="recepcionista" id="recepcionista" />
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <UserCheck className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <Label htmlFor="recepcionista" className="font-medium cursor-pointer">
+                              Recepcionista
+                            </Label>
+                            <p className="text-sm text-gray-500">Responsável pelo atendimento e agendamentos</p>
+                          </div>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Botões */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancel}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Cadastrar
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        {/* Botões de Ação */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <Button
-            onClick={() => setLocation("/profissionais/novo?tipo=barbeiro")}
-            className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Cadastrar Barbeiro
-          </Button>
-          <Button
-            onClick={() => setLocation("/profissionais/novo?tipo=recepcionista")}
-            variant="outline"
-            className="border-2 border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Cadastrar Recepcionista
-          </Button>
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <User className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total de Profissionais</p>
+                  <p className="text-2xl font-bold text-gray-900">{profissionais.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <UserCheck className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Profissionais Ativos</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {profissionais.filter((p: Profissional) => p.ativo).length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <User className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Barbeiros</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {profissionais.filter((p: Profissional) => p.tipo === 'barbeiro').length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Lista de Profissionais */}
-        <div className="grid gap-4">
-        {Array.isArray(barbeiros) && barbeiros.length > 0 ? (
-          barbeiros.map((profissional: Profissional) => (
-            <Card key={profissional.id} className="shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#8B4513] text-white">
-                      <User className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {profissional.nome}
-                      </h3>
-                      <p className="text-gray-600">{profissional.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          Barbeiro
-                        </Badge>
-                        <Badge 
-                          variant={profissional.ativo ? "default" : "secondary"}
-                          className={profissional.ativo ? "bg-green-100 text-green-800" : ""}
-                        >
-                          {profissional.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              Equipe Cadastrada
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profissionais.length === 0 ? (
+              <div className="text-center py-12">
+                <UserCheck className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhum profissional cadastrado
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Comece cadastrando barbeiros e recepcionistas para sua equipe
+                </p>
+                <Button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Primeiro Profissional
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {profissionais.map((profissional: Profissional) => (
+                  <div key={profissional.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        profissional.tipo === 'barbeiro' ? 'bg-blue-100' : 'bg-green-100'
+                      }`}>
+                        {profissional.tipo === 'barbeiro' ? (
+                          <User className={`h-6 w-6 ${profissional.tipo === 'barbeiro' ? 'text-blue-600' : 'text-green-600'}`} />
+                        ) : (
+                          <UserCheck className="h-6 w-6 text-green-600" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {profissional.nome}
+                        </h3>
+                        <p className="text-gray-600">{profissional.email}</p>
+                        {profissional.telefone && (
+                          <p className="text-sm text-gray-500">{profissional.telefone}</p>
+                        )}
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Badge variant={profissional.tipo === 'barbeiro' ? 'default' : 'secondary'}>
+                            {profissional.tipo === 'barbeiro' ? 'Barbeiro' : 'Recepcionista'}
+                          </Badge>
+                          <Badge variant={profissional.ativo ? 'default' : 'secondary'} 
+                                 className={profissional.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
+                            {profissional.ativo ? 'Ativo' : 'Inativo'}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLocation(`/profissionais/editar/${profissional.id}`)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => handleDelete(profissional)}
-                      disabled={deleteProfissional.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="shadow-sm">
-            <CardContent className="p-12 text-center">
-              <UserCheck className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum profissional cadastrado
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Comece cadastrando barbeiros e recepcionistas para sua equipe.
-              </p>
-              <Button
-                onClick={() => setLocation("/profissionais/novo?tipo=barbeiro")}
-                className="bg-[#365e78] hover:bg-[#2a4a5e] text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Cadastrar Primeiro Profissional
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
