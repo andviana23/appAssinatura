@@ -48,7 +48,7 @@ function AuthenticatedRoutes() {
           <Route path="/profissionais/editar/:id" component={Profissionais} />
           <Route path="/clientes" component={ClientesNovo} />
           <Route path="/clientes-debug" component={ClientesDebug} />
-          <Route path="/status-clientes" component={ClientesStatus} />
+          <Route path="/clientes-status" component={ClientesStatus} />
 
           <Route path="/sistema-moderno" component={SistemaModerno} />
           <Route path="/servicos" component={Servicos} />
