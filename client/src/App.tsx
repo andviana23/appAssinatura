@@ -13,7 +13,7 @@ import Login from "@/pages/login-aprimorado";
 import AdminDashboard from "@/pages/dashboard-melhorado";
 import Barbeiros from "@/pages/barbeiros";
 import Profissionais from "@/pages/profissionais";
-import Clientes from "@/pages/clientes";
+import ClientesNovo from "@/pages/clientes";
 import ClientesDebug from "@/pages/clientes-debug";
 import SistemaModerno from "@/pages/sistema-moderno";
 import Servicos from "@/pages/servicos";
@@ -42,7 +42,7 @@ function AuthenticatedRoutes() {
           <Route path="/profissionais" component={Profissionais} />
           <Route path="/profissionais/novo" component={Profissionais} />
           <Route path="/profissionais/editar/:id" component={Profissionais} />
-          <Route path="/clientes" component={Clientes} />
+          <Route path="/clientes" component={ClientesNovo} />
           <Route path="/clientes-debug" component={ClientesDebug} />
           <Route path="/sistema-moderno" component={SistemaModerno} />
           <Route path="/servicos" component={Servicos} />
@@ -86,7 +86,7 @@ function AuthenticatedRoutes() {
         <Route path="/" component={RecepcionistaDashboard} />
         <Route path="/recepcionista-dashboard" component={RecepcionistaDashboard} />
         <Route path="/agendamento" component={Agendamento} />
-        <Route path="/clientes" component={Clientes} />
+        <Route path="/clientes" component={ClientesNovo} />
         <Route path="/planos" component={Planos} />
         <Route path="/lista-da-vez" component={ListaDaVez} />
         <Route path="/configuracoes" component={Configuracoes} />

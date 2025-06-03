@@ -1,696 +1,424 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { UserCheck, RefreshCw, Users, TrendingUp, AlertCircle, Filter, Search, ArrowLeft, MoreVertical, Ban, Trash2, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
-import { useLocation } from "wouter";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  Phone, 
+  Mail, 
+  CreditCard, 
+  Calendar,
+  TrendingUp,
+  Database,
+  Eye,
+  Download,
+  MoreVertical
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-interface ClienteUnificado {
+interface Cliente {
   id: number;
-  nome: string;
-  email: string;
-  telefone: string | null;
-  cpf: string | null;
-  planoNome: string | null;
-  planoValor: string | null;
-  formaPagamento: string | null;
-  statusAssinatura: string | null;
-  dataInicioAssinatura: Date | null;
-  dataVencimentoAssinatura: Date | null;
-  origem: 'ASAAS' | 'EXTERNO';
-  createdAt: Date;
-  dataProximaFatura?: string | null;
-  cycle?: string | null;
+  nomeCompleto: string;
+  email?: string;
+  telefonePrincipal?: string;
+  numeroDocumento?: string;
+  valorPlanoAtual?: string;
+  statusAssinatura?: string;
+  dataUltimoPagamento?: string;
+  origem: string;
+  idAsaasPrincipal?: string;
+  idAsaasAndrey?: string;
+  cidade?: string;
+  estado?: string;
+  createdAt: string;
 }
 
-interface ClientesStats {
-  totalActiveClients: number;
-  totalSubscriptionRevenue: number;
-  totalExpiringSubscriptions: number;
-}
-
-interface ClienteAsaasAndrey {
-  id: string;
-  nome: string;
-  email: string;
-  telefone: string | null;
-  cpf: string | null;
-  endereco: string | null;
-  cidade: string | null;
-  estado: string | null;
-  dataCadastro: string;
-  origem: 'ASAAS_ANDREY';
-  planoNome: string | null;
-  planoValor: number | null;
-  formaPagamento: string | null;
-  statusAssinatura: string | null;
-  dataProximaFatura: string | null;
-  cycle: string | null;
-}
-
-export default function Clientes() {
-  const { toast } = useToast();
-  const [, setLocation] = useLocation();
+export default function ClientesPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("todos");
+  const [filterOrigem, setFilterOrigem] = useState("todas");
+  const [selectedTab, setSelectedTab] = useState("lista");
   const queryClient = useQueryClient();
-  
-  // Estados para filtros de data
-  const currentDate = new Date();
-  const [filtroMes, setFiltroMes] = useState<string>((currentDate.getMonth() + 1).toString().padStart(2, '0'));
-  const [filtroAno, setFiltroAno] = useState<string>(currentDate.getFullYear().toString());
-  const [filtroOrigem, setFiltroOrigem] = useState<string>('todos');
-  const [buscaNome, setBuscaNome] = useState<string>('');
-  const [abaAtiva, setAbaAtiva] = useState<string>('principal');
 
-  const { data: stats, isLoading: statsLoading } = useQuery<ClientesStats>({
-    queryKey: ['/api/clientes-unified/stats', filtroMes, filtroAno],
-    refetchInterval: 300000,
+  // Buscar estatísticas consolidadas
+  const { data: estatisticas, isLoading: statsLoading } = useQuery({
+    queryKey: ["/api/v2/estatisticas"],
+    refetchInterval: 30000,
   });
 
-  const { data: clientesResponse, isLoading: clientesLoading, refetch } = useQuery<{success: boolean, total: number, clientes: ClienteUnificado[]}>({
-    queryKey: ['/api/clientes-unified'],
-    refetchInterval: 300000,
+  // Buscar todos os clientes
+  const { data: clientesData, isLoading: clientesLoading } = useQuery({
+    queryKey: ["/api/v2/clientes"],
   });
 
-  // Hook para buscar clientes da segunda conta Asaas (Andrey)
-  const { data: clientesAndrey, isLoading: clientesAndreyLoading, refetch: refetchAndrey } = useQuery<{success: boolean, total: number, clientes: ClienteAsaasAndrey[]}>({
-    queryKey: ['/api/clientes-asaas-andrey'],
-    refetchInterval: 300000,
-    enabled: abaAtiva === 'andrey',
-  });
-
-  // Extrair clientes do response
-  const clientes = clientesResponse?.clientes || [];
-
-  // Filtrar clientes baseado nos filtros selecionados
-  const clientesFiltrados = clientes.filter(cliente => {
-    // Filtro por origem
-    const matchOrigem = filtroOrigem === 'todos' || cliente.origem.toLowerCase() === filtroOrigem;
-    
-    // Filtro por nome (busca)
-    const matchNome = buscaNome === '' || 
-      cliente.nome.toLowerCase().includes(buscaNome.toLowerCase()) ||
-      cliente.email.toLowerCase().includes(buscaNome.toLowerCase());
-    
-    // Filtro por data de cadastro/pagamento
-    const dataReferencia = cliente.dataInicioAssinatura || cliente.createdAt;
-    if (dataReferencia) {
-      const dataCliente = new Date(dataReferencia);
-      const mesCliente = (dataCliente.getMonth() + 1).toString().padStart(2, '0');
-      const anoCliente = dataCliente.getFullYear().toString();
-      
-      const matchData = mesCliente === filtroMes && anoCliente === filtroAno;
-      return matchOrigem && matchNome && matchData;
-    }
-    
-    return matchOrigem && matchNome;
-  });
-
-  const handleRefresh = async () => {
-    try {
-      await refetch();
-      await refetchAndrey();
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-asaas-andrey'] });
-      toast({
-        title: "Dados atualizados",
-        description: "Informações dos clientes foram sincronizadas",
+  // Mutations para sincronização
+  const syncPrincipalMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/v2/sync/asaas-principal", {
+        method: "POST"
       });
-    } catch (error) {
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível sincronizar os dados",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
-  // Mutations para cancelar e excluir assinaturas
-  const cancelarAssinaturaMutation = useMutation({
-    mutationFn: async ({ clienteId, origem }: { clienteId: number; origem: 'ASAAS' | 'EXTERNO' }) => {
-      const endpoint = origem === 'EXTERNO' 
-        ? `/api/assinaturas-externas/${clienteId}/cancelar`
-        : `/api/assinaturas-asaas/${clienteId}/cancelar`;
-      
-      const response = await fetch(endpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao cancelar assinatura');
-      }
-      
+      if (!response.ok) throw new Error("Erro na sincronização");
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
-      toast({
-        title: "Assinatura cancelada",
-        description: data.message,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao cancelar",
-        description: error.message,
-        variant: "destructive",
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v2/clientes"] });
     },
   });
 
-  const excluirAssinaturaMutation = useMutation({
-    mutationFn: async ({ clienteId, origem }: { clienteId: number; origem: 'ASAAS' | 'EXTERNO' }) => {
-      const endpoint = origem === 'EXTERNO' 
-        ? `/api/assinaturas-externas/${clienteId}/excluir`
-        : `/api/assinaturas-asaas/${clienteId}/excluir`;
-      
-      const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+  const syncAndreyMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/v2/sync/asaas-andrey", {
+        method: "POST"
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao excluir assinatura');
-      }
-      
+      if (!response.ok) throw new Error("Erro na sincronização");
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/clientes-unified/stats'] });
-      toast({
-        title: "Assinatura excluída",
-        description: data.message,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao excluir",
-        description: error.message,
-        variant: "destructive",
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v2/clientes"] });
     },
   });
 
-  const handleCancelarAssinatura = (cliente: ClienteUnificado) => {
-    cancelarAssinaturaMutation.mutate({
-      clienteId: cliente.id,
-      origem: cliente.origem,
+  // Filtrar clientes
+  const clientesFiltrados = useMemo(() => {
+    if (!clientesData?.clientes) return [];
+    
+    return clientesData.clientes.filter((cliente: Cliente) => {
+      const matchSearch = !searchTerm || 
+        cliente.nomeCompleto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.numeroDocumento?.includes(searchTerm);
+      
+      const matchStatus = filterStatus === "todos" || 
+        (filterStatus === "ativo" && cliente.statusAssinatura === "ATIVO") ||
+        (filterStatus === "inativo" && cliente.statusAssinatura !== "ATIVO");
+      
+      const matchOrigem = filterOrigem === "todas" || 
+        (filterOrigem === "local" && cliente.origem === "LOCAL") ||
+        (filterOrigem === "principal" && cliente.origem === "ASAAS_PRINCIPAL") ||
+        (filterOrigem === "andrey" && cliente.origem === "ASAAS_ANDREY");
+      
+      return matchSearch && matchStatus && matchOrigem;
     });
+  }, [clientesData?.clientes, searchTerm, filterStatus, filterOrigem]);
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case "ATIVO":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "CANCELADO":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "PAUSADO":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+    }
   };
 
-  const handleExcluirAssinatura = (cliente: ClienteUnificado) => {
-    excluirAssinaturaMutation.mutate({
-      clienteId: cliente.id,
-      origem: cliente.origem,
-    });
+  const getOrigemColor = (origem: string) => {
+    switch (origem) {
+      case "LOCAL":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "ASAAS_PRINCIPAL":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "ASAAS_ANDREY":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+    }
   };
 
-  if (statsLoading && clientesLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-                <CardHeader>
-                  <Skeleton className="h-4 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-20 mb-2" />
-                  <Skeleton className="h-3 w-24" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatCurrency = (value?: string) => {
+    if (!value) return "R$ 0,00";
+    const num = parseFloat(value);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(num);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              Gestão de Clientes
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Visualize e gerencie todos os clientes de todas as fontes
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
-              onClick={() => setLocation("/")}
+              onClick={() => syncPrincipalMutation.mutate()}
+              disabled={syncPrincipalMutation.isPending}
               variant="outline"
               size="sm"
-              className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
+              className="flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+              <RefreshCw className={`h-4 w-4 ${syncPrincipalMutation.isPending ? 'animate-spin' : ''}`} />
+              Sync Principal
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-              <p className="text-gray-600 mt-1">
-                Gerencie clientes e assinaturas do sistema
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
             <Button
-              onClick={handleRefresh}
+              onClick={() => syncAndreyMutation.mutate()}
+              disabled={syncAndreyMutation.isPending}
               variant="outline"
-              className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
+              size="sm"
+              className="flex items-center gap-2"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Sincronizar Dados
+              <RefreshCw className={`h-4 w-4 ${syncAndreyMutation.isPending ? 'animate-spin' : ''}`} />
+              Sync Andrey
             </Button>
           </div>
         </div>
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total de Clientes</CardTitle>
-              <Users className="h-4 w-4 text-[#365e78]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : clientes.length}
+          <Card className="border-0 shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Total de Clientes
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {statsLoading ? "..." : estatisticas?.consolidado?.totalClientes || 0}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Todos os clientes cadastrados</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Clientes Ativos</CardTitle>
-              <UserCheck className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalActiveClients || 0)}
+          <Card className="border-0 shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Receita Mensal
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {statsLoading ? "..." : formatCurrency(estatisticas?.consolidado?.receitaTotal?.toString())}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Com assinaturas válidas</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Expirando em Breve</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-500">
-                {statsLoading ? <Skeleton className="h-6 w-16" /> : (stats?.totalExpiringSubscriptions || 0)}
+          <Card className="border-0 shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                  <Database className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Conta Principal
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {statsLoading ? "..." : estatisticas?.asaasPrincipal?.assinaturasAtivas || 0}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Próximos 7 dias</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Receita de Assinaturas</CardTitle>
-              <TrendingUp className="h-4 w-4 text-[#365e78]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-[#365e78]">
-                {statsLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(stats?.totalSubscriptionRevenue || 0)}
+          <Card className="border-0 shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                  <Database className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Conta Andrey
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {statsLoading ? "..." : estatisticas?.asaasAndrey?.assinaturasAtivas || 0}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Assinaturas ativas</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Abas para separar os clientes */}
-        <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="principal">Clientes Principal</TabsTrigger>
-            <TabsTrigger value="andrey">Clientes Asaas Andrey</TabsTrigger>
-          </TabsList>
-
-          {/* Aba Principal - Clientes existentes */}
-          <TabsContent value="principal" className="space-y-6">
-            {/* Filtros */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
-                  Filtros
-                </CardTitle>
-              </CardHeader>
-          <CardContent>
-            {/* Barra de Busca */}
-            <div className="mb-6">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar Cliente</label>
-              <div className="relative">
+        {/* Filtros e Busca */}
+        <Card className="border-0 shadow-md">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  type="text"
-                  placeholder="Digite o nome ou email do cliente..."
-                  value={buscaNome}
-                  onChange={(e) => setBuscaNome(e.target.value)}
+                  placeholder="Buscar por nome, email ou documento..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
-            </div>
+              
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Filtros de Data e Origem */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Mês</label>
-                <Select value={filtroMes} onValueChange={setFiltroMes}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o mês" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="01">Janeiro</SelectItem>
-                    <SelectItem value="02">Fevereiro</SelectItem>
-                    <SelectItem value="03">Março</SelectItem>
-                    <SelectItem value="04">Abril</SelectItem>
-                    <SelectItem value="05">Maio</SelectItem>
-                    <SelectItem value="06">Junho</SelectItem>
-                    <SelectItem value="07">Julho</SelectItem>
-                    <SelectItem value="08">Agosto</SelectItem>
-                    <SelectItem value="09">Setembro</SelectItem>
-                    <SelectItem value="10">Outubro</SelectItem>
-                    <SelectItem value="11">Novembro</SelectItem>
-                    <SelectItem value="12">Dezembro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Ano</label>
-                <Select value={filtroAno} onValueChange={setFiltroAno}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2023">2023</SelectItem>
-                    <SelectItem value="2024">2024</SelectItem>
-                    <SelectItem value="2025">2025</SelectItem>
-                    <SelectItem value="2026">2026</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Origem</label>
-                <Select value={filtroOrigem} onValueChange={setFiltroOrigem}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="asaas">Asaas</SelectItem>
-                    <SelectItem value="externo">Externo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as Origens</SelectItem>
+                  <SelectItem value="local">Local</SelectItem>
+                  <SelectItem value="principal">Asaas Principal</SelectItem>
+                  <SelectItem value="andrey">Asaas Andrey</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
         {/* Lista de Clientes */}
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+        <Card className="border-0 shadow-md">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-900">
-              Lista de Clientes ({clientesFiltrados.length} de {clientes.length})
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Lista de Clientes
+              <Badge variant="secondary" className="ml-2">
+                {clientesFiltrados.length} clientes
+              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {clientesLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <div key={i} className="border rounded-lg p-4">
-                    <Skeleton className="h-4 w-32 mb-2" />
-                    <Skeleton className="h-3 w-48 mb-1" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                ))
-              ) : (
-                clientesFiltrados.map((cliente) => (
-                  <div key={cliente.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
-                          <div className="flex items-center gap-2">
-                            {cliente.statusAssinatura === 'ATIVO' ? (
-                              <Badge variant="default" className="bg-green-100 text-green-800 text-xs">ATIVO</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">SEM ASSINATURA</Badge>
+          <CardContent className="p-0">
+            {clientesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando clientes...</span>
+              </div>
+            ) : clientesFiltrados.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">Nenhum cliente encontrado</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {clientesFiltrados.map((cliente: Cliente) => (
+                  <div key={cliente.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                            {getInitials(cliente.nomeCompleto)}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              {cliente.nomeCompleto}
+                            </h3>
+                            <Badge className={getOrigemColor(cliente.origem)}>
+                              {cliente.origem === 'LOCAL' ? 'Local' : 
+                               cliente.origem === 'ASAAS_PRINCIPAL' ? 'Principal' : 'Andrey'}
+                            </Badge>
+                            {cliente.statusAssinatura && (
+                              <Badge className={getStatusColor(cliente.statusAssinatura)}>
+                                {cliente.statusAssinatura}
+                              </Badge>
                             )}
-                            <Badge variant="secondary" className="text-xs">ASAAS PRINCIPAL</Badge>
-                            {cliente.planoValor && parseFloat(cliente.planoValor) > 0 && (
-                              <span className="text-sm font-semibold text-gray-900">
-                                R$ {parseFloat(cliente.planoValor).toFixed(2)}
-                              </span>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            {cliente.email && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4" />
+                                <span className="truncate max-w-xs">{cliente.email}</span>
+                              </div>
+                            )}
+                            {cliente.telefonePrincipal && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-4 w-4" />
+                                <span>{cliente.telefonePrincipal}</span>
+                              </div>
+                            )}
+                            {cliente.valorPlanoAtual && (
+                              <div className="flex items-center gap-1">
+                                <CreditCard className="h-4 w-4" />
+                                <span className="font-medium text-green-600 dark:text-green-400">
+                                  {formatCurrency(cliente.valorPlanoAtual)}
+                                </span>
+                              </div>
+                            )}
+                            {cliente.dataUltimoPagamento && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>{formatDate(cliente.dataUltimoPagamento)}</span>
+                              </div>
                             )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600">{cliente.email}</p>
-                        {cliente.telefone && (
-                          <p className="text-sm text-gray-500">Telefone: {cliente.telefone}</p>
-                        )}
-                        {cliente.cpf && (
-                          <p className="text-sm text-gray-500">CPF: {cliente.cpf}</p>
-                        )}
-                        
-                        {cliente.planoNome && (
-                          <div className="mt-2 text-sm text-gray-600">
-                            <strong>Plano:</strong> {cliente.planoNome} | <strong>Pagamento:</strong> {cliente.formaPagamento}
-                          </div>
-                        )}
-                        
-                        {cliente.dataVencimentoAssinatura && (
-                          <div className="text-sm text-gray-600">
-                            <strong>Próxima fatura:</strong> {new Date(cliente.dataVencimentoAssinatura).toLocaleDateString()}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-4 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            Cadastrado: {new Date(cliente.createdAt).toLocaleDateString()}
-                          </Badge>
-                        </div>
                       </div>
-                      <div className="flex items-start gap-3">
-                        
-                        {/* Menu de Ações */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {cliente.statusAssinatura === 'ATIVO' && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Ban className="mr-2 h-4 w-4" />
-                                    Cancelar Assinatura
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Cancelar Assinatura</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Tem certeza que deseja cancelar a assinatura de {cliente.nome}? 
-                                      A assinatura permanecerá ativa até a data de vencimento.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleCancelarAssinatura(cliente)}
-                                      disabled={cancelarAssinaturaMutation.isPending}
-                                    >
-                                      {cancelarAssinaturaMutation.isPending ? "Cancelando..." : "Confirmar"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                            
-                            <DropdownMenuSeparator />
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Trash2 className="mr-2 h-4 w-4 text-red-500" />
-                                  <span className="text-red-500">Excluir Permanentemente</span>
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir Assinatura</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    <strong>ATENÇÃO:</strong> Esta ação é irreversível! 
-                                    Todos os dados de {cliente.nome} serão excluídos permanentemente.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleExcluirAssinatura(cliente)}
-                                    disabled={excluirAssinaturaMutation.isPending}
-                                    className="bg-red-500 hover:bg-red-600"
-                                  >
-                                    {excluirAssinaturaMutation.isPending ? "Excluindo..." : "Excluir"}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-600">
-                      <strong>Plano:</strong> {cliente.planoNome || 'N/A'} | 
-                      <strong> Pagamento:</strong> {cliente.formaPagamento || 'N/A'}
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Download className="h-4 w-4 mr-2" />
+                            Exportar Dados
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                ))
-              )}
-              
-              {clientesFiltrados.length === 0 && !clientesLoading && (
-                <div className="text-center py-12">
-                  <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nenhum cliente encontrado
-                  </h3>
-                  <p className="text-gray-500">
-                    {clientes.length === 0 
-                      ? "Os clientes aparecerão aqui quando forem cadastrados"
-                      : "Ajuste os filtros para encontrar os clientes desejados"
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-          </TabsContent>
-
-          {/* Aba Clientes Asaas Andrey */}
-          <TabsContent value="andrey" className="space-y-6">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  Clientes Asaas Andrey
-                  <Badge variant="secondary" className="ml-2">
-                    {clientesAndrey?.total || 0} clientes
-                  </Badge>
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    Sincronização Automática
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {clientesAndreyLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="border rounded-lg p-4">
-                        <Skeleton className="h-4 w-48 mb-2" />
-                        <Skeleton className="h-3 w-64 mb-1" />
-                        <Skeleton className="h-3 w-32" />
-                      </div>
-                    ))}
-                  </div>
-                ) : clientesAndrey?.success && clientesAndrey.clientes.length > 0 ? (
-                  <div className="space-y-4">
-                    {clientesAndrey.clientes.map((cliente) => (
-                      <div key={cliente.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
-                              <div className="flex items-center gap-2">
-                                {cliente.statusAssinatura === 'ATIVO' ? (
-                                  <Badge variant="default" className="bg-green-100 text-green-800 text-xs">ATIVO</Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="text-xs">SEM ASSINATURA</Badge>
-                                )}
-                                <Badge variant="secondary" className="text-xs">ASAAS ANDREY</Badge>
-                                {cliente.planoValor && (
-                                  <span className="text-sm font-semibold text-gray-900">
-                                    R$ {cliente.planoValor.toFixed(2)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600">{cliente.email}</p>
-                            {cliente.telefone && (
-                              <p className="text-sm text-gray-500">Telefone: {cliente.telefone}</p>
-                            )}
-                            {cliente.cpf && (
-                              <p className="text-sm text-gray-500">CPF: {cliente.cpf}</p>
-                            )}
-                            
-                            {cliente.planoNome && (
-                              <div className="mt-2 text-sm text-gray-600">
-                                <strong>Plano:</strong> {cliente.planoNome} | <strong>Pagamento:</strong> {cliente.formaPagamento}
-                              </div>
-                            )}
-                            
-                            {cliente.dataProximaFatura && (
-                              <div className="text-sm text-gray-600">
-                                <strong>Próxima fatura:</strong> {new Date(cliente.dataProximaFatura).toLocaleDateString()}
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center gap-4 mt-2">
-                              <Badge variant="outline" className="text-xs">
-                                Cadastrado: {new Date(cliente.dataCadastro).toLocaleDateString()}
-                              </Badge>
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Download className="mr-2 h-4 w-4" />
-                                Exportar dados
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <UserCheck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Nenhum cliente encontrado
-                    </h3>
-                    <p className="text-gray-500">
-                      Não há clientes cadastrados na conta Asaas Andrey
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   );
