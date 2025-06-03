@@ -766,17 +766,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stats unificados APENAS com pagamentos CONFIRMADOS do Asaas + receitas externas ativas
+  // Rota para limpar dados antigos
+  app.post("/api/admin/limpar-dados", requireAuth, async (req, res) => {
+    try {
+      const { limparDadosAntigos } = await import('./cleanup-data');
+      const resultado = await limparDadosAntigos();
+      res.json({
+        success: true,
+        message: "Limpeza realizada com sucesso",
+        ...resultado
+      });
+    } catch (error) {
+      console.error("Erro na limpeza:", error);
+      res.status(500).json({ message: "Erro ao limpar dados" });
+    }
+  });
+
+  // Stats unificados APENAS com clientes ATIVOS de hoje + APIs Asaas
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
-      console.log("📊 Calculando estatísticas APENAS com pagamentos CONFIRMADOS...");
+      console.log("📊 Calculando estatísticas CONFIRMADAS (apenas hoje + Asaas ativas)...");
       
-      // 1. Clientes locais/externos ATIVOS (incluindo pagamentos externos confirmados)
+      // 1. Clientes locais/externos ATIVOS criados HOJE
       const clientesLocais = await storage.getAllClientes();
-      const clientesLocaisAtivos = clientesLocais.filter(c => c.statusAssinatura === 'ATIVO');
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const clientesLocaisAtivos = clientesLocais.filter(c => {
+        if (c.statusAssinatura !== 'ATIVO') return false;
+        
+        const dataCliente = new Date(c.createdAt);
+        dataCliente.setHours(0, 0, 0, 0);
+        return dataCliente.getTime() === hoje.getTime();
+      });
+      
       const receitaLocal = clientesLocaisAtivos.reduce((sum, c) => sum + parseFloat(c.planoValor || '0'), 0);
       
-      console.log(`Local/Externos: ${clientesLocaisAtivos.length} clientes ativos, R$ ${receitaLocal.toFixed(2)} receita`);
+      console.log(`Local/Externos HOJE: ${clientesLocaisAtivos.length} clientes ativos, R$ ${receitaLocal.toFixed(2)} receita`);
       
       // 2. Conta Principal - Assinaturas ATIVAS (status ACTIVE = pagamentos confirmados)
       let clientesAtivosPrincipal = 0;

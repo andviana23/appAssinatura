@@ -75,6 +75,25 @@ export default function ClientesDebugPage() {
     setDebugInfo(results);
   };
 
+  const limparDadosAntigos = async () => {
+    try {
+      const response = await fetch("/api/admin/limpar-dados", {
+        method: "POST"
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Limpeza realizada: ${result.clientesInativados} clientes inativados, ${result.clientesHoje} clientes mantidos`);
+        // Recarregar dados
+        window.location.reload();
+      } else {
+        alert("Erro ao limpar dados");
+      }
+    } catch (error) {
+      alert("Erro ao executar limpeza");
+    }
+  };
+
   useEffect(() => {
     testAsaasConnections();
   }, []);
@@ -94,9 +113,14 @@ export default function ClientesDebugPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Diagnóstico de Clientes</h1>
-        <Button onClick={testAsaasConnections} variant="outline">
-          Testar Conexões
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={limparDadosAntigos} variant="destructive">
+            Limpar Dados Antigos
+          </Button>
+          <Button onClick={testAsaasConnections} variant="outline">
+            Testar Conexões
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas Gerais */}
