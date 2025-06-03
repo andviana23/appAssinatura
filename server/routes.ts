@@ -32,6 +32,28 @@ export async function registerRoutes(app: Express): Promise<Express> {
     // Por padrão, considera ativo (em dia ou dentro do prazo)
     return 'ativo';
   }
+
+  // Função auxiliar para organizar cliente por status original (3 categorias)
+  function organizarClientePorStatus(cliente: any, ativos: any[], inativos: any[], aguardando: any[]) {
+    // Se tem notificationDisabled = true, pode ser inativo
+    if (cliente.notificationDisabled) {
+      inativos.push({...cliente, status: 'inativo'});
+      return;
+    }
+    
+    // Se tem data de criação muito recente e sem histórico de pagamento
+    const dataCreated = new Date(cliente.dateCreated);
+    const agora = new Date();
+    const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
+    
+    if (diasCriacao <= 7) {
+      aguardando.push({...cliente, status: 'aguardando_pagamento'});
+      return;
+    }
+    
+    // Por padrão, considera ativo
+    ativos.push({...cliente, status: 'ativo'});
+  }
   
   // =====================================================
   // ROTA UNIFICADA CLIENTES ASAAS POR STATUS
@@ -110,17 +132,32 @@ export async function registerRoutes(app: Express): Promise<Express> {
         }
       }
       
+      // Organizar clientes por status original com três categorias
+      const ativos: any[] = [];
+      const inativos: any[] = [];
+      const aguardandoPagamento: any[] = [];
+
+      // Combinar todos os clientes das duas contas
+      const todosClientes = [...clientesAtivos, ...clientesAtrasados];
+      
+      todosClientes.forEach(cliente => {
+        organizarClientePorStatus(cliente, ativos, inativos, aguardandoPagamento);
+      });
+
       res.json({
         success: true,
-        total: clientesAtivos.length + clientesAtrasados.length,
-        mes: mesFiltro,
+        total: ativos.length + inativos.length + aguardandoPagamento.length,
         ativos: {
-          total: clientesAtivos.length,
-          clientes: clientesAtivos
+          total: ativos.length,
+          clientes: ativos
         },
         inativos: {
-          total: clientesAtrasados.length,
-          clientes: clientesAtrasados
+          total: inativos.length,
+          clientes: inativos
+        },
+        aguardandoPagamento: {
+          total: aguardandoPagamento.length,
+          clientes: aguardandoPagamento
         },
         timestamp: new Date().toISOString()
       });
@@ -139,7 +176,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
   app.get('/api/clientes/assinaturas', async (req: Request, res: Response) => {
     try {
-      console.log('🔄 Buscando clientes com assinaturas ativas...');
+      const mesFiltro = req.query.mes as string || new Date().toISOString().slice(0, 7); // YYYY-MM
+      console.log(`🔄 Buscando clientes com assinaturas para o mês: ${mesFiltro}...`);
       
       const asaasTrato = process.env.ASAAS_TRATO;
       const asaasAnd = process.env.ASAAS_AND;
@@ -152,7 +190,6 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       const baseUrl = 'https://www.asaas.com/api/v3';
-      const mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
       const clientesComAssinaturas: any[] = [];
       let totalFaturado = 0;
       let quantidadeAssinaturas = 0;
