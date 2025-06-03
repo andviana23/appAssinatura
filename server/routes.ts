@@ -5953,20 +5953,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('✅ Assinatura criada com sucesso:', subscriptionResponseData.id);
       
-      // Etapa 4: Gerar invoiceUrl da assinatura (formato /i/)
-      const invoiceResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions/${subscriptionResponseData.id}/invoiceUrl`, {
-        method: 'POST',
+      // Etapa 4: Buscar primeira cobrança da assinatura para gerar paymentBook
+      const paymentsResponse = await fetch(`https://www.asaas.com/api/v3/payments?subscription=${subscriptionResponseData.id}&limit=1`, {
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
         }
       });
       
-      if (invoiceResponse.ok) {
-        const invoiceData = await invoiceResponse.json();
-        console.log('✅ InvoiceUrl criado (formato /i/):', invoiceData.invoiceUrl);
+      if (paymentsResponse.ok) {
+        const paymentsData = await paymentsResponse.json();
         
-        // Retornar dados completos
+        if (paymentsData.data && paymentsData.data.length > 0) {
+          const firstPayment = paymentsData.data[0];
+          console.log('✅ Primeira cobrança encontrada:', firstPayment.id);
+          
+          // Gerar paymentBook da primeira cobrança (formato /i/)
+          const paymentBookResponse = await fetch(`https://www.asaas.com/api/v3/payments/${firstPayment.id}/paymentBook`, {
+            method: 'POST',
+            headers: {
+              'access_token': asaasApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (paymentBookResponse.ok) {
+            const paymentBookData = await paymentBookResponse.json();
+            console.log('✅ PaymentBook criado (formato /i/):', paymentBookData.url);
+            
+            // Retornar dados completos
+            res.json({
+              success: true,
+              customer: {
+                id: customerId,
+                name: name,
+                email: email,
+                cpfCnpj: cpfCnpj,
+                phone: phone
+              },
+              subscription: {
+                id: subscriptionResponseData.id,
+                name: planName,
+                description: description,
+                value: value,
+                cycle: subscriptionCycle
+              },
+              paymentLink: {
+                id: firstPayment.id,
+                url: paymentBookData.url,
+                name: planName,
+                description: description,
+                value: value,
+                subscriptionCycle: subscriptionCycle
+              },
+              message: 'Cliente e assinatura recorrente criados com sucesso'
+            });
+            return;
+          }
+        }
+      }
+      
+      // Fallback: criar payment link direto com assinatura
+      console.log('🔄 Criando paymentLink direto para assinatura');
+      const linkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': asaasApiKey
+        },
+        body: JSON.stringify({
+          billingType: "CREDIT_CARD",
+          chargeType: "RECURRENT",
+          name: planName,
+          description: description,
+          value: parseFloat(value.toString()),
+          subscriptionCycle: subscriptionCycle,
+          customer: customerId,
+          subscription: subscriptionResponseData.id,
+          dueDateLimitDays: 7,
+          maxInstallmentCount: 1,
+          notificationEnabled: true
+        })
+      });
+      
+      if (linkResponse.ok) {
+        const linkData = await linkResponse.json();
+        console.log('✅ PaymentLink direto criado:', linkData.url);
+        
         res.json({
           success: true,
           customer: {
@@ -5984,8 +6057,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cycle: subscriptionCycle
           },
           paymentLink: {
-            id: subscriptionResponseData.id,
-            url: invoiceData.invoiceUrl,
+            id: linkData.id,
+            url: linkData.url,
             name: planName,
             description: description,
             value: value,
@@ -5996,9 +6069,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Fallback: usar invoiceUrl da própria assinatura se disponível
+      // Último fallback
       const finalUrl = subscriptionResponseData.invoiceUrl || `https://www.asaas.com/subscriptions/${subscriptionResponseData.id}`;
-      console.log('✅ Usando URL da assinatura:', finalUrl);
+      console.log('✅ Usando URL da assinatura (último fallback):', finalUrl);
       
       // Retornar dados completos com fallback
       res.json({
