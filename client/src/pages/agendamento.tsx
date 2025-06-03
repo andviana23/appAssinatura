@@ -707,51 +707,58 @@ export default function Agendamento() {
 
 
 
-      {/* Modal de Agendamento Modernizado */}
+      {/* Modal de Agendamento - Dark Mode Premium */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-2xl border-0">
-          <DialogHeader className="text-center pb-6">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl flex items-center justify-center shadow-lg mb-4">
-              <Calendar className="h-8 w-8 text-white" />
+        <DialogContent className="sm:max-w-lg bg-card border-border rounded-xl shadow-2xl">
+          <DialogHeader className="pb-6 border-b border-border">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold text-foreground">Novo Agendamento</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Preencha os dados para agendar o cliente</p>
+              </div>
             </div>
-            <DialogTitle className="text-2xl font-bold text-[#1e3a8a]">Novo Agendamento</DialogTitle>
-            <p className="text-gray-600 mt-2">Preencha os dados para agendar o cliente</p>
           </DialogHeader>
           
-          <div className="space-y-6">
-            <div>
-              <label className="text-sm font-bold text-gray-700 mb-3 block">📅 Data e Horário</label>
-              <div className="p-4 bg-gradient-to-r from-[#1e3a8a]/5 to-[#1e40af]/5 rounded-xl border-2 border-[#1e3a8a]/20">
+          <div className="space-y-6 pt-6">
+            {/* Data e Horário */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Data e Horário</label>
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-[#8B4513]" />
-                  <span className="font-semibold text-[#8B4513]">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium text-foreground">
                     {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às {selectedHour}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-bold text-gray-700 mb-3 block">💼 Barbeiro</label>
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200">
+            {/* Barbeiro */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Barbeiro</label>
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">
+                  <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-primary-foreground font-medium text-sm">
                       {activeBarbeiros.find(b => b.id.toString() === selectedBarbeiro)?.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="font-semibold text-blue-700">
+                  <span className="font-medium text-foreground">
                     {activeBarbeiros.find(b => b.id.toString() === selectedBarbeiro)?.nome}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-bold text-gray-700 mb-3 block">👤 Cliente</label>
+            {/* Cliente */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Cliente</label>
               <div className="relative">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Digite o nome do cliente..."
                     value={clienteSearchTerm}
@@ -760,11 +767,11 @@ export default function Agendamento() {
                       setShowClienteDropdown(true);
                     }}
                     onFocus={() => setShowClienteDropdown(true)}
-                    className="h-12 pl-10 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl"
+                    className="h-11 pl-10 bg-background border-border focus:border-primary text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
                 {showClienteDropdown && clientesFiltrados.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
                     {clientesFiltrados.map((cliente: any) => (
                       <button
                         key={cliente.id}
@@ -774,57 +781,59 @@ export default function Agendamento() {
                           setClienteSearchTerm(cliente.nome);
                           setShowClienteDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 border-b border-border last:border-b-0 transition-colors"
                       >
-                        <div className="font-medium text-gray-900">{cliente.nome}</div>
-                        <div className="text-sm text-gray-500">{cliente.email}</div>
-                        <div className="text-xs text-blue-600">{cliente.origem === 'ASAAS' ? 'Cliente Asaas' : 'Cliente Externo'}</div>
+                        <div className="font-medium text-foreground">{cliente.nome}</div>
+                        <div className="text-sm text-muted-foreground">{cliente.email}</div>
+                        <div className="text-xs text-primary">{cliente.origem === 'ASAAS' ? 'Cliente Asaas' : 'Cliente Externo'}</div>
                       </button>
                     ))}
                   </div>
                 )}
                 {showClienteDropdown && clientesFiltrados.length === 0 && clienteSearchTerm && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
-                    <div className="text-gray-500 text-center">Nenhum cliente encontrado</div>
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-xl p-4">
+                    <div className="text-muted-foreground text-center text-sm">Nenhum cliente encontrado</div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-bold text-gray-700 mb-3 block">✂️ Serviço</label>
+            {/* Serviço */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">Serviço</label>
               <Select value={selectedServico} onValueChange={setSelectedServico} required>
-                <SelectTrigger className="h-12 border-2 border-gray-200 focus:border-[#8B4513] rounded-xl">
+                <SelectTrigger className="h-11 bg-background border-border focus:border-primary text-foreground">
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="bg-card border-border shadow-xl">
                   {Array.isArray(servicos) ? servicos.map((servico: any) => (
-                    <SelectItem key={servico.id} value={servico.id.toString()} className="rounded-lg">
+                    <SelectItem key={servico.id} value={servico.id.toString()} className="text-foreground hover:bg-muted/50">
                       {servico.nome} ({servico.tempoMinutos}min)
                     </SelectItem>
                   )) : null}
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div className="flex gap-3 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 h-12 border-2 border-gray-200 hover:bg-gray-50 rounded-xl font-semibold"
-                onClick={() => setIsModalOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                className="flex-1 h-12 bg-gradient-to-r from-[#8B4513] to-[#A0522D] hover:from-[#A0522D] hover:to-[#8B4513] text-white rounded-xl font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
-                disabled={createAgendamento.isPending}
-                onClick={handleCreateAgendamento}
-              >
-{createAgendamento.isPending ? "Criando..." : "✅ AGENDAR"}
-              </Button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-6 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11 border-border hover:bg-muted text-foreground"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              disabled={createAgendamento.isPending}
+              onClick={handleCreateAgendamento}
+            >
+              {createAgendamento.isPending ? "Criando..." : "Agendar"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
