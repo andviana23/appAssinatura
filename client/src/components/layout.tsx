@@ -23,13 +23,15 @@ export function Layout({ children }: LayoutProps) {
   // Layout diferente para barbeiro
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background text-foreground">
         <Header 
           showMenuButton={false}
           onMenuToggle={() => {}}
         />
-        <main className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-          {children}
+        <main className="container-responsive py-4 sm:py-6 lg:py-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     );

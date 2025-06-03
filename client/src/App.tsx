@@ -8,6 +8,7 @@ import { IdleLogoutManager } from "@/components/IdleLogoutManager";
 import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { ThemeProvider } from "@/contexts/theme-context";
 
 // Pages
 import Login from "@/pages/login-basico";
@@ -155,14 +156,16 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <div className="min-h-screen bg-background">
-            <AppContent />
-            <Toaster />
-          </div>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ThemeProvider defaultTheme="system" storageKey="trato-barbados-theme">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <div className="min-h-screen bg-background text-foreground">
+              <AppContent />
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

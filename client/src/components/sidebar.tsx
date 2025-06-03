@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   BarChart3,
   Users,
@@ -222,33 +223,39 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
         </nav>
       </div>
 
-      {/* User section */}
-      <div className={`mt-auto ${collapsed ? 'p-4' : 'p-6'}`}>
+      {/* Theme Toggle and User section */}
+      <div className={`mt-auto space-y-4 ${collapsed ? 'p-4' : 'p-6'}`}>
+        {/* Theme Toggle */}
+        <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+          <ThemeToggle />
+        </div>
+        
+        {/* User Section */}
         {collapsed ? (
           <div className="flex flex-col items-center space-y-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-sm">
+            <div className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 dark:from-primary dark:to-primary/90 rounded-2xl flex items-center justify-center shadow-md border border-border/50">
+              <span className="text-primary-foreground font-bold text-sm">
                 {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
             <button
               onClick={() => logout()}
-              className="text-muted-foreground hover:text-destructive p-2 rounded-xl hover:bg-destructive/5 transition-all duration-200"
+              className="text-muted-foreground hover:text-destructive p-2 rounded-xl hover:bg-destructive/10 dark:hover:bg-destructive/20 transition-all duration-200"
               title="Sair do Sistema"
             >
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-2xl p-5 border border-border/50">
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
             <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">
+              <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 dark:from-primary dark:to-primary/90 rounded-2xl flex items-center justify-center shadow-md border border-border/50">
+                <span className="text-primary-foreground font-bold text-lg">
                   {user?.email?.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">
+                <p className="text-sm font-semibold text-card-foreground truncate">
                   {user?.email}
                 </p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
@@ -257,7 +264,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
               </div>
               <button
                 onClick={() => logout()}
-                className="text-muted-foreground hover:text-destructive p-2 rounded-xl hover:bg-destructive/5 transition-all duration-200"
+                className="text-muted-foreground hover:text-destructive p-2 rounded-xl hover:bg-destructive/10 dark:hover:bg-destructive/20 transition-all duration-200"
                 title="Sair do Sistema"
               >
                 <LogOut className="h-5 w-5" />
