@@ -5767,7 +5767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔄 Criando checkout recorrente no Asaas:', payload);
 
-      const response = await fetch('https://api.asaas.com/v3/checkout', {
+      const response = await fetch('https://www.asaas.com/api/v3/checkout', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
