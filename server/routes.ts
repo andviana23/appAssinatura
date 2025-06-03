@@ -5918,44 +5918,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const proximoVencimento = new Date();
       proximoVencimento.setMonth(proximoVencimento.getMonth() + 1);
 
-      // Payload seguindo a documentação do Asaas para checkout personalizado
-      const checkoutPayload = {
-        billingTypes: ["CREDIT_CARD"],
-        chargeTypes: ["RECURRENT"],
-        minutesToExpire: 100,
-        callback: {
-          successUrl: `${process.env.BASE_URL || 'http://localhost:5000'}/pagamento/sucesso`,
-          cancelUrl: `${process.env.BASE_URL || 'http://localhost:5000'}/pagamento/cancelado`,
-          expiredUrl: `${process.env.BASE_URL || 'http://localhost:5000'}/pagamento/expirado`
-        },
-        items: [{
-          description: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome}`,
-          name: planoSelecionado.nome,
-          quantity: 1,
-          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor)
-        }],
-        customerData: {
+      // Como o endpoint /v3/checkout retorna 404, vamos usar paymentLinks com dados personalizados
+      // Primeiro, criar um cliente no Asaas se necessário
+      let customerId = null;
+      
+      if (cpf || telefone) {
+        const customerPayload = {
           name: nome,
           email: email,
-          ...(telefone && { phone: telefone.replace(/\D/g, '') }),
-          ...(cpf && { cpfCnpj: cpf.replace(/\D/g, '') })
-        },
-        subscription: {
-          cycle: "MONTHLY",
-          endDate: dataFim.toISOString().split('T')[0] + " 23:59:59",
-          nextDueDate: proximoVencimento.toISOString().split('T')[0] + " 00:00:00"
+          ...(cpf && { cpfCnpj: cpf.replace(/\D/g, '') }),
+          ...(telefone && { phone: telefone.replace(/\D/g, '') })
+        };
+
+        console.log('Criando cliente no Asaas:', JSON.stringify(customerPayload, null, 2));
+
+        const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
+          method: 'POST',
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(customerPayload)
+        });
+
+        if (customerResponse.ok) {
+          const customerData = await customerResponse.json();
+          customerId = customerData.id;
+          console.log('✅ Cliente criado no Asaas:', customerId);
+        } else {
+          console.log('⚠️ Não foi possível criar cliente, continuando sem...');
         }
+      }
+
+      // Criar paymentLink personalizado
+      const paymentLinkPayload = {
+        billingType: "CREDIT_CARD",
+        chargeType: "RECURRENT",
+        name: `${planoSelecionado.nome} - ${nome}`,
+        description: `Assinatura ${planoSelecionado.nome} para ${nome}`,
+        value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
+        subscriptionCycle: "MONTHLY",
+        dueDateLimitDays: 7,
+        maxInstallmentCount: 1,
+        notificationEnabled: true,
+        ...(customerId && { customer: customerId })
       };
 
-      console.log('Criando checkout personalizado:', JSON.stringify(checkoutPayload, null, 2));
+      console.log('Criando paymentLink personalizado:', JSON.stringify(paymentLinkPayload, null, 2));
 
-      const checkoutResponse = await fetch('https://www.asaas.com/api/v3/checkout', {
+      const checkoutResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(checkoutPayload)
+        body: JSON.stringify(paymentLinkPayload)
       });
 
       console.log('Response Status:', checkoutResponse.status);
@@ -5973,9 +5990,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      let checkoutData;
+      let paymentLinkData;
       try {
-        checkoutData = JSON.parse(responseText);
+        paymentLinkData = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Erro ao fazer parse do JSON:', parseError);
         return res.status(500).json({
@@ -5983,14 +6000,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           response: responseText.substring(0, 500)
         });
       }
-      console.log('✅ Checkout personalizado criado:', checkoutData.url);
+      
+      console.log('✅ PaymentLink personalizado criado:', paymentLinkData.url);
+
+      // Adicionar parâmetros para pré-preencher dados do cliente
+      const urlComDados = new URL(paymentLinkData.url);
+      urlComDados.searchParams.set('customerName', nome);
+      urlComDados.searchParams.set('customerEmail', email);
+      if (telefone) {
+        urlComDados.searchParams.set('customerPhone', telefone.replace(/\D/g, ''));
+      }
+      if (cpf) {
+        urlComDados.searchParams.set('customerDocument', cpf.replace(/\D/g, ''));
+      }
 
       res.json({
         success: true,
-        checkoutUrl: checkoutData.url,
-        checkoutId: checkoutData.id,
+        checkoutUrl: urlComDados.toString(),
+        linkId: paymentLinkData.id,
         planoNome: planoSelecionado.nome,
-        valorMensal: planoSelecionado.valorMensal || planoSelecionado.valor
+        valorMensal: planoSelecionado.valorMensal || planoSelecionado.valor,
+        customerId: customerId
       });
 
     } catch (error) {
