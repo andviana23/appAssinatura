@@ -273,6 +273,136 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // API GESTÃO DE ASSINATURAS E CLIENTES
   // =====================================================
 
+  // Endpoint para buscar clientes pagantes do mês vigente
+  app.get('/api/clientes/pagamentos-mes', async (req: Request, res: Response) => {
+    try {
+      const asaasTrato = process.env.ASAAS_TRATO;
+      const asaasAndrey = process.env.ASAAS_AND;
+      
+      if (!asaasTrato || !asaasAndrey) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Chaves de API do Asaas não configuradas' 
+        });
+      }
+
+      const hoje = new Date();
+      const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+      
+      console.log(`📅 Buscando pagamentos do mês: ${mesAtual}...`);
+
+      let clientesPagantes: any[] = [];
+      let valorTotalPago = 0;
+
+      // Buscar pagamentos da conta ASAAS_TRATO
+      try {
+        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=RECEIVED,CONFIRMED&receivedInCashDate[ge]=${mesAtual}-01&receivedInCashDate[le]=${mesAtual}-31&limit=100`, {
+          headers: {
+            'access_token': asaasTrato,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (responseTrato.ok) {
+          const dataTrato = await responseTrato.json();
+          for (const pagamento of dataTrato.data || []) {
+            const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
+              headers: {
+                'access_token': asaasTrato,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (cliente.ok) {
+              const dadosCliente = await cliente.json();
+              clientesPagantes.push({
+                id: dadosCliente.id,
+                nome: dadosCliente.name,
+                email: dadosCliente.email,
+                telefone: dadosCliente.mobilePhone,
+                valorPago: pagamento.value,
+                dataPagamento: pagamento.paymentDate || pagamento.clientPaymentDate,
+                descricao: pagamento.description,
+                conta: 'ASAAS_TRATO'
+              });
+              valorTotalPago += pagamento.value;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pagamentos ASAAS_TRATO:', error);
+      }
+
+      // Buscar pagamentos da conta ASAAS_AND
+      try {
+        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=RECEIVED,CONFIRMED&receivedInCashDate[ge]=${mesAtual}-01&receivedInCashDate[le]=${mesAtual}-31&limit=100`, {
+          headers: {
+            'access_token': asaasAndrey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (responseAndrey.ok) {
+          const dataAndrey = await responseAndrey.json();
+          for (const pagamento of dataAndrey.data || []) {
+            const cliente = await fetch(`https://www.asaas.com/api/v3/customers/${pagamento.customer}`, {
+              headers: {
+                'access_token': asaasAndrey,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (cliente.ok) {
+              const dadosCliente = await cliente.json();
+              clientesPagantes.push({
+                id: dadosCliente.id,
+                nome: dadosCliente.name,
+                email: dadosCliente.email,
+                telefone: dadosCliente.mobilePhone,
+                valorPago: pagamento.value,
+                dataPagamento: pagamento.paymentDate || pagamento.clientPaymentDate,
+                descricao: pagamento.description,
+                conta: 'ASAAS_AND'
+              });
+              valorTotalPago += pagamento.value;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pagamentos ASAAS_AND:', error);
+      }
+
+      // Remover duplicatas baseado no ID + conta
+      const clientesUnicos = clientesPagantes.reduce((acc, cliente) => {
+        const chave = `${cliente.id}-${cliente.conta}`;
+        if (!acc.has(chave)) {
+          acc.set(chave, cliente);
+        }
+        return acc;
+      }, new Map());
+
+      const clientesPagantesUnicos = Array.from(clientesUnicos.values());
+
+      console.log(`✅ ${clientesPagantesUnicos.length} clientes pagantes encontrados no mês ${mesAtual}`);
+      console.log(`💰 Valor total pago: R$ ${valorTotalPago.toFixed(2)}`);
+
+      res.json({
+        success: true,
+        totalClientes: clientesPagantesUnicos.length,
+        valorTotal: valorTotalPago,
+        mes: mesAtual,
+        clientes: clientesPagantesUnicos
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar clientes pagantes do mês:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Erro interno do servidor' 
+      });
+    }
+  });
+
   app.get('/api/clientes/assinaturas', async (req: Request, res: Response) => {
     try {
       const mesFiltro = req.query.mes as string || new Date().toISOString().slice(0, 7); // YYYY-MM
