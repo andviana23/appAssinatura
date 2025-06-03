@@ -245,7 +245,7 @@ export default function ClientesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Conta Principal
+                    Conta Trato de Barbados
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {statsLoading ? "..." : estatisticas?.asaasPrincipal?.assinaturasAtivas || 0}

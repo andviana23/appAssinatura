@@ -61,18 +61,24 @@ export class AsaasIntegrationService {
     this.clientesMasterService = new ClientesMasterService();
   }
 
-  // Sincronizar clientes da conta Principal
+  // Sincronizar clientes da conta Principal (Trato de Barbados)
   async syncClientesPrincipal(): Promise<{ success: boolean; total: number; sincronizados: number; erros: number }> {
     const logId = await this.iniciarLogSync('ASAAS_PRINCIPAL', 'SYNC_CLIENTES');
     
     try {
       const apiKey = process.env.ASAAS_API_KEY;
+      console.log('🔑 API Key Principal (Trato de Barbados):', apiKey ? `${apiKey.substring(0, 20)}...` : 'NÃO DEFINIDA');
+      
       if (!apiKey) {
+        console.error('❌ ERRO: ASAAS_API_KEY não configurada');
         throw new Error('ASAAS_API_KEY não configurada');
       }
 
+      console.log('🔍 Buscando assinaturas ativas da Conta Trato de Barbados...');
       // Buscar assinaturas ativas da API Asaas Principal
       const subscriptions = await this.buscarAssinaturasAsaas(apiKey);
+      console.log('📊 Assinaturas encontradas na Conta Trato de Barbados:', subscriptions.length);
+      
       let sincronizados = 0;
       let erros = 0;
 
@@ -151,19 +157,42 @@ export class AsaasIntegrationService {
 
   // Buscar assinaturas ativas da API Asaas
   private async buscarAssinaturasAsaas(apiKey: string): Promise<AsaasSubscription[]> {
-    const response = await fetch('https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100', {
-      headers: {
-        'access_token': apiKey,
-        'Content-Type': 'application/json'
+    const url = 'https://www.asaas.com/api/v3/subscriptions?status=ACTIVE&limit=100';
+    console.log('🌐 URL da API:', url);
+    console.log('🔑 Usando API Key:', apiKey ? `${apiKey.substring(0, 30)}...` : 'UNDEFINED');
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📡 Status da resposta:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro na API Asaas:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorBody: errorText
+        });
+        throw new Error(`Erro na API Asaas: ${response.status} - ${response.statusText} - ${errorText}`);
       }
-    });
 
-    if (!response.ok) {
-      throw new Error(`Erro na API Asaas: ${response.status} - ${response.statusText}`);
+      const data: AsaasApiResponse<AsaasSubscription> = await response.json();
+      console.log('📊 Dados recebidos da API:', {
+        totalCount: data.totalCount,
+        hasMore: data.hasMore,
+        dataLength: data.data?.length || 0
+      });
+      
+      return data.data || [];
+    } catch (error) {
+      console.error('💥 Erro ao buscar assinaturas:', error);
+      throw error;
     }
-
-    const data: AsaasApiResponse<AsaasSubscription> = await response.json();
-    return data.data || [];
   }
 
   // Buscar dados completos do cliente
