@@ -74,34 +74,34 @@ export class AsaasIntegrationService {
         throw new Error('ASAAS_TRATO não configurada');
       }
 
-      console.log('🔍 Buscando assinaturas ativas da Conta Trato de Barbados...');
-      // Buscar assinaturas ativas da API Asaas Principal
-      const subscriptions = await this.buscarAssinaturasAsaas(apiKey);
-      console.log('📊 Assinaturas encontradas na Conta Trato de Barbados:', subscriptions.length);
+      console.log('🔍 Buscando cobranças confirmadas da Conta Trato de Barbados...');
+      // Buscar cobranças confirmadas da API Asaas Principal
+      const payments = await this.buscarCobrancasConfirmadas(apiKey);
+      console.log('📊 Cobranças confirmadas encontradas na Conta Trato de Barbados:', payments.length);
       
       let sincronizados = 0;
       let erros = 0;
 
-      for (const subscription of subscriptions) {
+      for (const payment of payments) {
         try {
           // Buscar dados do cliente
-          const customer = await this.buscarClienteAsaas(apiKey, subscription.customer);
+          const customer = await this.buscarClienteAsaas(apiKey, payment.customer);
           
           if (customer) {
-            await this.sincronizarClienteAsaas(customer, subscription, 'ASAAS_PRINCIPAL');
+            await this.sincronizarClienteFromPayment(customer, payment, 'ASAAS_TRATO');
             sincronizados++;
           }
         } catch (error) {
-          console.error(`Erro ao sincronizar cliente ${subscription.customer}:`, error);
+          console.error(`Erro ao sincronizar cliente ${payment.customer}:`, error);
           erros++;
         }
       }
 
-      await this.finalizarLogSync(logId, 'SUCESSO', subscriptions.length, erros);
+      await this.finalizarLogSync(logId, 'SUCESSO', payments.length, erros);
       
       return {
         success: true,
-        total: subscriptions.length,
+        total: payments.length,
         sincronizados,
         erros
       };
@@ -191,6 +191,43 @@ export class AsaasIntegrationService {
       return data.data || [];
     } catch (error) {
       console.error('💥 Erro ao buscar assinaturas:', error);
+      throw error;
+    }
+  }
+
+  // Buscar cobranças confirmadas do Asaas
+  private async buscarCobrancasConfirmadas(apiKey: string): Promise<any[]> {
+    try {
+      console.log('🌐 Fazendo requisição para cobranças confirmadas...');
+      const response = await fetch('https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=100', {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📡 Status da resposta:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro na API Asaas:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorBody: errorText
+        });
+        throw new Error(`Erro na API Asaas: ${response.status} - ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Cobranças confirmadas recebidas:', {
+        totalCount: data.totalCount,
+        hasMore: data.hasMore,
+        dataLength: data.data?.length || 0
+      });
+      
+      return data.data || [];
+    } catch (error) {
+      console.error('💥 Erro ao buscar cobranças confirmadas:', error);
       throw error;
     }
   }
