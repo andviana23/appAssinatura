@@ -985,6 +985,51 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // FINALIZAR PAGAMENTO EXTERNO
+  // =====================================================
+
+  app.post("/api/clientes-externos/finalizar-pagamento", async (req: Request, res: Response) => {
+    try {
+      const { nome, email, telefone, planoNome, planoValor, formaPagamento, origem } = req.body;
+      
+      if (!nome || !planoNome || !planoValor || !formaPagamento) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Nome, plano, valor e forma de pagamento são obrigatórios' 
+        });
+      }
+
+      // Salvar cliente externo no banco de dados
+      const novoCliente = await db.insert(schema.clientes).values({
+        nome,
+        email: email || '',
+        telefone: telefone || '',
+        origem: 'EXTERNO',
+        planoNome,
+        planoValor: planoValor.toString(),
+        formaPagamento,
+        statusAssinatura: 'ATIVO',
+        dataInicioAssinatura: new Date(),
+        dataVencimentoAssinatura: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+      }).returning();
+
+      res.json({
+        success: true,
+        cliente: novoCliente[0],
+        message: 'Cliente cadastrado com sucesso para pagamento externo'
+      });
+
+    } catch (error) {
+      console.error('Erro ao finalizar pagamento externo:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // =====================================================
   // LISTAR PLANOS DE ASSINATURA
   // =====================================================
 
