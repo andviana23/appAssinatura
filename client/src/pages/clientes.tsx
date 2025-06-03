@@ -19,7 +19,10 @@ import {
   Database,
   Eye,
   Download,
-  MoreVertical
+  MoreVertical,
+  FileText,
+  MapPin,
+  Clock
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -199,209 +202,329 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-md">
+        {/* Cards de Estatísticas Modernos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {/* Total de Clientes */}
+          <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200/60 dark:border-gray-700/60 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Total de Clientes
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {statsLoading ? "..." : estatisticas?.consolidado?.totalClientes || 0}
                   </p>
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full font-medium">
+                      Ativos: {clientesData?.clientes?.filter(c => c.status === 'ATIVO').length || 0}
+                    </span>
+                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-full font-medium">
+                      Vencidos: {clientesData?.clientes?.filter(c => c.status === 'VENCIDO').length || 0}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          {/* Receita Total */}
+          <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200/60 dark:border-gray-700/60 bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-900/10">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Receita Mensal
+                    Receita Total
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {statsLoading ? "..." : formatCurrency(estatisticas?.consolidado?.receitaTotal?.toString())}
                   </p>
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full font-medium">
+                      Cobranças Confirmadas
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          {/* Conta Trato de Barbados */}
+          <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200/60 dark:border-gray-700/60 bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-900/10">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                  <Database className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Conta Trato de Barbados
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {statsLoading ? "..." : estatisticas?.asaasPrincipal?.clientesComCobrancas || 0}
                   </p>
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full font-medium">
+                      Asaas Principal
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <Database className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          {/* Conta Andrey */}
+          <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200/60 dark:border-gray-700/60 bg-gradient-to-br from-white to-orange-50/30 dark:from-gray-900 dark:to-orange-900/10">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-                  <Database className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Conta Andrey
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {statsLoading ? "..." : estatisticas?.asaasAndrey?.clientesComCobrancas || 0}
                   </p>
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-full font-medium">
+                      Asaas Andrey
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <Database className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filtros e Busca */}
-        <Card className="border-0 shadow-md">
+        {/* Filtros e Busca Modernos */}
+        <Card className="border border-gray-200/60 dark:border-gray-700/60 shadow-lg bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nome, email ou documento..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nome, email ou telefone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
               </div>
-              
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as Origens</SelectItem>
-                  <SelectItem value="local">Local</SelectItem>
-                  <SelectItem value="principal">Asaas Principal</SelectItem>
-                  <SelectItem value="andrey">Asaas Andrey</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-3">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-44 border-gray-200 dark:border-gray-700">
+                    <SelectValue placeholder="Filtrar por Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="ativo">🟢 Ativos</SelectItem>
+                    <SelectItem value="inativo">🟡 Vencidos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+                  <SelectTrigger className="w-44 border-gray-200 dark:border-gray-700">
+                    <SelectValue placeholder="Filtrar por Origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Origens</SelectItem>
+                    <SelectItem value="principal">🏢 Asaas Trato</SelectItem>
+                    <SelectItem value="andrey">🏢 Asaas Andrey</SelectItem>
+                    <SelectItem value="local">💳 Pagamentos Externos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Lista de Clientes */}
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Lista de Clientes
-              <Badge variant="secondary" className="ml-2">
-                {clientesFiltrados.length} clientes
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {clientesLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando clientes...</span>
+        {/* Lista de Clientes Moderna */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-            ) : clientesFiltrados.length === 0 ? (
-              <div className="text-center py-12">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Lista de Clientes
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {clientesFiltrados.length} clientes encontrados
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {clientesLoading ? (
+            <Card className="border border-gray-200/60 dark:border-gray-700/60">
+              <CardContent className="flex items-center justify-center py-12">
+                <RefreshCw className="h-6 w-6 animate-spin text-blue-500 mr-3" />
+                <span className="text-gray-600 dark:text-gray-400">Carregando clientes...</span>
+              </CardContent>
+            </Card>
+          ) : clientesFiltrados.length === 0 ? (
+            <Card className="border border-gray-200/60 dark:border-gray-700/60">
+              <CardContent className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">Nenhum cliente encontrado</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {clientesFiltrados.map((cliente: Cliente) => (
-                  <div key={cliente.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Nenhum cliente encontrado
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Tente ajustar os filtros ou adicionar novos clientes
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {clientesFiltrados.map((cliente: Cliente) => (
+                <Card key={cliente.id} className="group hover:shadow-lg transition-all duration-300 border border-gray-200/60 dark:border-gray-700/60 bg-gradient-to-r from-white to-gray-50/30 dark:from-gray-900 dark:to-gray-800/30">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Informações Principais */}
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <Avatar className="h-14 w-14 ring-2 ring-gray-200 dark:ring-gray-700">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg">
                             {getInitials(cliente.nomeCompleto)}
                           </AvatarFallback>
                         </Avatar>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {/* Nome e Status */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 truncate">
                               {cliente.nomeCompleto}
                             </h3>
-                            <Badge className={getOrigemColor(cliente.origem)}>
-                              {cliente.origem === 'LOCAL' ? 'Local' : 
-                               cliente.origem === 'ASAAS_PRINCIPAL' ? 'Principal' : 'Andrey'}
-                            </Badge>
-                            {cliente.statusAssinatura && (
-                              <Badge className={getStatusColor(cliente.statusAssinatura)}>
-                                {cliente.statusAssinatura}
+                            
+                            {/* Status do Cliente */}
+                            {cliente.statusAssinatura === 'ATIVO' && (
+                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800">
+                                🟢 Ativo
+                              </Badge>
+                            )}
+                            {cliente.statusAssinatura === 'CANCELADO' && (
+                              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800">
+                                🔴 Cancelado
+                              </Badge>
+                            )}
+                            {(!cliente.statusAssinatura || cliente.statusAssinatura === 'VENCIDO') && (
+                              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800">
+                                🟡 Vencido
+                              </Badge>
+                            )}
+                            
+                            {/* Origem do Pagamento */}
+                            {cliente.origem === 'ASAAS_TRATO' && (
+                              <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200 dark:border-purple-800">
+                                🏢 Asaas Trato
+                              </Badge>
+                            )}
+                            {cliente.origem === 'ASAAS_ANDREY' && (
+                              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400 border-orange-200 dark:border-orange-800">
+                                🏢 Asaas Andrey
+                              </Badge>
+                            )}
+                            {cliente.origem === 'LOCAL' && (
+                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                                💳 Externo
                               </Badge>
                             )}
                           </div>
                           
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                          {/* Informações de Contato */}
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
                             {cliente.email && (
-                              <div className="flex items-center gap-1">
-                                <Mail className="h-4 w-4" />
-                                <span className="truncate max-w-xs">{cliente.email}</span>
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <Mail className="h-4 w-4 text-gray-400" />
+                                <span className="truncate">{cliente.email}</span>
                               </div>
                             )}
                             {cliente.telefonePrincipal && (
-                              <div className="flex items-center gap-1">
-                                <Phone className="h-4 w-4" />
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <Phone className="h-4 w-4 text-gray-400" />
                                 <span>{cliente.telefonePrincipal}</span>
                               </div>
                             )}
+                            {cliente.numeroDocumento && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <FileText className="h-4 w-4 text-gray-400" />
+                                <span>{cliente.numeroDocumento}</span>
+                              </div>
+                            )}
+                            {cliente.cidade && cliente.estado && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <MapPin className="h-4 w-4 text-gray-400" />
+                                <span>{cliente.cidade}, {cliente.estado}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Informações Financeiras */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             {cliente.valorPlanoAtual && (
-                              <div className="flex items-center gap-1">
-                                <CreditCard className="h-4 w-4" />
-                                <span className="font-medium text-green-600 dark:text-green-400">
-                                  {formatCurrency(cliente.valorPlanoAtual)}
-                                </span>
+                              <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/10 rounded-lg">
+                                <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <div>
+                                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Valor Mensal</p>
+                                  <p className="font-bold text-green-700 dark:text-green-300">
+                                    {formatCurrency(cliente.valorPlanoAtual)}
+                                  </p>
+                                </div>
                               </div>
                             )}
+                            
                             {cliente.dataUltimoPagamento && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{formatDate(cliente.dataUltimoPagamento)}</span>
+                              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+                                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                <div>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Último Pagamento</p>
+                                  <p className="font-bold text-blue-700 dark:text-blue-300">
+                                    {formatDate(cliente.dataUltimoPagamento)}
+                                  </p>
+                                </div>
                               </div>
                             )}
+                            
+                            {/* Próxima Cobrança (apenas se for nos próximos 31 dias) */}
+                            {(() => {
+                              const proximaCobranca = calcularProximaCobranca(cliente.dataUltimoPagamento);
+                              const diasRestantes = proximaCobranca ? Math.ceil((new Date(proximaCobranca).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+                              
+                              if (proximaCobranca && diasRestantes !== null && diasRestantes <= 31 && diasRestantes >= 0) {
+                                return (
+                                  <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+                                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    <div>
+                                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Próxima Cobrança</p>
+                                      <p className="font-bold text-amber-700 dark:text-amber-300">
+                                        {diasRestantes === 0 ? 'Hoje' : diasRestantes === 1 ? 'Amanhã' : `${diasRestantes} dias`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
                       </div>
                       
+                      {/* Menu de Ações */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem>
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalhes
@@ -413,12 +536,12 @@ export default function ClientesPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
