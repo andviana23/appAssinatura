@@ -282,8 +282,8 @@ export class AsaasIntegrationService {
         asaasPrincipal: principalStats,
         asaasAndrey: andreyStats,
         consolidado: {
-          totalClientes: parseInt(estatisticasModernas.clientesAtivos || 0) + principalStats.assinaturasAtivas + andreyStats.assinaturasAtivas,
-          receitaTotal: parseFloat(estatisticasModernas.receitaMensalAtiva || 0) + principalStats.receitaAtiva + andreyStats.receitaAtiva
+          totalClientes: (principalStats.assinaturasAtivas || 0) + (andreyStats.assinaturasAtivas || 0),
+          receitaTotal: (principalStats.receitaAtiva || 0) + (andreyStats.receitaAtiva || 0)
         }
       };
     } catch (error) {

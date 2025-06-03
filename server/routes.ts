@@ -828,7 +828,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const service = new ClientesMasterService();
-      const cliente = await service.getClienteById(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      const cliente = await service.getClienteById(id);
 
       if (!cliente) {
         return res.status(404).json({ message: "Cliente não encontrado" });
