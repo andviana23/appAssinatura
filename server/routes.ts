@@ -61,19 +61,19 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
 
-      // Buscar a última cobrança paga
-      const cobrancasPagas = cobrancas.filter((c: any) => c.status === 'RECEIVED');
+      // Buscar a última cobrança paga (RECEIVED ou CONFIRMED)
+      const cobrancasPagas = cobrancas.filter((c: any) => c.status === 'RECEIVED' || c.status === 'CONFIRMED');
       const ultimaCobrancaPaga = cobrancasPagas.sort((a: any, b: any) => 
-        new Date(b.paymentDate || b.dueDate).getTime() - new Date(a.paymentDate || a.dueDate).getTime()
+        new Date(b.paymentDate || b.clientPaymentDate || b.dueDate).getTime() - new Date(a.paymentDate || a.clientPaymentDate || a.dueDate).getTime()
       )[0];
 
       // Verificar se cliente tem período ativo baseado na última cobrança paga
       if (ultimaCobrancaPaga) {
-        const dataPagamento = new Date(ultimaCobrancaPaga.paymentDate || ultimaCobrancaPaga.dueDate);
+        const dataPagamento = new Date(ultimaCobrancaPaga.paymentDate || ultimaCobrancaPaga.clientPaymentDate || ultimaCobrancaPaga.dueDate);
         
         // Verificar se existe próxima cobrança registrada
         const proximaCobranca = cobrancas.find((c: any) => 
-          c.status !== 'RECEIVED' && new Date(c.dueDate) > dataPagamento
+          (c.status !== 'RECEIVED' && c.status !== 'CONFIRMED') && new Date(c.dueDate) > dataPagamento
         );
         
         let dataVencimentoAssinatura: Date;
@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       // Verificar se tem cobrança pendente vencida
-      const cobrancasPendentes = cobrancas.filter((c: any) => c.status !== 'RECEIVED');
+      const cobrancasPendentes = cobrancas.filter((c: any) => c.status !== 'RECEIVED' && c.status !== 'CONFIRMED');
       const cobrancasVencidasNaoPagas = cobrancasPendentes.filter((cobranca: any) => {
         const dataVencimento = new Date(cobranca.dueDate);
         dataVencimento.setHours(23, 59, 59, 999);
