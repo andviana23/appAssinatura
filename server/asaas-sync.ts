@@ -39,7 +39,7 @@ export async function syncAsaasData() {
       try {
         console.log(`📡 Buscando dados da conta: ${account.name}`);
         
-        // Buscar clientes da conta
+        // PRODUÇÃO APENAS: URL fixa para ambiente de produção
         const customersResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
           headers: {
             'access_token': account.apiKey,
