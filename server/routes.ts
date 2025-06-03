@@ -35,23 +35,23 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
   // Função auxiliar para organizar cliente por status original (3 categorias)
   function organizarClientePorStatus(cliente: any, ativos: any[], inativos: any[], aguardando: any[]) {
-    // Se tem notificationDisabled = true, pode ser inativo
-    if (cliente.notificationDisabled) {
-      inativos.push({...cliente, status: 'inativo'});
-      return;
-    }
-    
-    // Se tem data de criação muito recente e sem histórico de pagamento
     const dataCreated = new Date(cliente.dateCreated);
     const agora = new Date();
     const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
     
+    // Clientes com notificação desabilitada ou deletados = inativos
+    if (cliente.notificationDisabled || cliente.deleted) {
+      inativos.push({...cliente, status: 'inativo'});
+      return;
+    }
+    
+    // Clientes criados recentemente (últimos 7 dias) = aguardando pagamento
     if (diasCriacao <= 7) {
       aguardando.push({...cliente, status: 'aguardando_pagamento'});
       return;
     }
     
-    // Por padrão, considera ativo
+    // Clientes antigos sem problemas = ativos
     ativos.push({...cliente, status: 'ativo'});
   }
   
