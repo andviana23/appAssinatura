@@ -18,7 +18,7 @@ if (process.env.ASAAS_ANDREY) {
 async function testAsaasConnection() {
   const accounts = [
     { name: 'ASAAS_TRATO', key: process.env.ASAAS_TRATO },
-    { name: 'ASAAS_API_KEY', key: process.env.ASAAS_API_KEY }
+    { name: 'ASAAS_ANDREY', key: process.env.ASAAS_ANDREY }
   ];
 
   for (const account of accounts) {
