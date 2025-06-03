@@ -20,6 +20,13 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  EmptyClientsState, 
+  NetworkErrorState, 
+  LoadingClientsState, 
+  GenericErrorState,
+  NoDataForMonthState 
+} from "@/components/error-illustrations";
 
 interface ClienteUnificado {
   id: string;
@@ -53,16 +60,23 @@ export default function ClientesStatusNovo() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const { data: clientesPorStatus, isLoading, refetch } = useQuery<ClientesPorStatus>({
+  const { data: clientesPorStatus, isLoading, error, refetch } = useQuery<ClientesPorStatus>({
     queryKey: ["/api/clientes/unificados-status", mesSelecionado],
     queryFn: async () => {
       const response = await fetch(`/api/clientes/unificados-status?mes=${mesSelecionado}`);
       if (!response.ok) {
-        throw new Error('Erro ao buscar clientes');
+        if (response.status >= 500) {
+          throw new Error('server_error');
+        } else if (response.status === 404) {
+          throw new Error('not_found');
+        } else {
+          throw new Error('network_error');
+        }
       }
       return response.json();
     },
     refetchInterval: 30000,
+    retry: 3,
   });
 
   // Gerar opções de meses (últimos 12 meses)
@@ -168,12 +182,96 @@ export default function ClientesStatusNovo() {
     </Card>
   );
 
+  // Handle loading state
   if (isLoading) {
     return (
       <div className="space-y-6 p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Clientes por Status</h1>
+            <p className="text-muted-foreground mt-2">
+              Visualização unificada dos clientes das contas ASAAS organizados por status
+            </p>
+          </div>
         </div>
+        <LoadingClientsState />
+      </div>
+    );
+  }
+
+  // Handle error states
+  if (error) {
+    const errorMessage = error.message;
+    if (errorMessage === 'network_error') {
+      return (
+        <div className="space-y-6 p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Clientes por Status</h1>
+              <p className="text-muted-foreground mt-2">
+                Visualização unificada dos clientes das contas ASAAS organizados por status
+              </p>
+            </div>
+          </div>
+          <NetworkErrorState onRetry={() => refetch()} />
+        </div>
+      );
+    } else {
+      return (
+        <div className="space-y-6 p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Clientes por Status</h1>
+              <p className="text-muted-foreground mt-2">
+                Visualização unificada dos clientes das contas ASAAS organizados por status
+              </p>
+            </div>
+          </div>
+          <GenericErrorState onRetry={() => refetch()} />
+        </div>
+      );
+    }
+  }
+
+  // Handle empty data state
+  if (clientesPorStatus && clientesPorStatus.total === 0) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Clientes por Status</h1>
+            <p className="text-muted-foreground mt-2">
+              Visualização unificada dos clientes das contas ASAAS organizados por status
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Select value={mesSelecionado} onValueChange={setMesSelecionado}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    {gerarOpcoesMeses().find(opcao => opcao.valor === mesSelecionado)?.label}
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {gerarOpcoesMeses().map((opcao) => (
+                  <SelectItem key={opcao.valor} value={opcao.valor}>
+                    {opcao.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <NoDataForMonthState 
+          selectedMonth={gerarOpcoesMeses().find(opcao => opcao.valor === mesSelecionado)?.label || mesSelecionado}
+          onChangeMonth={() => {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            setMesSelecionado(currentMonth);
+          }}
+        />
       </div>
     );
   }
@@ -279,21 +377,54 @@ export default function ClientesStatusNovo() {
         </TabsList>
 
         <TabsContent value="ativos">
-          <ClienteTable 
-            clientes={clientesPorStatus?.ativos.clientes || []}
-            titulo="Clientes Ativos (Em dia ou dentro do prazo)"
-            icon={<CheckCircle className="h-5 w-5" />}
-            cor="bg-green-600"
-          />
+          {(clientesPorStatus?.ativos.clientes || []).length === 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <EmptyClientsState onRefresh={() => refetch()} />
+              </CardContent>
+            </Card>
+          ) : (
+            <ClienteTable 
+              clientes={clientesPorStatus?.ativos.clientes || []}
+              titulo="Clientes Ativos (Em dia ou dentro do prazo)"
+              icon={<CheckCircle className="h-5 w-5" />}
+              cor="bg-green-600"
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="atrasados">
-          <ClienteTable 
-            clientes={clientesPorStatus?.inativos.clientes || []}
-            titulo="Clientes Atrasados (Pagamento vencido)"
-            icon={<XCircle className="h-5 w-5" />}
-            cor="bg-red-600"
-          />
+          {(clientesPorStatus?.inativos.clientes || []).length === 0 ? (
+            <Card>
+              <CardContent className="p-0">
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/20 dark:to-green-800/20 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-12 h-12 text-green-500" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">✓</span>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    Ótimas notícias!
+                  </h3>
+                  
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md leading-relaxed">
+                    Todos os clientes estão em dia! Não há pagamentos em atraso para este período.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ClienteTable 
+              clientes={clientesPorStatus?.inativos.clientes || []}
+              titulo="Clientes Atrasados (Pagamento vencido)"
+              icon={<XCircle className="h-5 w-5" />}
+              cor="bg-red-600"
+            />
+          )}
         </TabsContent>
       </Tabs>
 
