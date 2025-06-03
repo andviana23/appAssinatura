@@ -244,7 +244,7 @@ export default function ListaDaVez() {
                   </Select>
                   
                   <Button
-                    className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/80 hover:to-primary/60 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                     onClick={() => {
                       if (barbeiroSelecionado) {
                         adicionarClienteEspecifico.mutate(parseInt(barbeiroSelecionado));
@@ -279,28 +279,28 @@ export default function ListaDaVez() {
 
         {/* Estatísticas Resumidas - Compactas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+          <Card className="shadow-sm border border-border/50 bg-card/95 backdrop-blur-sm rounded-xl">
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
                   <Plus className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Total de Atendimentos no Mês</p>
+                  <p className="text-xs text-muted-foreground">Total de Atendimentos no Mês</p>
                   <p className="text-lg font-bold text-green-600">{totalAtendimentos}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
+          <Card className="shadow-sm border border-border/50 bg-card/95 backdrop-blur-sm rounded-xl">
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                   <RotateCcw className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Média de Atendimentos</p>
+                  <p className="text-xs text-muted-foreground">Média de Atendimentos</p>
                   <p className="text-lg font-bold text-orange-600">{mediaAtendimentos}</p>
                 </div>
               </div>
@@ -309,17 +309,17 @@ export default function ListaDaVez() {
         </div>
 
         {/* Tabela de Atendimento Mensal */}
-        <Card className="shadow-sm border border-slate-200/50 bg-white/95 backdrop-blur-sm rounded-xl">
-          <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-xl p-4">
+        <Card className="shadow-sm border border-border/50 bg-card/95 backdrop-blur-sm rounded-xl">
+          <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-t-xl p-4">
             <CardTitle className="text-lg">Tabela de Atendimento Mensal</CardTitle>
-            <CardDescription className="text-blue-100 text-sm">
+            <CardDescription className="text-primary-foreground/80 text-sm">
               Controle mensal de atendimentos por barbeiro
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               {/* Header da tabela */}
-              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-[#365e78]/5 to-[#2a4a5e]/5 border-b border-[#365e78]/10 font-medium text-[#365e78] text-sm">
+              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/10 font-medium text-primary text-sm">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Barbeiro
@@ -333,10 +333,10 @@ export default function ListaDaVez() {
               {/* Linhas da tabela - Desktop */}
               <div className="hidden lg:block divide-y divide-gray-50">
                 {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-[#365e78]/5 transition-all duration-200 items-center group">
+                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-primary/5 transition-all duration-200 items-center group">
                     {/* Barbeiro */}
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-lg flex items-center justify-center">
+                      <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
                         <User className="h-4 w-4 text-white" />
                       </div>
                       <div>

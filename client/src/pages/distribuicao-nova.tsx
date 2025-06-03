@@ -89,11 +89,11 @@ export default function DistribuicaoNova() {
 
   const getPositionBadge = (position: number) => {
     const colors = {
-      1: "bg-yellow-500 text-white border-yellow-600",
-      2: "bg-gray-400 text-white border-gray-500", 
-      3: "bg-orange-600 text-white border-orange-700",
-      4: "bg-blue-500 text-white border-blue-600",
-      5: "bg-green-500 text-white border-green-600"
+      1: "bg-yellow-500 dark:bg-yellow-600 text-white border-yellow-600 dark:border-yellow-700",
+      2: "bg-gray-400 dark:bg-gray-500 text-white border-gray-500 dark:border-gray-600", 
+      3: "bg-orange-600 dark:bg-orange-700 text-white border-orange-700 dark:border-orange-800",
+      4: "bg-blue-500 dark:bg-blue-600 text-white border-blue-600 dark:border-blue-700",
+      5: "bg-green-500 dark:bg-green-600 text-white border-green-600 dark:border-green-700"
     };
     const color = colors[position as keyof typeof colors] || "bg-gray-300 text-gray-700 border-gray-400";
     
