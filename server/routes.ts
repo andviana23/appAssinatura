@@ -782,6 +782,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // NOVA API MODERNA - CLIENTES MASTER
+  // =====================================================
+
+  // Importar serviços
+  let AsaasIntegrationService: any;
+  let ClientesMasterService: any;
+
+  try {
+    const asaasModule = await import('./services/asaas-integration');
+    const clientesModule = await import('./services/clientes-master');
+    AsaasIntegrationService = asaasModule.AsaasIntegrationService;
+    ClientesMasterService = clientesModule.ClientesMasterService;
+  } catch (error) {
+    console.error('Erro ao importar serviços:', error);
+  }
+
+  // Listar todos os clientes da nova estrutura
+  app.get("/api/v2/clientes", requireAuth, async (req, res) => {
+    try {
+      if (!ClientesMasterService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new ClientesMasterService();
+      const clientes = await service.getClientesCompletos();
+
+      res.json({
+        success: true,
+        total: clientes.length,
+        clientes
+      });
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Obter cliente específico
+  app.get("/api/v2/clientes/:id", requireAuth, async (req, res) => {
+    try {
+      if (!ClientesMasterService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new ClientesMasterService();
+      const cliente = await service.getClienteById(parseInt(req.params.id));
+
+      if (!cliente) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+
+      res.json({
+        success: true,
+        cliente
+      });
+    } catch (error) {
+      console.error("Erro ao buscar cliente:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Criar novo cliente
+  app.post("/api/v2/clientes", requireAuth, async (req, res) => {
+    try {
+      if (!ClientesMasterService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new ClientesMasterService();
+      const novoCliente = await service.createCliente(req.body);
+
+      res.status(201).json({
+        success: true,
+        message: "Cliente criado com sucesso",
+        cliente: novoCliente
+      });
+    } catch (error) {
+      console.error("Erro ao criar cliente:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Atualizar cliente
+  app.put("/api/v2/clientes/:id", requireAuth, async (req, res) => {
+    try {
+      if (!ClientesMasterService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new ClientesMasterService();
+      const clienteAtualizado = await service.updateCliente(parseInt(req.params.id), req.body);
+
+      if (!clienteAtualizado) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+
+      res.json({
+        success: true,
+        message: "Cliente atualizado com sucesso",
+        cliente: clienteAtualizado
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar cliente:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Sincronizar clientes das APIs Asaas
+  app.post("/api/v2/sync/asaas-principal", requireAuth, async (req, res) => {
+    try {
+      if (!AsaasIntegrationService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new AsaasIntegrationService();
+      const resultado = await service.syncClientesPrincipal();
+
+      res.json({
+        success: true,
+        message: "Sincronização concluída",
+        ...resultado
+      });
+    } catch (error) {
+      console.error("Erro na sincronização:", error);
+      res.status(500).json({ 
+        message: "Erro na sincronização",
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
+  app.post("/api/v2/sync/asaas-andrey", requireAuth, async (req, res) => {
+    try {
+      if (!AsaasIntegrationService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new AsaasIntegrationService();
+      const resultado = await service.syncClientesAndrey();
+
+      res.json({
+        success: true,
+        message: "Sincronização concluída",
+        ...resultado
+      });
+    } catch (error) {
+      console.error("Erro na sincronização:", error);
+      res.status(500).json({ 
+        message: "Erro na sincronização",
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  });
+
+  // Estatísticas consolidadas da nova estrutura
+  app.get("/api/v2/estatisticas", requireAuth, async (req, res) => {
+    try {
+      if (!AsaasIntegrationService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new AsaasIntegrationService();
+      const estatisticas = await service.getEstatisticasConsolidadas();
+
+      res.json({
+        success: true,
+        ...estatisticas
+      });
+    } catch (error) {
+      console.error("Erro ao obter estatísticas:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Validar integridade dos dados
+  app.get("/api/v2/clientes/validar-integridade", requireAuth, async (req, res) => {
+    try {
+      if (!ClientesMasterService) {
+        return res.status(500).json({ message: "Serviço não disponível" });
+      }
+
+      const service = new ClientesMasterService();
+      const problemas = await service.validarIntegridade();
+
+      res.json({
+        success: true,
+        problemas
+      });
+    } catch (error) {
+      console.error("Erro na validação:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // =====================================================
+  // MANTER APIs ANTIGAS PARA COMPATIBILIDADE
+  // =====================================================
+
   // Stats unificados APENAS com clientes ATIVOS de hoje + APIs Asaas
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {

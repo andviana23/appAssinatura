@@ -15,6 +15,7 @@ import Barbeiros from "@/pages/barbeiros";
 import Profissionais from "@/pages/profissionais";
 import Clientes from "@/pages/clientes";
 import ClientesDebug from "@/pages/clientes-debug";
+import SistemaModerno from "@/pages/sistema-moderno";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
 import DistribuicaoNova from "@/pages/distribuicao-nova";
@@ -43,6 +44,7 @@ function AuthenticatedRoutes() {
           <Route path="/profissionais/editar/:id" component={Profissionais} />
           <Route path="/clientes" component={Clientes} />
           <Route path="/clientes-debug" component={ClientesDebug} />
+          <Route path="/sistema-moderno" component={SistemaModerno} />
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/agendamento" component={Agendamento} />
