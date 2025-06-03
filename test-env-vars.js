@@ -2,16 +2,16 @@
 import { config } from 'dotenv';
 config();
 
-console.log('=== TESTE DE VARIÁVEIS DE AMBIENTE ===');
+console.log('=== TESTE DE VARIÁVEIS DE AMBIENTE PADRONIZADAS ===');
 console.log('ASAAS_TRATO exists:', !!process.env.ASAAS_TRATO);
-console.log('ASAAS_API_KEY exists:', !!process.env.ASAAS_API_KEY);
+console.log('ASAAS_ANDREY exists:', !!process.env.ASAAS_ANDREY);
 
 if (process.env.ASAAS_TRATO) {
   console.log('ASAAS_TRATO starts with:', process.env.ASAAS_TRATO.substring(0, 10) + '...');
 }
 
-if (process.env.ASAAS_API_KEY) {
-  console.log('ASAAS_API_KEY starts with:', process.env.ASAAS_API_KEY.substring(0, 10) + '...');
+if (process.env.ASAAS_ANDREY) {
+  console.log('ASAAS_ANDREY starts with:', process.env.ASAAS_ANDREY.substring(0, 10) + '...');
 }
 
 // Test API connectivity

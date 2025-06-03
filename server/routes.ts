@@ -3409,15 +3409,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Configurar contas Asaas
+      // INTEGRAÇÃO ASAAS: Configurar contas padronizadas
       const asaasAccounts = [
         {
           apiKey: process.env.ASAAS_TRATO,
-          name: 'PRINCIPAL'
+          name: 'TRATO_BARBADOS', // Conta principal
+          description: 'Conta principal Trato de Barbados'
         },
         {
           apiKey: process.env.ASAAS_ANDREY,
-          name: 'ANDREY'
+          name: 'ANDREY', // Conta secundária
+          description: 'Conta secundária Andrey'
         }
       ];
 
@@ -6516,23 +6518,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
 
-  // Webhook do Asaas para capturar pagamentos confirmados automaticamente
+  // WEBHOOK ASAAS: Endpoint seguro para capturar notificações do Asaas
   app.post('/webhook/asaas', async (req: Request, res: Response) => {
     try {
-      console.log('🔔 Webhook Asaas recebido:', JSON.stringify(req.body, null, 2));
+      // Validação de segurança - verificar origem
+      const userAgent = req.get('User-Agent') || '';
+      const asaasToken = req.get('asaas-access-token') || req.get('access_token');
+      
+      // Log detalhado para debugging
+      console.log('🔔 Webhook Asaas recebido:', {
+        headers: {
+          'user-agent': userAgent,
+          'content-type': req.get('Content-Type'),
+          'asaas-access-token': asaasToken ? '***PRESENTE***' : 'AUSENTE'
+        },
+        body: req.body
+      });
       
       const { event, payment } = req.body;
       
+      // Validação de dados obrigatórios
       if (!event || !payment) {
-        console.log('❌ Webhook inválido: dados faltando');
-        return res.status(400).json({ error: 'Dados inválidos no webhook' });
+        console.log('❌ Webhook inválido: dados obrigatórios faltando');
+        return res.status(400).json({ 
+          success: false,
+          error: 'Dados inválidos no webhook',
+          required: ['event', 'payment']
+        });
+      }
+
+      // Validação básica de segurança - verificar se é do Asaas
+      if (!userAgent.toLowerCase().includes('asaas') && !asaasToken) {
+        console.log('❌ Webhook rejeitado: origem não confiável');
+        return res.status(401).json({ 
+          success: false,
+          error: 'Origem não autorizada' 
+        });
       }
 
       console.log(`📋 Evento: ${event} | Pagamento: ${payment.id} | Cliente: ${payment.customer}`);
 
-      // Determinar qual API usar baseado no payment ou customer
-      let apiKey = process.env.ASAAS_ANDREY; // Padrão
+      // INTEGRAÇÃO ASAAS: Determinar qual conta usar para processar webhook
+      let apiKey = process.env.ASAAS_ANDREY; // Padrão: conta secundária
       let accountName = 'ASAAS_ANDREY';
+      
+      // Tentar identificar a conta pela estrutura do payment/customer
+      // Se não conseguir identificar, usar conta padrão ASAAS_ANDREY
       
       // Processar eventos de pagamento
       if (['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'].includes(event)) {
