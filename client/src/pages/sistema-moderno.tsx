@@ -80,7 +80,7 @@ export default function SistemaModernoPage() {
             disabled={syncPrincipalMutation.isPending}
             variant="outline"
           >
-            <Sync className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" />
             {syncPrincipalMutation.isPending ? "Sincronizando..." : "Sync Principal"}
           </Button>
           <Button 
@@ -88,7 +88,7 @@ export default function SistemaModernoPage() {
             disabled={syncAndreyMutation.isPending}
             variant="outline"
           >
-            <Sync className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" />
             {syncAndreyMutation.isPending ? "Sincronizando..." : "Sync Andrey"}
           </Button>
         </div>
@@ -157,7 +157,7 @@ export default function SistemaModernoPage() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Asaas APIs</CardTitle>
-                    <Sync className="h-4 w-4 text-muted-foreground" />
+                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">

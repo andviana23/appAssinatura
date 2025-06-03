@@ -5271,6 +5271,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== API V2 - SISTEMA MODERNO =====
+  
+  // Estatísticas consolidadas
+  app.get("/api/v2/estatisticas", async (req: Request, res: Response) => {
+    try {
+      const asaasService = new AsaasIntegrationService();
+      const estatisticas = await asaasService.getEstatisticasConsolidadas();
+      res.json(estatisticas);
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Listar clientes da nova estrutura
+  app.get("/api/v2/clientes", async (req: Request, res: Response) => {
+    try {
+      const clientesMasterService = new ClientesMasterService();
+      const clientes = await clientesMasterService.getClientesCompletos();
+      const total = clientes.length;
+      
+      res.json({
+        success: true,
+        total,
+        clientes
+      });
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Validar integridade dos dados
+  app.get("/api/v2/clientes/validar-integridade", async (req: Request, res: Response) => {
+    try {
+      const clientesMasterService = new ClientesMasterService();
+      const problemas = await clientesMasterService.validarIntegridade();
+      
+      res.json({
+        success: true,
+        problemas
+      });
+    } catch (error) {
+      console.error('Erro ao validar integridade:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Sincronização Asaas Principal
+  app.post("/api/v2/sync/asaas-principal", async (req: Request, res: Response) => {
+    try {
+      const asaasService = new AsaasIntegrationService();
+      const resultado = await asaasService.syncClientesPrincipal();
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro na sincronização Principal:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Erro na sincronização com Asaas Principal' 
+      });
+    }
+  });
+
+  // Sincronização Asaas Andrey
+  app.post("/api/v2/sync/asaas-andrey", async (req: Request, res: Response) => {
+    try {
+      const asaasService = new AsaasIntegrationService();
+      const resultado = await asaasService.syncClientesAndrey();
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro na sincronização Andrey:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Erro na sincronização com Asaas Andrey' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
