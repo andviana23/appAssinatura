@@ -2,11 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { storage } from "./storage";
+import { storage, db } from "./storage";
 import { syncAsaasData } from "./asaas-sync";
-import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema, insertAgendamentoSchema, insertClienteSchema } from "@shared/schema";
+import { insertBarbeiroSchema, insertServicoSchema, insertPlanoAssinaturaSchema, insertUserSchema, insertAtendimentoDiarioSchema, insertAgendamentoSchema, insertClienteSchema, planosAssinatura } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
+import { eq } from "drizzle-orm";
 
 // Extend session interface
 declare module "express-session" {
