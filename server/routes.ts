@@ -6300,6 +6300,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Endpoint de teste para verificar clientes unificados SEM autenticação
+  app.get('/api/test/clientes-unified', async (req: Request, res: Response) => {
+    try {
+      console.log('🧪 TESTE: Iniciando busca de clientes unificados');
+      const clientesUnificados = [];
+      const hoje = new Date();
+
+      // Buscar clientes externos do banco local
+      const clientesExternos = await storage.getAllClientesExternos();
+      console.log(`🧪 TESTE: Clientes externos encontrados: ${clientesExternos.length}`);
+      
+      // Adicionar clientes externos válidos
+      for (const cliente of clientesExternos) {
+        if (cliente.dataVencimentoAssinatura) {
+          const validade = new Date(cliente.dataVencimentoAssinatura);
+          const daysRemaining = Math.ceil((validade.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+          
+          clientesUnificados.push({
+            id: cliente.id,
+            nome: cliente.nome,
+            email: cliente.email,
+            origem: 'EXTERNO',
+            statusAssinatura: status
+          });
+        }
+      }
+
+      // Configurar contas Asaas
+      const asaasAccounts = [
+        {
+          apiKey: process.env.ASAAS_TRATO,
+          name: 'ASAAS_TRATO'
+        },
+        {
+          apiKey: process.env.ASAAS_API_KEY,
+          name: 'ASAAS_API_KEY'
+        }
+      ];
+
+      console.log('🧪 TESTE: Verificando chaves API...');
+      console.log(`🧪 ASAAS_TRATO: ${process.env.ASAAS_TRATO ? 'CONFIGURADA' : 'NÃO CONFIGURADA'}`);
+      console.log(`🧪 ASAAS_API_KEY: ${process.env.ASAAS_API_KEY ? 'CONFIGURADA' : 'NÃO CONFIGURADA'}`);
+
+      // Buscar clientes de ambas as contas Asaas
+      for (const account of asaasAccounts) {
+        if (!account.apiKey) {
+          console.log(`🧪 TESTE: Chave API não encontrada para conta: ${account.name}`);
+          continue;
+        }
+
+        try {
+          console.log(`🧪 TESTE: Buscando clientes da conta ${account.name}`);
+          const customersResponse = await fetch('https://www.asaas.com/api/v3/customers?limit=10', {
+            headers: {
+              'access_token': account.apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (customersResponse.ok) {
+            const customersData = await customersResponse.json();
+            console.log(`🧪 TESTE: ${account.name} - ${customersData.totalCount} clientes encontrados`);
+            
+            for (const customer of customersData.data || []) {
+              clientesUnificados.push({
+                id: `asaas_${account.name}_${customer.id}`,
+                nome: customer.name,
+                email: customer.email,
+                origem: `ASAAS_${account.name}`,
+                statusAssinatura: 'CLIENTE_CADASTRADO'
+              });
+            }
+          } else {
+            console.log(`🧪 TESTE: Erro API ${account.name}: ${customersResponse.status}`);
+          }
+        } catch (error) {
+          console.log(`🧪 TESTE: Erro ao conectar com ${account.name}:`, error.message);
+        }
+      }
+
+      console.log(`🧪 TESTE: Total de clientes unificados: ${clientesUnificados.length}`);
+      
+      res.json({
+        success: true,
+        totalClientes: clientesUnificados.length,
+        clientesExternos: clientesExternos.length,
+        clientesAsaas: clientesUnificados.length - clientesExternos.length,
+        clientes: clientesUnificados.slice(0, 5), // Retorna apenas os primeiros 5 para teste
+        apiKeys: {
+          ASAAS_TRATO: !!process.env.ASAAS_TRATO,
+          ASAAS_API_KEY: !!process.env.ASAAS_API_KEY
+        }
+      });
+
+    } catch (error) {
+      console.error('🧪 TESTE: Erro:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message 
+      });
+    }
+  });
+
   // Endpoint para testar conexão com Asaas
   app.get('/api/test-asaas', async (req: Request, res: Response) => {
     try {
