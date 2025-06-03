@@ -353,200 +353,229 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Calendário Lateral - Igual à imagem */}
-      <div className="w-72 bg-white shadow-xl">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-bold text-[#1e3a8a]">Calendário</h2>
+    <div className="min-h-screen bg-background text-foreground flex">
+      {/* Sidebar do Calendário - Dark Mode Premium */}
+      <div className="w-80 bg-card border-r border-border shadow-2xl">
+        <div className="p-6 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Calendário
+          </h2>
         </div>
         
         {/* Mini Calendário */}
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={previousMonth} 
+              className="h-8 w-8 p-0 hover:bg-muted"
+            >
               <ChevronLeft className="h-4 w-4" />
-            </button>
-            <h3 className="font-semibold text-sm">
+            </Button>
+            <h3 className="font-semibold text-foreground capitalize">
               {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
             </h3>
-            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={nextMonth}
+              className="h-8 w-8 p-0 hover:bg-muted"
+            >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
           
-          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-3">
             {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
-              <div key={day} className="p-1 font-medium text-gray-500">{day}</div>
+              <div key={day} className="p-2 font-medium text-muted-foreground">{day}</div>
             ))}
           </div>
           
           <div className="grid grid-cols-7 gap-1">
             {daysInMonth.map(date => (
-              <button
+              <Button
                 key={date.toISOString()}
+                variant="ghost"
+                size="sm"
                 onClick={() => selectCalendarDate(date)}
                 className={`
-                  p-2 text-xs rounded hover:bg-blue-100 transition-colors
-                  ${isSameDay(date, selectedDate) ? 'bg-[#1e3a8a] text-white' : ''}
-                  ${isToday(date) ? 'font-bold bg-blue-100' : ''}
-                  ${hasAgendamentos(date) ? 'bg-green-100' : ''}
+                  h-8 w-8 p-0 text-xs transition-all hover:bg-muted relative
+                  ${isSameDay(date, selectedDate) ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
+                  ${isToday(date) ? 'font-bold ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}
+                  ${!isSameMonth(date, currentCalendarDate) ? 'text-muted-foreground/50' : ''}
                 `}
               >
                 {format(date, "d")}
-              </button>
+                {hasAgendamentos(date) && (
+                  <div className="absolute bottom-0 right-0 h-1.5 w-1.5 bg-green-500 rounded-full"></div>
+                )}
+              </Button>
             ))}
           </div>
         </div>
         
         {/* Navegação de Data */}
-        <div className="p-4 border-t">
-          <div className="flex gap-2 mb-4">
-            <button
+        <div className="p-6 border-t border-border">
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => selectCalendarDate(subDays(selectedDate, 1))}
-              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+              className="flex-1"
             >
-              ← Anterior
-            </button>
-            <button
+              <ChevronLeft className="h-3 w-3 mr-1" />
+              Anterior
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
               onClick={() => selectCalendarDate(new Date())}
-              className="flex-1 p-2 bg-[#1e3a8a] text-white hover:bg-[#1e40af] rounded text-xs"
+              className="flex-1"
             >
               Hoje
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => selectCalendarDate(addDays(selectedDate, 1))}
-              className="flex-1 p-2 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+              className="flex-1"
             >
-              Próximo →
-            </button>
+              Próximo
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
           </div>
           
           {/* Informações da Data Selecionada */}
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-bold text-gray-700 mb-2">Data Selecionada</h3>
-            <div className="text-xs text-center text-gray-500 mb-3">
+          <div className="border-t border-border pt-6">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              Data Selecionada
+            </h3>
+            <div className="text-sm text-center text-muted-foreground mb-4 font-medium">
               {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
             </div>
             
             <div className="space-y-2">
-              <button className="w-full p-2 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+              <Button variant="secondary" size="sm" className="w-full justify-start">
+                <Clock className="h-3 w-3 mr-2" />
                 Horários disponíveis
-              </button>
-              <button className="w-full p-2 bg-orange-100 text-orange-800 rounded text-xs font-medium">
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start">
+                <Search className="h-3 w-3 mr-2" />
                 Lista de Espera
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Área Principal da Agenda - Sem cabeçalho duplo */}
-      <div className="flex-1">
-        {/* Cabeçalho Moderno */}
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] rounded-2xl m-6 p-6 shadow-xl">
+      {/* Área Principal da Agenda - Dark Mode Premium */}
+      <div className="flex-1 bg-background">
+        {/* Cabeçalho Premium Dark */}
+        <div className="bg-card border border-border rounded-lg m-6 p-6 shadow-2xl">
           <div className="flex items-center justify-between">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setLocation("/recepcionista-dashboard")}
-              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20"
+              className="flex items-center gap-2 hover:bg-muted"
             >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-semibold">Voltar</span>
-            </button>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="font-medium">Voltar</span>
+            </Button>
 
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-white mb-2">Agenda do Dia</h1>
-              <div className="text-xl font-semibold text-blue-100">
+              <h1 className="text-2xl font-bold text-foreground mb-1">Agenda do Dia</h1>
+              <div className="text-lg font-medium text-muted-foreground capitalize">
                 {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                className="border-white/30 text-white hover:bg-white/20 hover:text-white bg-white/10"
               >
-                <ChevronLeft className="h-5 w-5" />
-                <span className="ml-1 font-medium">Anterior</span>
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-1">Anterior</span>
               </Button>
               <Button
                 variant={isToday(selectedDate) ? "default" : "outline"}
-                size="lg"
+                size="sm"
                 onClick={() => setSelectedDate(new Date())}
-                className={isToday(selectedDate) ? "bg-white text-[#1e3a8a] hover:bg-blue-50 font-bold" : "border-white/30 text-white hover:bg-white/20 hover:text-white bg-white/10"}
               >
                 Hoje
               </Button>
               <Button
                 variant="outline"
-                size="lg"
+                size="sm"
                 onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                className="border-white/30 text-white hover:bg-white/20 hover:text-white bg-white/10"
               >
-                <span className="mr-1 font-medium">Próximo</span>
-                <ChevronRight className="h-5 w-5" />
+                <span className="mr-1">Próximo</span>
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
           {/* Indicadores de Status */}
-          <div className="mt-6 flex items-center justify-center gap-8">
-            <div className="flex items-center gap-2 text-white">
-              <div className="w-4 h-4 rounded-full bg-blue-400 shadow-lg"></div>
-              <span className="font-medium">Agendado</span>
+          <div className="mt-4 flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="w-3 h-3 rounded-full bg-primary"></div>
+              <span className="text-sm font-medium">Agendado</span>
             </div>
-            <div className="flex items-center gap-2 text-white">
-              <div className="w-4 h-4 rounded-full bg-amber-400 shadow-lg"></div>
-              <span className="font-medium">Em Atendimento</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+              <span className="text-sm font-medium">Em Atendimento</span>
             </div>
-            <div className="flex items-center gap-2 text-white">
-              <div className="w-4 h-4 rounded-full bg-green-400 shadow-lg"></div>
-              <span className="font-medium">Finalizado</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-sm font-medium">Finalizado</span>
             </div>
           </div>
         </div>
 
-        {/* Grade da Agenda Moderna - Compacta para caber todos os barbeiros */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mx-6">
+        {/* Grade da Agenda Dark Mode - Inspirada nas imagens de referência */}
+        <div className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden mx-6 mb-6">
           {/* Header com nomes dos barbeiros */}
           <div 
-            className="grid bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white shadow-lg"
+            className="grid bg-muted border-b border-border"
             style={{ 
-              gridTemplateColumns: `100px repeat(${activeBarbeiros.length}, 1fr)` 
+              gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
             }}
           >
-            <div className="p-3 border-r border-white/20 font-bold flex items-center gap-2">
+            <div className="p-4 border-r border-border font-semibold flex items-center gap-2 text-foreground">
               <Clock className="h-4 w-4" />
               <span className="text-xs">Horário</span>
             </div>
             {activeBarbeiros.map((barbeiro: Barbeiro) => (
-              <div key={barbeiro.id} className="p-3 border-r border-white/20 text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">
+              <div key={barbeiro.id} className="p-4 border-r border-border text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">
                       {barbeiro.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="font-bold text-xs truncate w-full">{barbeiro.nome}</span>
+                  <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Linhas de horário - Compactas */}
+          {/* Linhas de horário - Dark Mode Premium */}
           <div className="max-h-[70vh] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
               <div 
                 key={timeSlot} 
-                className="grid border-b border-gray-100 min-h-[60px] hover:bg-gray-50/50 transition-colors"
+                className="grid border-b border-border min-h-[70px] hover:bg-muted/30 transition-colors group"
                 style={{ 
-                  gridTemplateColumns: `100px repeat(${activeBarbeiros.length}, 1fr)` 
+                  gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                 }}
               >
-                <div className="p-2 border-r border-gray-100 text-xs font-bold text-[#1e3a8a] flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
+                <div className="p-3 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
                     {timeSlot}
                   </div>
                 </div>
@@ -555,29 +584,35 @@ export default function Agendamento() {
                   const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                   
                   return (
-                    <div key={barbeiro.id} className="border-r border-gray-200 p-1 relative">
+                    <div key={barbeiro.id} className="border-r border-border p-2 relative">
                       {agendamento ? (
                         <div 
-                          className={`${getAgendamentoColors(agendamento).bg} ${getAgendamentoColors(agendamento).border} border rounded-md p-1 text-xs h-full transition-all duration-200 group relative cursor-pointer`}
+                          className={`
+                            ${agendamento.status === "FINALIZADO" ? "bg-green-500/90 hover:bg-green-500" : ""}
+                            ${agendamento.status === "CANCELADO" ? "bg-red-500/90 hover:bg-red-500" : ""}
+                            ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
+                            ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
+                            rounded-md p-3 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
+                          `}
                           onClick={() => abrirComanda(agendamento)}
                           onContextMenu={(e) => handleContextMenu(e, agendamento)}
                         >
-                          <div className={`font-bold ${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                          <div className="font-semibold text-white text-xs truncate mb-1">
                             {agendamento.cliente?.nome}
                           </div>
-                          <div className={`${getAgendamentoColors(agendamento).text} text-xs truncate`}>
+                          <div className="text-white/90 text-xs truncate">
                             {agendamento.servico?.nome}
                           </div>
                           
                           {agendamento.status === "FINALIZADO" && (
-                            <div className="text-xs font-bold opacity-80">
-                              ✅
+                            <div className="text-xs font-bold mt-1">
+                              <Check className="h-3 w-3" />
                             </div>
                           )}
                           
                           {agendamento.status === "CANCELADO" && (
-                            <div className="text-xs font-bold opacity-80 text-red-500">
-                              ❌ CANCELADO
+                            <div className="text-xs font-bold mt-1">
+                              <X className="h-3 w-3" />
                             </div>
                           )}
                         </div>
@@ -585,18 +620,17 @@ export default function Agendamento() {
                         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                           <DialogTrigger asChild>
                             <button
-                              className="w-full h-full hover:bg-gray-50 flex items-center justify-center transition-colors"
+                              className="w-full h-full hover:bg-muted/50 flex items-center justify-center transition-all duration-200 rounded-md border-2 border-dashed border-muted hover:border-primary/50 group"
                               onClick={() => {
                                 setSelectedHour(timeSlot);
                                 setSelectedBarbeiro(barbeiro.id.toString());
                               }}
                             >
-                              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                              <div className="relative flex flex-col items-center gap-1">
-                                <div className="h-8 w-8 rounded-full bg-gray-100 group-hover:bg-[#8B4513]/10 flex items-center justify-center transition-colors duration-300">
-                                  <Plus className="h-4 w-4 text-gray-400 group-hover:text-[#8B4513] transition-colors duration-300" />
+                              <div className="flex flex-col items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <div className="h-6 w-6 rounded-full bg-muted group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                                  <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
-                                <span className="text-xs font-medium text-gray-400 group-hover:text-[#8B4513] transition-colors duration-300">
+                                <span className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
                                   Agendar
                                 </span>
                               </div>
