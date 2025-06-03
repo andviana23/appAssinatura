@@ -164,12 +164,16 @@ export default function Planos() {
         throw new Error('Plano não selecionado');
       }
       
-      // Criar checkout recorrente com nova estrutura
-      const response = await apiRequest("/api/asaas/criar-checkout-recorrente", "POST", {
-        nome: formData.nome,
+      // Criar assinatura recorrente com nova estrutura
+      const response = await apiRequest("/api/create-customer-subscription", "POST", {
+        name: formData.nome,
         email: formData.email,
-        telefone: formData.telefone,
-        planoSelecionado: planoSelecionado
+        phone: formData.telefone,
+        cpfCnpj: '',
+        planName: planoSelecionado.nome,
+        value: planoSelecionado.valorMensal || planoSelecionado.valor,
+        description: planoSelecionado.descricao || 'Assinatura mensal',
+        subscriptionCycle: 'MONTHLY'
       });
       
       const result = await response.json();
@@ -183,16 +187,17 @@ export default function Planos() {
           title: "Cliente cadastrado!",
           description: "Agora escolha o método de pagamento externo.",
         });
-      } else if (data.success && data.checkoutUrl) {
-        // Abrir checkout do Asaas
-        window.open(data.checkoutUrl, '_blank');
+      } else if (data.success && data.paymentLink?.url) {
+        // Abrir link de assinatura recorrente
+        window.open(data.paymentLink.url, '_blank');
         toast({
-          title: "Checkout criado!",
-          description: "Abrindo página de pagamento do Asaas.",
+          title: "Assinatura recorrente criada!",
+          description: "Abrindo página de pagamento com renovação automática.",
         });
         setShowCheckoutModal(false);
+        setLocation('/clientes');
       } else if (data.success && data.subscription) {
-        // Assinatura criada mas sem checkout
+        // Assinatura criada mas sem link
         toast({
           title: "Assinatura criada!",
           description: "Cliente receberá cobrança por email.",
