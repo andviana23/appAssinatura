@@ -150,8 +150,8 @@ export default function ClientesStatusPage() {
     icon: React.ReactNode, 
     cor: string 
   }) => (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className={`${cor} text-white`}>
+    <Card className="border-border bg-card shadow-lg">
+      <CardHeader className="bg-primary text-primary-foreground">
         <CardTitle className="flex items-center gap-2">
           {icon}
           {titulo} ({clientes.length})
@@ -290,53 +290,53 @@ export default function ClientesStatusPage() {
         {/* Estatísticas */}
         {clientesPorStatus && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+            <Card className="border-border bg-card shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600">Total de Clientes</p>
-                    <p className="text-2xl font-bold text-blue-900">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total de Clientes</p>
+                    <p className="text-2xl font-bold text-card-foreground">
                       {clientesPorStatus.total}
                     </p>
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Quantidade total cadastrados no sistema
                     </p>
                   </div>
-                  <Users className="h-8 w-8 text-blue-600" />
+                  <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+            <Card className="border-border bg-card shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-green-600">Clientes Ativos</p>
-                    <p className="text-2xl font-bold text-green-900">
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Clientes Ativos</p>
+                    <p className="text-2xl font-bold text-card-foreground">
                       {clientesPorStatus.ativos.total}
                     </p>
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Assinaturas ativas no mês atual
                     </p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100">
+            <Card className="border-border bg-card shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-red-600">Clientes Inadimplentes</p>
-                    <p className="text-2xl font-bold text-red-900">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400">Clientes Inadimplentes</p>
+                    <p className="text-2xl font-bold text-card-foreground">
                       {clientesPorStatus.inativos.total}
                     </p>
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Cobranças em atraso no mês vigente
                     </p>
                   </div>
-                  <XCircle className="h-8 w-8 text-red-600" />
+                  <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
                 </div>
               </CardContent>
             </Card>
