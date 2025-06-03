@@ -620,11 +620,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== ROTAS DE CLIENTES UNIFICADOS =====
-  // Lista todos os clientes da tabela central unificada (OTIMIZADO)
+  // Lista todos os clientes de todas as fontes (Local + Principal + Andrey)
   app.get("/api/clientes-unified", requireAuth, async (req, res) => {
     try {
-      // Buscar apenas dados locais para performance
-      const clientesUnificados = await storage.getAllClientes();
+      console.log("🔍 Buscando clientes unificados de todas as fontes...");
+      
+      const clientesUnificados = [];
+      
+      // 1. Clientes do banco local (incluindo sincronizados e externos)
+      const clientesLocais = await storage.getAllClientes();
+      clientesUnificados.push(...clientesLocais);
+      console.log(`✅ ${clientesLocais.length} clientes locais adicionados`);
+      
+      // 2. Buscar clientes da conta Principal Asaas (não sincronizados)
+      try {
+        const apiKey = process.env.ASAAS_API_KEY;
+        if (apiKey) {
+          const customersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+            headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
+          });
+          
+          if (customersResponse.ok) {
+            const customersData = await customersResponse.json();
+            
+            // Buscar assinaturas ativas da conta principal
+            const subscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+              headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
+            });
+            
+            const subscriptionsData = subscriptionsResponse.ok ? await subscriptionsResponse.json() : { data: [] };
+            const activeSubscriptions = new Set(subscriptionsData.data?.map((s: any) => s.customer) || []);
+            
+            // Verificar quais clientes ainda não estão no banco local
+            const emailsLocais = new Set(clientesLocais.map(c => c.email.toLowerCase()));
+            
+            for (const customer of customersData.data || []) {
+              if (!emailsLocais.has(customer.email.toLowerCase())) {
+                const hasActiveSubscription = activeSubscriptions.has(customer.id);
+                
+                clientesUnificados.push({
+                  id: `principal_${customer.id}`,
+                  nome: customer.name,
+                  email: customer.email,
+                  telefone: customer.phone || customer.mobilePhone,
+                  cpf: customer.cpfCnpj,
+                  origem: 'ASAAS_PRINCIPAL',
+                  asaasCustomerId: customer.id,
+                  planoNome: hasActiveSubscription ? 'Assinatura Ativa' : 'Cliente Cadastrado',
+                  planoValor: hasActiveSubscription ? '50.00' : '0.00',
+                  formaPagamento: hasActiveSubscription ? 'CREDIT_CARD' : 'N/A',
+                  statusAssinatura: hasActiveSubscription ? 'ATIVO' : 'INATIVO',
+                  dataInicioAssinatura: new Date(customer.dateCreated),
+                  dataVencimentoAssinatura: hasActiveSubscription ? 
+                    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : 
+                    new Date(customer.dateCreated),
+                  createdAt: new Date(customer.dateCreated)
+                });
+              }
+            }
+            console.log(`✅ Clientes da conta Principal verificados`);
+          }
+        }
+      } catch (error) {
+        console.warn("Aviso: Erro ao buscar conta Principal:", error);
+      }
+      
+      // 3. Buscar clientes da conta Asaas Andrey (não sincronizados)
+      try {
+        const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
+        
+        const andreyCustomersResponse = await fetch('https://api.asaas.com/v3/customers?limit=100', {
+          headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
+        });
+        
+        if (andreyCustomersResponse.ok) {
+          const andreyCustomersData = await andreyCustomersResponse.json();
+          
+          // Buscar assinaturas ativas da conta Andrey
+          const andreySubscriptionsResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+            headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
+          });
+          
+          const andreySubscriptionsData = andreySubscriptionsResponse.ok ? await andreySubscriptionsResponse.json() : { data: [] };
+          const andreyActiveSubscriptions = new Set(andreySubscriptionsData.data?.map((s: any) => s.customer) || []);
+          
+          // Verificar quais clientes ainda não estão na lista
+          const emailsExistentes = new Set(clientesUnificados.map(c => c.email.toLowerCase()));
+          
+          for (const customer of andreyCustomersData.data || []) {
+            if (!emailsExistentes.has(customer.email.toLowerCase())) {
+              const hasActiveSubscription = andreyActiveSubscriptions.has(customer.id);
+              
+              clientesUnificados.push({
+                id: `andrey_${customer.id}`,
+                nome: customer.name,
+                email: customer.email,
+                telefone: customer.phone || customer.mobilePhone,
+                cpf: customer.cpfCnpj,
+                origem: 'ASAAS_ANDREY',
+                asaasCustomerId: customer.id,
+                planoNome: hasActiveSubscription ? 'Assinatura Ativa' : 'Cliente Cadastrado',
+                planoValor: hasActiveSubscription ? '50.00' : '0.00',
+                formaPagamento: hasActiveSubscription ? 'CREDIT_CARD' : 'N/A',
+                statusAssinatura: hasActiveSubscription ? 'ATIVO' : 'INATIVO',
+                dataInicioAssinatura: new Date(customer.dateCreated),
+                dataVencimentoAssinatura: hasActiveSubscription ? 
+                  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : 
+                  new Date(customer.dateCreated),
+                createdAt: new Date(customer.dateCreated)
+              });
+            }
+          }
+          console.log(`✅ Clientes da conta Andrey verificados`);
+        }
+      } catch (error) {
+        console.warn("Aviso: Erro ao buscar conta Andrey:", error);
+      }
+      
+      console.log(`🎯 Total de clientes unificados: ${clientesUnificados.length}`);
       
       res.json({
         success: true,
@@ -637,24 +750,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stats unificados (para Dashboard) - OTIMIZADO
+  // Stats unificados (para Dashboard) - INCLUINDO TODAS AS FONTES
   app.get("/api/clientes-unified/stats", requireAuth, async (req, res) => {
     try {
-      // Usar métodos do sistema central unificado
-      const totalClientes = await storage.getTotalClientes();
-      const clientesPorOrigem = await storage.getClientesPorOrigem();
-      const valorTotalAssinaturas = await storage.getValorTotalAssinaturas();
+      console.log("📊 Calculando estatísticas unificadas de todas as fontes...");
       
-      // Resposta consolidada do sistema central unificado
+      // 1. Clientes do banco local (incluindo sincronizados)
+      const clientesLocais = await storage.getAllClientes();
+      const totalClientesLocais = clientesLocais.length;
+      const receitaLocal = clientesLocais
+        .filter(c => c.statusAssinatura === 'ATIVO')
+        .reduce((sum, c) => sum + parseFloat(c.planoValor || '0'), 0);
+      
+      console.log(`Local: ${totalClientesLocais} clientes, R$ ${receitaLocal.toFixed(2)} receita`);
+      
+      // 2. Buscar clientes da conta Principal Asaas
+      let totalClientesPrincipal = 0;
+      let receitaPrincipal = 0;
+      let clientesAtivosPrincipal = 0;
+      
+      try {
+        const apiKey = process.env.ASAAS_API_KEY;
+        if (apiKey) {
+          const principalResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+            headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
+          });
+          
+          if (principalResponse.ok) {
+            const principalData = await principalResponse.json();
+            totalClientesPrincipal = principalData.totalCount || 0;
+            receitaPrincipal = principalData.data?.reduce((sum: number, sub: any) => sum + parseFloat(sub.value || '0'), 0) || 0;
+            clientesAtivosPrincipal = principalData.data?.length || 0;
+            console.log(`Principal: ${totalClientesPrincipal} clientes, R$ ${receitaPrincipal.toFixed(2)} receita`);
+          }
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar dados da conta Principal:", error);
+      }
+      
+      // 3. Buscar clientes da conta Asaas Andrey
+      let totalClientesAndrey = 0;
+      let receitaAndrey = 0;
+      let clientesAtivosAndrey = 0;
+      
+      try {
+        const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
+        
+        const andreyResponse = await fetch('https://api.asaas.com/v3/subscriptions?status=ACTIVE&limit=100', {
+          headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
+        });
+        
+        if (andreyResponse.ok) {
+          const andreyData = await andreyResponse.json();
+          totalClientesAndrey = andreyData.totalCount || 0;
+          receitaAndrey = andreyData.data?.reduce((sum: number, sub: any) => sum + parseFloat(sub.value || '0'), 0) || 0;
+          clientesAtivosAndrey = andreyData.data?.length || 0;
+          console.log(`Andrey: ${totalClientesAndrey} clientes, R$ ${receitaAndrey.toFixed(2)} receita`);
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar dados da conta Andrey:", error);
+      }
+      
+      // 4. Calcular totais consolidados
+      const totalClientes = totalClientesLocais + totalClientesPrincipal + totalClientesAndrey;
+      const receitaTotal = receitaLocal + receitaPrincipal + receitaAndrey;
+      const clientesAtivos = clientesLocais.filter(c => c.statusAssinatura === 'ATIVO').length + 
+                           clientesAtivosPrincipal + clientesAtivosAndrey;
+      
+      console.log(`🎯 TOTAL CONSOLIDADO: ${totalClientes} clientes, R$ ${receitaTotal.toFixed(2)} receita, ${clientesAtivos} ativos`);
+      
+      // 5. Estatísticas por origem
+      const clientesPorOrigem = await storage.getClientesPorOrigem();
+      clientesPorOrigem.push(
+        { origem: 'ASAAS_PRINCIPAL', total: totalClientesPrincipal },
+        { origem: 'ASAAS_ANDREY', total: totalClientesAndrey }
+      );
+      
       res.json({
         success: true,
         total: totalClientes,
         origem: clientesPorOrigem,
-        valorTotalAssinaturas: valorTotalAssinaturas,
+        valorTotalAssinaturas: receitaTotal,
+        clientesAtivos: clientesAtivos,
         stats: {
           totalClientes,
-          valorTotalAssinaturas,
-          clientesPorOrigem
+          valorTotalAssinaturas: receitaTotal,
+          clientesAtivos,
+          clientesPorOrigem,
+          breakdown: {
+            local: { total: totalClientesLocais, receita: receitaLocal },
+            principal: { total: totalClientesPrincipal, receita: receitaPrincipal },
+            andrey: { total: totalClientesAndrey, receita: receitaAndrey }
+          }
         }
       });
     } catch (error) {
@@ -3800,7 +3987,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar estatísticas de clientes unificadas para o mês específico
       const [ano, mesNum] = (mesAtual as string).split('-');
-      const clientesStats = await storage.getClientesUnifiedStats(mesNum, ano);
+      const totalClientes = await storage.getTotalClientes();
+      const valorTotalAssinaturas = await storage.getValorTotalAssinaturas();
+      const clientesStats = {
+        totalActiveClients: totalClientes,
+        totalSubscriptionRevenue: valorTotalAssinaturas,
+        totalExpiringSubscriptions: 0
+      };
       
       // Calcular KPIs com dados reais do mês
       const totalAtendimentos = agendamentosFiltrados.length;

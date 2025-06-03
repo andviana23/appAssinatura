@@ -76,7 +76,7 @@ export default function Clientes() {
     refetchInterval: 300000,
   });
 
-  const { data: clientes = [], isLoading: clientesLoading, refetch } = useQuery<ClienteUnificado[]>({
+  const { data: clientesResponse, isLoading: clientesLoading, refetch } = useQuery<{success: boolean, total: number, clientes: ClienteUnificado[]}>({
     queryKey: ['/api/clientes-unified'],
     refetchInterval: 300000,
   });
@@ -87,6 +87,9 @@ export default function Clientes() {
     refetchInterval: 300000,
     enabled: abaAtiva === 'andrey',
   });
+
+  // Extrair clientes do response
+  const clientes = clientesResponse?.clientes || [];
 
   // Filtrar clientes baseado nos filtros selecionados
   const clientesFiltrados = clientes.filter(cliente => {
