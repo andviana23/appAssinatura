@@ -122,29 +122,29 @@ export class AsaasIntegrationService {
         throw new Error('ASAAS_API_KEY_ANDREY não configurada');
       }
 
-      const subscriptions = await this.buscarAssinaturasAsaas(apiKey);
+      const payments = await this.buscarCobrancasConfirmadas(apiKey);
       let sincronizados = 0;
       let erros = 0;
 
-      for (const subscription of subscriptions) {
+      for (const payment of payments) {
         try {
-          const customer = await this.buscarClienteAsaas(apiKey, subscription.customer);
+          const customer = await this.buscarClienteAsaas(apiKey, payment.customer);
           
           if (customer) {
-            await this.sincronizarClienteAsaas(customer, subscription, 'ASAAS_ANDREY');
+            await this.sincronizarClienteFromPayment(customer, payment, 'ASAAS_ANDREY');
             sincronizados++;
           }
         } catch (error) {
-          console.error(`Erro ao sincronizar cliente ${subscription.customer}:`, error);
+          console.error(`Erro ao sincronizar cliente ${payment.customer}:`, error);
           erros++;
         }
       }
 
-      await this.finalizarLogSync(logId, 'SUCESSO', subscriptions.length, erros);
+      await this.finalizarLogSync(logId, 'SUCESSO', payments.length, erros);
       
       return {
         success: true,
-        total: subscriptions.length,
+        total: payments.length,
         sincronizados,
         erros
       };
