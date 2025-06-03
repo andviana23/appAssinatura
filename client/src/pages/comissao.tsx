@@ -29,7 +29,7 @@ interface ComissaoStats {
   totalComissao: number;
 }
 
-export default function Distribuicao() {
+export default function Comissao() {
   const [selectedBarbeiro, setSelectedBarbeiro] = useState<BarbeiroComissao | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   

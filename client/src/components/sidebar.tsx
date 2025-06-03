@@ -62,7 +62,7 @@ const navigation = [
   },
   {
     name: "Comissão",
-    href: "/distribuicao",
+    href: "/comissao",
     icon: Calculator,
   },
   {

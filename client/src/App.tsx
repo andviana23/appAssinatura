@@ -22,6 +22,7 @@ import ClientesStatus from "@/pages/clientes-status";
 import SistemaModerno from "@/pages/sistema-moderno";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
+import Comissao from "@/pages/comissao";
 import DistribuicaoNova from "@/pages/distribuicao-nova";
 import TotalServicos from "@/pages/total-servicos";
 import BarbeiroDashboard from "@/pages/barbeiro-dashboard-final";
@@ -55,7 +56,7 @@ function AuthenticatedRoutes() {
           <Route path="/servicos" component={Servicos} />
           <Route path="/planos" component={Planos} />
           <Route path="/agendamento" component={Agendamento} />
-          <Route path="/comissao" component={DistribuicaoNova} />
+          <Route path="/comissao" component={Comissao} />
           <Route path="/relatorio" component={TotalServicos} />
           <Route path="/relatorios" component={TotalServicos} />
           <Route path="/total-servicos" component={TotalServicos} />

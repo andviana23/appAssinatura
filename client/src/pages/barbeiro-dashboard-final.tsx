@@ -174,10 +174,10 @@ export default function BarbeiroDashboardFinal() {
     updateSenhaMutation.mutate(senhaForm);
   };
 
-  // Encontrar dados do barbeiro logado usando a mesma estrutura da página de distribuição
+  // Encontrar dados do barbeiro logado usando a mesma estrutura da página de comissão
   const barbeiroLogado = servicosData?.barbeiros?.find(b => b.barbeiro.email === user?.email);
   
-  // Calcular estatísticas baseadas na mesma fonte da página de distribuição
+  // Calcular estatísticas baseadas na mesma fonte da página de comissão
   const servicosFinalizados = barbeiroLogado?.totalServicos || 0;
   const tempoTotal = barbeiroLogado?.tempoTotalMinutos || 0;
   const comissaoTotal = barbeiroLogado?.comissaoTotal || 0;
