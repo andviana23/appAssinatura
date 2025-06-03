@@ -1,0 +1,300 @@
+Objetivo
+Criar uma API REST no Replit que integre com o Asaas (v3) para gerar links de pagamento personalizados de assinatura recorrente, corrigindo o problema de retorno HTML ao invés de JSON.
+Configuração Inicial
+1. Estrutura do Projeto
+projeto/
+├── index.js (arquivo principal)
+├── package.json
+└── .env (para variáveis de ambiente)
+2. Dependências Necessárias
+json{
+  "name": "asaas-checkout-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}
+Código Completo da API
+index.js
+javascriptconst express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Token do Asaas (SUBSTITUA pelo seu token real)
+const ASAAS_API_TOKEN = process.env.ASAAS_API_TOKEN || 'SEU_TOKEN_AQUI';
+const ASAAS_BASE_URL = 'https://www.asaas.com/api/v3';
+
+// Middleware para validar dados de entrada
+const validatePaymentData = (req, res, next) => {
+  const { name, description, value, subscriptionCycle } = req.body;
+  
+  if (!name || !description || !value || !subscriptionCycle) {
+    return res.status(400).json({
+      error: 'Dados obrigatórios: name, description, value, subscriptionCycle'
+    });
+  }
+  
+  if (typeof value !== 'number' || value <= 0) {
+    return res.status(400).json({
+      error: 'O valor deve ser um número maior que zero'
+    });
+  }
+  
+  const validCycles = ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'SEMIANNUALLY', 'YEARLY'];
+  if (!validCycles.includes(subscriptionCycle)) {
+    return res.status(400).json({
+      error: `subscriptionCycle deve ser um dos valores: ${validCycles.join(', ')}`
+    });
+  }
+  
+  next();
+};
+
+// Endpoint principal para criar link de pagamento
+app.post('/api/create-payment-link', validatePaymentData, async (req, res) => {
+  try {
+    const { name, description, value, subscriptionCycle } = req.body;
+    
+    // Payload EXATO para o Asaas
+    const asaasPayload = {
+      billingType: "CREDIT_CARD",
+      chargeType: "RECURRENT", 
+      name: name,
+      description: description,
+      value: parseFloat(value),
+      subscriptionCycle: subscriptionCycle
+    };
+    
+    console.log('🚀 Enviando para Asaas:', JSON.stringify(asaasPayload, null, 2));
+    
+    // Configuração da requisição para o Asaas
+    const config = {
+      method: 'POST',
+      url: `${ASAAS_BASE_URL}/paymentLinks`,
+      headers: {
+        'Content-Type': 'application/json',
+        'access_token': ASAAS_API_TOKEN,
+        'User-Agent': 'ReplitApp/1.0'
+      },
+      data: asaasPayload,
+      timeout: 10000, // 10 segundos
+      validateStatus: function (status) {
+        return status < 500; // Resolve apenas se não for erro de servidor
+      }
+    };
+    
+    const response = await axios(config);
+    
+    console.log('📥 Status da resposta:', response.status);
+    console.log('📥 Headers da resposta:', response.headers);
+    
+    // Verificar se a resposta é JSON
+    const contentType = response.headers['content-type'];
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('❌ Resposta não é JSON:', contentType);
+      console.error('❌ Dados recebidos:', response.data);
+      
+      return res.status(502).json({
+        error: 'Asaas retornou resposta inválida (não JSON)',
+        status: response.status,
+        contentType: contentType,
+        data: typeof response.data === 'string' ? response.data.substring(0, 500) : response.data
+      });
+    }
+    
+    // Verificar se houve erro na API do Asaas
+    if (response.status >= 400) {
+      console.error('❌ Erro na API do Asaas:', response.data);
+      return res.status(response.status).json({
+        error: 'Erro na API do Asaas',
+        asaasError: response.data
+      });
+    }
+    
+    // Sucesso - extrair o link de pagamento
+    const { url: paymentUrl, id, object } = response.data;
+    
+    if (!paymentUrl) {
+      console.error('❌ Link não encontrado na resposta:', response.data);
+      return res.status(502).json({
+        error: 'Link de pagamento não encontrado na resposta do Asaas',
+        response: response.data
+      });
+    }
+    
+    console.log('✅ Link criado com sucesso:', paymentUrl);
+    
+    // Retornar apenas o essencial
+    res.json({
+      success: true,
+      paymentUrl: paymentUrl,
+      linkId: id,
+      message: 'Link de pagamento criado com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('💥 Erro geral:', error.message);
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({
+        error: 'Timeout na conexão com Asaas'
+      });
+    }
+    
+    if (error.response) {
+      console.error('❌ Erro HTTP:', error.response.status);
+      console.error('❌ Dados do erro:', error.response.data);
+      
+      return res.status(error.response.status).json({
+        error: 'Erro na comunicação com Asaas',
+        status: error.response.status,
+        message: error.response.data
+      });
+    }
+    
+    if (error.request) {
+      console.error('❌ Sem resposta do servidor:', error.request);
+      return res.status(503).json({
+        error: 'Asaas não respondeu'
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      message: error.message
+    });
+  }
+});
+
+// Endpoint de teste para verificar se a API está funcionando
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'API funcionando',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint para testar conexão com Asaas
+app.get('/api/test-asaas', async (req, res) => {
+  try {
+    const response = await axios.get(`${ASAAS_BASE_URL}/customers`, {
+      headers: {
+        'access_token': ASAAS_API_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      timeout: 5000
+    });
+    
+    res.json({
+      success: true,
+      message: 'Conexão com Asaas OK',
+      status: response.status
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Erro na conexão com Asaas',
+      error: error.message
+    });
+  }
+});
+
+// Iniciar servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🔗 Test Asaas: http://localhost:${PORT}/api/test-asaas`);
+  console.log(`🔗 Create payment: POST http://localhost:${PORT}/api/create-payment-link`);
+});
+Arquivo .env
+ASAAS_API_TOKEN=seu_token_real_aqui
+PORT=3000
+Como Resolver o Problema do HTML
+Principais Causas e Soluções:
+
+Token Inválido/Incorreto
+
+✅ Verifique se o token está correto no arquivo .env
+✅ Confirme se está usando o token de produção ou sandbox conforme necessário
+
+
+Headers Incorretos
+
+✅ Use access_token no header (não Authorization)
+✅ Sempre inclua Content-Type: application/json
+
+
+URL Incorreta
+
+✅ Confirme a URL: https://www.asaas.com/api/v3/paymentLinks
+
+
+Payload Malformado
+
+✅ Sempre envie números como number, não string
+✅ Verifique se todos os campos obrigatórios estão presentes
+
+
+
+Como Testar
+1. Teste de Saúde
+bashGET http://localhost:3000/api/health
+2. Teste de Conexão Asaas
+bashGET http://localhost:3000/api/test-asaas
+3. Criar Link de Pagamento
+bashPOST http://localhost:3000/api/create-payment-link
+Content-Type: application/json
+
+{
+  "name": "Assinatura Gold",
+  "description": "Acesso premium mensal",
+  "value": 97.90,
+  "subscriptionCycle": "MONTHLY"
+}
+Exemplo de Resposta Esperada
+json{
+  "success": true,
+  "paymentUrl": "https://www.asaas.com/c/1234567890",
+  "linkId": "pay_1234567890",
+  "message": "Link de pagamento criado com sucesso"
+}
+Logs de Debug
+O código inclui logs detalhados para identificar problemas:
+
+🚀 Dados enviados para Asaas
+📥 Status e headers da resposta
+✅ Sucesso na criação
+❌ Erros detalhados
+
+Checklist Final
+
+ Token do Asaas configurado corretamente
+ Dependências instaladas (npm install)
+ Servidor iniciado (npm start)
+ Teste de health funcionando
+ Teste de conexão Asaas funcionando
+ Link de pagamento sendo criado corretamente
+ Resposta sempre em JSON
+
+Dicas Importantes
+
+Sempre teste primeiro com o endpoint /api/test-asaas
+Verifique os logs no console do Replit
+Confirme o token na documentação do Asaas
+Use HTTPS sempre em produção

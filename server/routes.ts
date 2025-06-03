@@ -5812,9 +5812,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API REST para checkout - será reimplementada conforme novas especificações
+  // API REST para criar link de pagamento personalizado - Asaas v3
+  app.post("/api/create-payment-link", async (req: Request, res: Response) => {
+    try {
+      const { name, description, value, subscriptionCycle } = req.body;
+      
+      // Validação dos dados obrigatórios
+      if (!name || !description || !value || !subscriptionCycle) {
+        return res.status(400).json({
+          error: 'Dados obrigatórios: name, description, value, subscriptionCycle'
+        });
+      }
+      
+      if (typeof value !== 'number' || value <= 0) {
+        return res.status(400).json({
+          error: 'O valor deve ser um número maior que zero'
+        });
+      }
+      
+      const validCycles = ['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY', 'SEMIANNUALLY', 'YEARLY'];
+      if (!validCycles.includes(subscriptionCycle)) {
+        return res.status(400).json({
+          error: `subscriptionCycle deve ser um dos valores: ${validCycles.join(', ')}`
+        });
+      }
 
-  // Endpoint de checkout - aguardando novas especificações
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Token de API do Asaas não configurado' 
+        });
+      }
+      
+      // Payload EXATO para o Asaas
+      const asaasPayload = {
+        billingType: "CREDIT_CARD",
+        chargeType: "RECURRENT", 
+        name: name,
+        description: description,
+        value: parseFloat(value.toString()),
+        subscriptionCycle: subscriptionCycle
+      };
+      
+      console.log('🚀 Enviando para Asaas:', JSON.stringify(asaasPayload, null, 2));
+      
+      // Configuração da requisição para o Asaas
+      const response = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': asaasApiKey,
+          'User-Agent': 'ReplitApp/1.0'
+        },
+        body: JSON.stringify(asaasPayload)
+      });
+      
+      console.log('📥 Status da resposta:', response.status);
+      console.log('📥 Headers da resposta:', response.headers.get('content-type'));
+      
+      // Verificar se a resposta é JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('❌ Resposta não é JSON:', contentType);
+        const responseText = await response.text();
+        console.error('❌ Dados recebidos:', responseText.substring(0, 500));
+        
+        return res.status(502).json({
+          error: 'Asaas retornou resposta inválida (não JSON)',
+          status: response.status,
+          contentType: contentType,
+          data: responseText.substring(0, 500)
+        });
+      }
+      
+      const responseData = await response.json();
+      
+      // Verificar se houve erro na API do Asaas
+      if (response.status >= 400) {
+        console.error('❌ Erro na API do Asaas:', responseData);
+        return res.status(response.status).json({
+          error: 'Erro na API do Asaas',
+          asaasError: responseData
+        });
+      }
+      
+      // Sucesso - extrair o link de pagamento
+      const { url: paymentUrl, id } = responseData;
+      
+      if (!paymentUrl) {
+        console.error('❌ Link não encontrado na resposta:', responseData);
+        return res.status(502).json({
+          error: 'Link de pagamento não encontrado na resposta do Asaas',
+          response: responseData
+        });
+      }
+      
+      console.log('✅ Link criado com sucesso:', paymentUrl);
+      
+      // Retornar apenas o essencial
+      res.json({
+        success: true,
+        paymentUrl: paymentUrl,
+        linkId: id,
+        message: 'Link de pagamento criado com sucesso'
+      });
+      
+    } catch (error) {
+      console.error('💥 Erro geral:', error);
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        message: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Endpoint de teste para verificar se a API está funcionando
+  app.get('/api/health', (req: Request, res: Response) => {
+    res.json({
+      status: 'OK',
+      message: 'API funcionando',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Endpoint para testar conexão com Asaas
+  app.get('/api/test-asaas', async (req: Request, res: Response) => {
+    try {
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({
+          success: false,
+          message: 'Token de API do Asaas não configurado'
+        });
+      }
+
+      const response = await fetch('https://www.asaas.com/api/v3/customers', {
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      res.json({
+        success: true,
+        message: 'Conexão com Asaas OK',
+        status: response.status
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Erro na conexão com Asaas',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
 
   // Rotas de callback para o checkout do Asaas
   app.get('/pagamento/sucesso', (req: Request, res: Response) => {
