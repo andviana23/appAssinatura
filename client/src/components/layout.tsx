@@ -76,7 +76,7 @@ export function Layout({ children }: LayoutProps) {
   // Layout desktop/tablet
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <Sidebar collapsed={isTablet} />
+      <Sidebar collapsed={true} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           showMenuButton={false}

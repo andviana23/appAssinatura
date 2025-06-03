@@ -630,16 +630,16 @@ export default function Agendamento() {
           </div>
 
           {/* Linhas de horário - Dark Mode Premium */}
-          <div className="max-h-[70vh] overflow-y-auto">
+          <div className="max-h-[80vh] overflow-y-auto">
             {timeSlots.map((timeSlot) => (
               <div 
                 key={timeSlot} 
-                className="grid border-b border-border min-h-[70px] hover:bg-muted/30 transition-colors group"
+                className="grid border-b border-border min-h-[50px] hover:bg-muted/30 transition-colors group"
                 style={{ 
                   gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                 }}
               >
-                <div className="p-3 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     {timeSlot}
@@ -650,7 +650,7 @@ export default function Agendamento() {
                   const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                   
                   return (
-                    <div key={barbeiro.id} className="border-r border-border p-2 relative">
+                    <div key={barbeiro.id} className="border-r border-border p-1 relative">
                       {agendamento ? (
                         <div 
                           className={`
