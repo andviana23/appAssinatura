@@ -771,16 +771,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("📊 Calculando estatísticas unificadas de todas as fontes...");
       
-      // 1. Clientes do banco local (incluindo sincronizados)
+      // 1. Clientes do banco local (incluindo sincronizados e externos)
       const clientesLocais = await storage.getAllClientes();
       const totalClientesLocais = clientesLocais.length;
+      
+      // Calcular receita de clientes locais ATIVOS (incluindo externos)
       const receitaLocal = clientesLocais
         .filter(c => c.statusAssinatura === 'ATIVO')
         .reduce((sum, c) => sum + parseFloat(c.planoValor || '0'), 0);
       
       console.log(`Local: ${totalClientesLocais} clientes, R$ ${receitaLocal.toFixed(2)} receita`);
       
-      // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal
+      // 2. Buscar apenas clientes com PAGAMENTOS CONFIRMADOS da conta Principal (últimos 30 dias)
       let totalClientesPrincipal = 0;
       let receitaPrincipal = 0;
       let clientesAtivosPrincipal = 0;
@@ -788,12 +790,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const apiKey = process.env.ASAAS_API_KEY;
         if (apiKey) {
-          // Buscar pagamentos confirmados dos últimos 30 dias
+          // Buscar apenas pagamentos CONFIRMED dos últimos 30 dias
           const dataLimite = new Date();
           dataLimite.setDate(dataLimite.getDate() - 30);
           const dataLimiteStr = dataLimite.toISOString().split('T')[0];
           
-          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
+          const paymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&paymentDate[ge]=${dataLimiteStr}&limit=100`, {
             headers: { 'access_token': apiKey, 'Content-Type': 'application/json' }
           });
           
@@ -803,21 +805,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let receitaConfirmada = 0;
             
             for (const payment of paymentsData.data || []) {
-              // Verificar se o pagamento foi confirmado nos últimos 30 dias
-              const paymentDate = new Date(payment.paymentDate || payment.confirmedDate);
-              const agora = new Date();
-              const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
-              
-              if (diasDesdeConfirmacao <= 30) {
-                clientesAtivos.add(payment.customer);
-                receitaConfirmada += parseFloat(payment.value || '0');
+              // Apenas pagamentos com status CONFIRMED e data válida
+              if (payment.status === 'CONFIRMED' && payment.paymentDate) {
+                const paymentDate = new Date(payment.paymentDate);
+                const agora = new Date();
+                const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (diasDesdeConfirmacao <= 30) {
+                  clientesAtivos.add(payment.customer);
+                  receitaConfirmada += parseFloat(payment.value || '0');
+                }
               }
             }
             
             totalClientesPrincipal = clientesAtivos.size;
             receitaPrincipal = receitaConfirmada;
             clientesAtivosPrincipal = clientesAtivos.size;
-            console.log(`Principal: ${totalClientesPrincipal} clientes ativos (pagamentos confirmados), R$ ${receitaPrincipal.toFixed(2)} receita`);
+            console.log(`Principal: ${totalClientesPrincipal} clientes ativos (pagamentos CONFIRMED), R$ ${receitaPrincipal.toFixed(2)} receita`);
           }
         }
       } catch (error) {
@@ -832,12 +836,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const andreyApiKey = '$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFmYWFlOWZkLTU5YzItNDQ1ZS1hZjAxLWI1ZTc4ZTg1MDJlYzo6JGFhY2hfOGY2NTBlYzQtZjY4My00MDllLWE3ZDYtMzM3ODQwN2ViOGRj';
         
-        // Buscar pagamentos confirmados dos últimos 30 dias
+        // Buscar apenas pagamentos CONFIRMED dos últimos 30 dias  
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - 30);
         const dataLimiteStr = dataLimite.toISOString().split('T')[0];
         
-        const andreyPaymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&dateCreated[ge]=${dataLimiteStr}&limit=100`, {
+        const andreyPaymentsResponse = await fetch(`https://api.asaas.com/v3/payments?status=CONFIRMED&paymentDate[ge]=${dataLimiteStr}&limit=100`, {
           headers: { 'access_token': andreyApiKey, 'Content-Type': 'application/json' }
         });
         
@@ -847,21 +851,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let receitaConfirmadaAndrey = 0;
           
           for (const payment of andreyPaymentsData.data || []) {
-            // Verificar se o pagamento foi confirmado nos últimos 30 dias
-            const paymentDate = new Date(payment.paymentDate || payment.confirmedDate);
-            const agora = new Date();
-            const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (diasDesdeConfirmacao <= 30) {
-              clientesAtivosAndreySet.add(payment.customer);
-              receitaConfirmadaAndrey += parseFloat(payment.value || '0');
+            // Apenas pagamentos com status CONFIRMED e data válida
+            if (payment.status === 'CONFIRMED' && payment.paymentDate) {
+              const paymentDate = new Date(payment.paymentDate);
+              const agora = new Date();
+              const diasDesdeConfirmacao = Math.floor((agora.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (diasDesdeConfirmacao <= 30) {
+                clientesAtivosAndreySet.add(payment.customer);
+                receitaConfirmadaAndrey += parseFloat(payment.value || '0');
+              }
             }
           }
           
           totalClientesAndrey = clientesAtivosAndreySet.size;
           receitaAndrey = receitaConfirmadaAndrey;
           clientesAtivosAndrey = clientesAtivosAndreySet.size;
-          console.log(`Andrey: ${totalClientesAndrey} clientes ativos (pagamentos confirmados), R$ ${receitaAndrey.toFixed(2)} receita`);
+          console.log(`Andrey: ${totalClientesAndrey} clientes ativos (pagamentos CONFIRMED), R$ ${receitaAndrey.toFixed(2)} receita`);
         }
       } catch (error) {
         console.warn("Erro ao buscar dados da conta Andrey:", error);
