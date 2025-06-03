@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { IdleLogoutManager } from "@/components/IdleLogoutManager";
 import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // Pages
 import Login from "@/pages/login-basico";
@@ -151,14 +152,16 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-background">
-          <AppContent />
-          <Toaster />
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className="min-h-screen bg-background">
+            <AppContent />
+            <Toaster />
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
