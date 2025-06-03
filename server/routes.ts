@@ -1310,6 +1310,76 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // CANCELAR E DELETAR CLIENTES
+  // =====================================================
+
+  // Cancelar cliente externo (marcar como cancelado)
+  app.post('/api/clientes-externos/:clienteId/cancelar', async (req: Request, res: Response) => {
+    try {
+      const { clienteId } = req.params;
+
+      // Atualizar status do cliente externo para "cancelado"
+      await db.update(schema.pagamentosExternos)
+        .set({ 
+          status: 'cancelado',
+          dataCancelamento: new Date()
+        })
+        .where(eq(schema.pagamentosExternos.id, parseInt(clienteId)));
+
+      res.json({ 
+        success: true, 
+        message: 'Cliente externo marcado como cancelado. Será removido automaticamente ao fim do período.'
+      });
+
+    } catch (error) {
+      console.error('Erro ao cancelar cliente externo:', error);
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Deletar cliente externo
+  app.delete('/api/clientes-externos/:clienteId/deletar', async (req: Request, res: Response) => {
+    try {
+      const { clienteId } = req.params;
+
+      await db.delete(schema.pagamentosExternos)
+        .where(eq(schema.pagamentosExternos.id, parseInt(clienteId)));
+
+      res.json({ 
+        success: true, 
+        message: 'Cliente externo deletado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao deletar cliente externo:', error);
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  });
+
+  // Deletar cliente Asaas (apenas do sistema local, não cancela no Asaas)
+  app.delete('/api/clientes-asaas/:clienteId/deletar', async (req: Request, res: Response) => {
+    try {
+      const { clienteId } = req.params;
+
+      // Remover das tabelas locais de sincronização
+      await db.delete(schema.clientesAsaasTrato)
+        .where(eq(schema.clientesAsaasTrato.id, clienteId));
+      
+      await db.delete(schema.clientesAsaasAndrey)
+        .where(eq(schema.clientesAsaasAndrey.id, clienteId));
+
+      res.json({ 
+        success: true, 
+        message: 'Cliente removido do sistema local. Assinatura no Asaas permanece ativa.'
+      });
+
+    } catch (error) {
+      console.error('Erro ao deletar cliente Asaas:', error);
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  });
+
+  // =====================================================
   // ENDPOINT DE SAÚDE
   // =====================================================
 
