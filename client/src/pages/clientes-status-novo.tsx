@@ -55,6 +55,13 @@ export default function ClientesStatusNovo() {
 
   const { data: clientesPorStatus, isLoading, refetch } = useQuery<ClientesPorStatus>({
     queryKey: ["/api/clientes/unificados-status", mesSelecionado],
+    queryFn: async () => {
+      const response = await fetch(`/api/clientes/unificados-status?mes=${mesSelecionado}`);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar clientes');
+      }
+      return response.json();
+    },
     refetchInterval: 30000,
   });
 

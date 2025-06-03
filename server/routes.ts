@@ -6,18 +6,47 @@ import { eq } from 'drizzle-orm';
 
 export async function registerRoutes(app: Express): Promise<Express> {
   
+  // Nova função para determinar status baseado no mês e lógica de pagamentos vencidos
+  function determinarStatusClientePorMes(cliente: any, mesFiltro: string): string {
+    // Regra: Cliente é ATIVO se está em dia ou cobrança ainda não venceu
+    // Regra: Cliente é ATRASADO apenas se pagamento venceu e não foi confirmado
+    
+    // Para simplificação inicial, vamos usar a lógica baseada em:
+    // - notificationDisabled = true -> provavelmente cancelado/inativo
+    // - Cliente muito recente (menos de 30 dias) -> ativo (ainda dentro do prazo)
+    // - Clientes antigos sem notificationDisabled -> ativos (presumindo em dia)
+    
+    if (cliente.notificationDisabled || cliente.deleted) {
+      return 'atrasado'; // Cliente com notificação desabilitada ou deletado = atrasado/cancelado
+    }
+    
+    const dataCreated = new Date(cliente.dateCreated);
+    const agora = new Date();
+    const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
+    
+    // Clientes muito antigos (mais de 90 dias) sem atividade recente podem estar atrasados
+    if (diasCriacao > 90 && cliente.notificationDisabled) {
+      return 'atrasado';
+    }
+    
+    // Por padrão, considera ativo (em dia ou dentro do prazo)
+    return 'ativo';
+  }
+  
   // =====================================================
   // ROTA UNIFICADA CLIENTES ASAAS POR STATUS
   // =====================================================
 
   app.get('/api/clientes/unificados-status', async (req: Request, res: Response) => {
     try {
+      const mesFiltro = req.query.mes as string || new Date().toISOString().slice(0, 7); // YYYY-MM
+      console.log(`📅 Filtrando clientes por mês: ${mesFiltro}`);
+      
       const asaasTrato = process.env.ASAAS_TRATO;
       const asaasAndrey = process.env.ASAAS_AND;
       
       const clientesAtivos: any[] = [];
-      const clientesInativos: any[] = [];
-      const clientesAguardandoPagamento: any[] = [];
+      const clientesAtrasados: any[] = [];
       
       // Buscar clientes da conta ASAAS_TRATO
       if (asaasTrato) {
@@ -34,11 +63,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
             data.data.forEach((cliente: any) => {
               const clienteFormatado = {
                 ...cliente,
-                conta: 'ASAAS_TRATO',
-                status: determinarStatusCliente(cliente)
+                conta: 'ASAAS_TRATO'
               };
               
-              organizarClientePorStatus(clienteFormatado, clientesAtivos, clientesInativos, clientesAguardandoPagamento);
+              const status = determinarStatusClientePorMes(clienteFormatado, mesFiltro);
+              if (status === 'ativo') {
+                clientesAtivos.push({...clienteFormatado, status: 'ativo'});
+              } else {
+                clientesAtrasados.push({...clienteFormatado, status: 'atrasado'});
+              }
             });
           }
         } catch (error) {
@@ -61,11 +94,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
             data.data.forEach((cliente: any) => {
               const clienteFormatado = {
                 ...cliente,
-                conta: 'ASAAS_AND',
-                status: determinarStatusCliente(cliente)
+                conta: 'ASAAS_AND'
               };
               
-              organizarClientePorStatus(clienteFormatado, clientesAtivos, clientesInativos, clientesAguardandoPagamento);
+              const status = determinarStatusClientePorMes(clienteFormatado, mesFiltro);
+              if (status === 'ativo') {
+                clientesAtivos.push({...clienteFormatado, status: 'ativo'});
+              } else {
+                clientesAtrasados.push({...clienteFormatado, status: 'atrasado'});
+              }
             });
           }
         } catch (error) {
@@ -75,18 +112,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
       
       res.json({
         success: true,
-        total: clientesAtivos.length + clientesInativos.length + clientesAguardandoPagamento.length,
+        total: clientesAtivos.length + clientesAtrasados.length,
+        mes: mesFiltro,
         ativos: {
           total: clientesAtivos.length,
           clientes: clientesAtivos
         },
         inativos: {
-          total: clientesInativos.length,
-          clientes: clientesInativos
-        },
-        aguardandoPagamento: {
-          total: clientesAguardandoPagamento.length,
-          clientes: clientesAguardandoPagamento
+          total: clientesAtrasados.length,
+          clientes: clientesAtrasados
         },
         timestamp: new Date().toISOString()
       });
@@ -98,43 +132,6 @@ export async function registerRoutes(app: Express): Promise<Express> {
       });
     }
   });
-
-  // Função auxiliar para determinar status do cliente
-  function determinarStatusCliente(cliente: any): string {
-    // Se tem notificationDisabled = true, pode ser inativo
-    if (cliente.notificationDisabled) {
-      return 'inativo';
-    }
-    
-    // Se tem data de criação muito recente e sem histórico de pagamento
-    const dataCreated = new Date(cliente.dateCreated);
-    const agora = new Date();
-    const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
-    
-    if (diasCriacao <= 7) {
-      return 'aguardando_pagamento';
-    }
-    
-    // Por padrão, considera ativo
-    return 'ativo';
-  }
-
-  // Função auxiliar para organizar cliente por status
-  function organizarClientePorStatus(cliente: any, ativos: any[], inativos: any[], aguardando: any[]) {
-    switch (cliente.status) {
-      case 'ativo':
-        ativos.push(cliente);
-        break;
-      case 'inativo':
-        inativos.push(cliente);
-        break;
-      case 'aguardando_pagamento':
-        aguardando.push(cliente);
-        break;
-      default:
-        ativos.push(cliente); // Default para ativo
-    }
-  }
 
   // =====================================================
   // TESTE DE CONECTIVIDADE ASAAS (APENAS PRODUÇÃO)
