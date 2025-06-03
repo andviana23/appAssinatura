@@ -1,0 +1,309 @@
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  Users, 
+  RefreshCw, 
+  Phone, 
+  Mail, 
+  Calendar,
+  Database,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ArrowLeft,
+  Building2
+} from "lucide-react";
+import { useLocation } from "wouter";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface ClienteUnificado {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  cpfCnpj?: string;
+  dateCreated: string;
+  conta: 'ASAAS_TRATO' | 'ASAAS_AND';
+  status: 'ativo' | 'inativo' | 'aguardando_pagamento';
+  notificationDisabled: boolean;
+  deleted: boolean;
+}
+
+interface ClientesPorStatus {
+  ativos: {
+    total: number;
+    clientes: ClienteUnificado[];
+  };
+  inativos: {
+    total: number;
+    clientes: ClienteUnificado[];
+  };
+  aguardandoPagamento: {
+    total: number;
+    clientes: ClienteUnificado[];
+  };
+  total: number;
+}
+
+export default function ClientesStatusPage() {
+  const [, setLocation] = useLocation();
+
+  // Buscar clientes unificados por status
+  const { data: clientesPorStatus, isLoading, refetch } = useQuery<ClientesPorStatus>({
+    queryKey: ["/api/clientes/unificados-status"],
+    refetchInterval: 30000,
+  });
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch {
+      return 'Data inválida';
+    }
+  };
+
+  const getContaBadge = (conta: string) => {
+    switch (conta) {
+      case 'ASAAS_TRATO':
+        return <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">Trato</Badge>;
+      case 'ASAAS_AND':
+        return <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-300">Andrey</Badge>;
+      default:
+        return <Badge variant="outline">{conta}</Badge>;
+    }
+  };
+
+  const ClienteTable = ({ clientes, titulo, icon, cor }: { 
+    clientes: ClienteUnificado[], 
+    titulo: string, 
+    icon: React.ReactNode, 
+    cor: string 
+  }) => (
+    <Card className="border-0 shadow-lg">
+      <CardHeader className={`${cor} text-white`}>
+        <CardTitle className="flex items-center gap-2">
+          {icon}
+          {titulo} ({clientes.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {clientes.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            Nenhum cliente encontrado nesta categoria
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Conta</TableHead>
+                <TableHead>Data Criação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clientes.map((cliente) => (
+                <TableRow key={`${cliente.conta}-${cliente.id}`}>
+                  <TableCell className="font-medium">{cliente.name}</TableCell>
+                  <TableCell>
+                    {cliente.email ? (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        {cliente.email}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {cliente.phone ? (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        {cliente.phone}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{getContaBadge(cliente.conta)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {formatDate(cliente.dateCreated)}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex items-center justify-center h-64">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLocation("/")}
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-xl px-4 py-2 hover:bg-primary/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-semibold">Voltar</span>
+            </button>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                Clientes por Status
+              </h1>
+              <p className="text-muted-foreground">
+                Visualização unificada das duas contas ASAAS organizadas por status
+              </p>
+            </div>
+            
+            <Button
+              onClick={() => refetch()}
+              variant="default"
+              size="sm"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar Dados
+            </Button>
+          </div>
+        </div>
+
+        {/* Estatísticas */}
+        {clientesPorStatus && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Total Clientes</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {clientesPorStatus.total}
+                    </p>
+                  </div>
+                  <Users className="h-8 w-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Clientes Ativos</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {clientesPorStatus.ativos.total}
+                    </p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-600">Aguardando Pagamento</p>
+                    <p className="text-2xl font-bold text-orange-900">
+                      {clientesPorStatus.aguardandoPagamento.total}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-red-600">Clientes Inativos</p>
+                    <p className="text-2xl font-bold text-red-900">
+                      {clientesPorStatus.inativos.total}
+                    </p>
+                  </div>
+                  <XCircle className="h-8 w-8 text-red-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Abas de Status */}
+        {clientesPorStatus && (
+          <Tabs defaultValue="ativos" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="ativos" className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Ativos ({clientesPorStatus.ativos.total})
+              </TabsTrigger>
+              <TabsTrigger value="aguardando" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Aguardando ({clientesPorStatus.aguardandoPagamento.total})
+              </TabsTrigger>
+              <TabsTrigger value="inativos" className="flex items-center gap-2">
+                <XCircle className="h-4 w-4" />
+                Inativos ({clientesPorStatus.inativos.total})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="ativos">
+              <ClienteTable 
+                clientes={clientesPorStatus.ativos.clientes}
+                titulo="Clientes Ativos"
+                icon={<CheckCircle className="h-5 w-5" />}
+                cor="bg-gradient-to-r from-green-600 to-green-700"
+              />
+            </TabsContent>
+
+            <TabsContent value="aguardando">
+              <ClienteTable 
+                clientes={clientesPorStatus.aguardandoPagamento.clientes}
+                titulo="Clientes Aguardando Pagamento"
+                icon={<Clock className="h-5 w-5" />}
+                cor="bg-gradient-to-r from-orange-600 to-orange-700"
+              />
+            </TabsContent>
+
+            <TabsContent value="inativos">
+              <ClienteTable 
+                clientes={clientesPorStatus.inativos.clientes}
+                titulo="Clientes Inativos"
+                icon={<XCircle className="h-5 w-5" />}
+                cor="bg-gradient-to-r from-red-600 to-red-700"
+              />
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,136 @@ import { db } from './db';
 export async function registerRoutes(app: Express): Promise<Express> {
   
   // =====================================================
+  // ROTA UNIFICADA CLIENTES ASAAS POR STATUS
+  // =====================================================
+
+  app.get('/api/clientes/unificados-status', async (req: Request, res: Response) => {
+    try {
+      const asaasTrato = process.env.ASAAS_TRATO;
+      const asaasAndrey = process.env.ASAAS_AND;
+      
+      const clientesAtivos: any[] = [];
+      const clientesInativos: any[] = [];
+      const clientesAguardandoPagamento: any[] = [];
+      
+      // Buscar clientes da conta ASAAS_TRATO
+      if (asaasTrato) {
+        try {
+          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
+            headers: {
+              'access_token': asaasTrato,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            data.data.forEach((cliente: any) => {
+              const clienteFormatado = {
+                ...cliente,
+                conta: 'ASAAS_TRATO',
+                status: determinarStatusCliente(cliente)
+              };
+              
+              organizarClientePorStatus(clienteFormatado, clientesAtivos, clientesInativos, clientesAguardandoPagamento);
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao buscar clientes ASAAS_TRATO:', error);
+        }
+      }
+      
+      // Buscar clientes da conta ASAAS_AND
+      if (asaasAndrey) {
+        try {
+          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
+            headers: {
+              'access_token': asaasAndrey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            data.data.forEach((cliente: any) => {
+              const clienteFormatado = {
+                ...cliente,
+                conta: 'ASAAS_AND',
+                status: determinarStatusCliente(cliente)
+              };
+              
+              organizarClientePorStatus(clienteFormatado, clientesAtivos, clientesInativos, clientesAguardandoPagamento);
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao buscar clientes ASAAS_AND:', error);
+        }
+      }
+      
+      res.json({
+        success: true,
+        total: clientesAtivos.length + clientesInativos.length + clientesAguardandoPagamento.length,
+        ativos: {
+          total: clientesAtivos.length,
+          clientes: clientesAtivos
+        },
+        inativos: {
+          total: clientesInativos.length,
+          clientes: clientesInativos
+        },
+        aguardandoPagamento: {
+          total: clientesAguardandoPagamento.length,
+          clientes: clientesAguardandoPagamento
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erro na rota clientes unificados:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Função auxiliar para determinar status do cliente
+  function determinarStatusCliente(cliente: any): string {
+    // Se tem notificationDisabled = true, pode ser inativo
+    if (cliente.notificationDisabled) {
+      return 'inativo';
+    }
+    
+    // Se tem data de criação muito recente e sem histórico de pagamento
+    const dataCreated = new Date(cliente.dateCreated);
+    const agora = new Date();
+    const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
+    
+    if (diasCriacao <= 7) {
+      return 'aguardando_pagamento';
+    }
+    
+    // Por padrão, considera ativo
+    return 'ativo';
+  }
+
+  // Função auxiliar para organizar cliente por status
+  function organizarClientePorStatus(cliente: any, ativos: any[], inativos: any[], aguardando: any[]) {
+    switch (cliente.status) {
+      case 'ativo':
+        ativos.push(cliente);
+        break;
+      case 'inativo':
+        inativos.push(cliente);
+        break;
+      case 'aguardando_pagamento':
+        aguardando.push(cliente);
+        break;
+      default:
+        ativos.push(cliente); // Default para ativo
+    }
+  }
+
+  // =====================================================
   // TESTE DE CONECTIVIDADE ASAAS (APENAS PRODUÇÃO)
   // =====================================================
 
