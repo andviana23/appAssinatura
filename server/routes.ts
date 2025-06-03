@@ -1722,22 +1722,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/planos-assinatura", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const { nome, descricao, valor, categoria, billingType, cycle, limitesServicos, beneficios } = req.body;
+      const { nome, descricao, valorMensal, categoria } = req.body;
       
-      if (!nome || !valor || !categoria) {
-        return res.status(400).json({ message: 'Nome, valor e categoria são obrigatórios' });
+      if (!nome || !valorMensal || !categoria) {
+        return res.status(400).json({ message: 'Nome, valor mensal e categoria são obrigatórios' });
       }
 
       const novoPlano = await storage.createPlano({
         nome,
-        descricao,
-        valor,
+        descricao: descricao || `Assinatura ${nome} - ${categoria}`,
+        valorMensal: valorMensal.toString(),
         categoria,
-        billingType: billingType || 'CREDIT_CARD',
-        cycle: cycle || 'MONTHLY',
-        limitesServicos: limitesServicos || {},
-        beneficios: beneficios || [],
-        ativo: true
+        servicosIncluidos: []
       });
 
       res.json(novoPlano);

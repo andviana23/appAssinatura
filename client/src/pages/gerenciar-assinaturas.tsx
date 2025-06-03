@@ -123,9 +123,9 @@ export default function GerenciarAssinaturas() {
 
     const dados = {
       nome: formData.nome,
-      descricao: formData.descricao,
       valorMensal: parseFloat(formData.valor),
-      categoria: formData.categoria
+      categoria: formData.categoria,
+      descricao: `Assinatura ${formData.nome} - ${formData.categoria}`
     };
 
     if (editingPlano) {
