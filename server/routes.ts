@@ -946,6 +946,48 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // CRIAR PLANO DE ASSINATURA (ENDPOINT GERENCIAR-ASSINATURAS)
+  // =====================================================
+
+  app.post("/api/assinatura/criar-plano", async (req: Request, res: Response) => {
+    try {
+      const { nome, descricao, valorMensal, categoria, servicosIncluidos } = req.body;
+      
+      if (!nome || !valorMensal || !categoria) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Nome, valor mensal e categoria são obrigatórios' 
+        });
+      }
+
+      // Salvar plano no banco de dados local
+      const novoPlano = await db.insert(planosAssinatura).values({
+        nome,
+        descricao: descricao || `Plano ${nome} - ${categoria}`,
+        valorMensal: parseFloat(valorMensal),
+        categoria,
+        servicosIncluidos: servicosIncluidos || [],
+        ativo: true,
+        criadoEm: new Date()
+      }).returning();
+
+      res.json({
+        success: true,
+        plano: novoPlano[0],
+        message: 'Plano criado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao criar plano:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // =====================================================
   // CRIAR ASSINATURA NO ASAAS (APENAS PRODUÇÃO)
   // =====================================================
 
