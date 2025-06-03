@@ -90,7 +90,7 @@ export default function Distribuicao() {
       numeroServicos: comissaoItem?.numeroServicos || 0,
       percentualTempo: comissaoItem?.percentualTempo || 0
     };
-  });
+  }).sort((a, b) => b.faturamentoAssinatura - a.faturamentoAssinatura);
   const stats: ComissaoStats = (statsData && typeof statsData === 'object' && !Array.isArray(statsData)) ? statsData : {
     faturamentoTotalAssinatura: 0,
     totalMinutosGerais: 0,
