@@ -5812,10 +5812,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API REST para criar link de pagamento personalizado - Asaas v3
+  // API REST para criar link de pagamento personalizado - Asaas v3 (formato /i/)
   app.post("/api/create-payment-link", async (req: Request, res: Response) => {
     try {
-      const { name, description, value, subscriptionCycle } = req.body;
+      const { name, description, value, subscriptionCycle, customer } = req.body;
       
       // Validação dos dados obrigatórios
       if (!name || !description || !value || !subscriptionCycle) {
@@ -5845,76 +5845,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Payload EXATO para o Asaas
-      const asaasPayload = {
+      // Etapa 1: Criar uma cobrança primeiro
+      const paymentData = {
+        customer: customer || undefined,
         billingType: "CREDIT_CARD",
-        chargeType: "RECURRENT", 
-        name: name,
-        description: description,
         value: parseFloat(value.toString()),
-        subscriptionCycle: subscriptionCycle
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
+        description: description,
+        externalReference: `payment_${Date.now()}`
       };
       
-      console.log('🚀 Enviando para Asaas:', JSON.stringify(asaasPayload, null, 2));
+      console.log('🚀 Criando cobrança no Asaas:', JSON.stringify(paymentData, null, 2));
       
-      // Configuração da requisição para o Asaas
-      const response = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+      const paymentResponse = await fetch('https://www.asaas.com/api/v3/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'access_token': asaasApiKey,
           'User-Agent': 'ReplitApp/1.0'
         },
-        body: JSON.stringify(asaasPayload)
+        body: JSON.stringify(paymentData)
       });
       
-      console.log('📥 Status da resposta:', response.status);
-      console.log('📥 Headers da resposta:', response.headers.get('content-type'));
+      console.log('📥 Status da resposta (payment):', paymentResponse.status);
       
-      // Verificar se a resposta é JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('❌ Resposta não é JSON:', contentType);
-        const responseText = await response.text();
-        console.error('❌ Dados recebidos:', responseText.substring(0, 500));
-        
-        return res.status(502).json({
-          error: 'Asaas retornou resposta inválida (não JSON)',
-          status: response.status,
-          contentType: contentType,
-          data: responseText.substring(0, 500)
+      const paymentResponseData = await paymentResponse.json();
+      
+      if (!paymentResponse.ok) {
+        console.error('❌ Erro ao criar cobrança:', paymentResponseData);
+        return res.status(paymentResponse.status).json({
+          error: 'Erro ao criar cobrança no Asaas',
+          asaasError: paymentResponseData
         });
       }
       
-      const responseData = await response.json();
+      console.log('✅ Cobrança criada:', paymentResponseData.id);
       
-      // Verificar se houve erro na API do Asaas
-      if (response.status >= 400) {
-        console.error('❌ Erro na API do Asaas:', responseData);
-        return res.status(response.status).json({
-          error: 'Erro na API do Asaas',
-          asaasError: responseData
+      // Etapa 2: Gerar paymentBook para obter link formato /i/
+      const checkoutResponse = await fetch(`https://www.asaas.com/api/v3/payments/${paymentResponseData.id}/paymentBook`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📥 Status da resposta (paymentBook):', checkoutResponse.status);
+      
+      const checkoutData = await checkoutResponse.json();
+      
+      if (!checkoutResponse.ok) {
+        console.error('❌ Erro ao criar paymentBook:', checkoutData);
+        return res.status(checkoutResponse.status).json({
+          error: 'Erro ao criar checkout no Asaas',
+          details: checkoutData
         });
       }
       
-      // Sucesso - extrair o link de pagamento
-      const { url: paymentUrl, id } = responseData;
+      console.log('✅ PaymentBook criado com sucesso:', checkoutData.url);
       
-      if (!paymentUrl) {
-        console.error('❌ Link não encontrado na resposta:', responseData);
-        return res.status(502).json({
-          error: 'Link de pagamento não encontrado na resposta do Asaas',
-          response: responseData
-        });
-      }
-      
-      console.log('✅ Link criado com sucesso:', paymentUrl);
-      
-      // Retornar apenas o essencial
+      // Retornar link no formato correto /i/
       res.json({
         success: true,
-        paymentUrl: paymentUrl,
-        linkId: id,
+        paymentUrl: checkoutData.url,
+        paymentId: paymentResponseData.id,
+        checkoutId: checkoutData.id,
         message: 'Link de pagamento criado com sucesso'
       });
       
