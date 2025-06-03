@@ -73,9 +73,12 @@ export default function Agendamento() {
     }
   });
 
-  const { data: barbeiros = [] } = useQuery({
-    queryKey: ["/api/barbeiros"],
+  const { data: barbeirosResponse } = useQuery({
+    queryKey: ["/api/profissionais"],
   });
+  
+  // Extract barbeiros from the API response
+  const barbeiros = barbeirosResponse?.data || [];
 
   // Buscar apenas clientes com assinaturas ativas para agendamento
   const { data: clientes = [] } = useQuery({
@@ -177,7 +180,7 @@ export default function Agendamento() {
   };
 
   const timeSlots = generateTimeSlots();
-  const activeBarbeiros = Array.isArray(barbeiros) ? barbeiros.filter((b: Barbeiro) => b.ativo) : [];
+  const activeBarbeiros = Array.isArray(barbeiros) ? barbeiros.filter((b: any) => b.ativo && b.tipo === 'barbeiro') : [];
 
   // Handler para fechar menu de contexto ao clicar fora
   const handleClickOutside = () => {
