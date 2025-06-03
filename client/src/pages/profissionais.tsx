@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, User, UserCheck, Edit, Trash2, Eye, EyeOff, Phone, Mail, Shield } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,8 @@ export default function Profissionais() {
   const [location, setLocation] = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Estado do formulário
   const [formData, setFormData] = useState({
@@ -39,30 +43,81 @@ export default function Profissionais() {
 
   const profissionais = response?.data || [];
 
+  // Mutation para cadastrar profissional
+  const criarProfissional = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const response = await apiRequest("/api/profissionais", "POST", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Profissional cadastrado com sucesso!",
+        description: `${data.data.nome} foi adicionado à equipe.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
+      setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cadastrar profissional",
+        description: error.message || "Verifique os dados e tente novamente",
+        variant: "destructive"
+      });
+    },
+  });
+
+  // Mutation para deletar profissional
+  const deletarProfissional = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest(`/api/profissionais/${id}`, "DELETE");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profissional removido",
+        description: "O profissional foi removido da equipe.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao remover profissional",
+        description: error.message || "Tente novamente",
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     // Validações básicas
     if (!formData.nome.trim() || !formData.email.trim() || !formData.senha.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha nome, email e senha",
+        variant: "destructive"
+      });
       return;
     }
     
-    console.log('Dados do formulário:', formData);
-    // Aqui será implementada a integração com o backend futuramente
-    alert('Formulário enviado! (Integração será implementada)');
-    
-    // Resetar formulário e fechar modal
-    setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
-    setIsModalOpen(false);
+    criarProfissional.mutate(formData);
   };
 
   const handleCancel = () => {
     setFormData({ nome: '', telefone: '', email: '', senha: '', tipo: 'barbeiro' });
     setIsModalOpen(false);
+  };
+
+  const handleDelete = (profissional: any) => {
+    if (window.confirm(`Tem certeza que deseja remover ${profissional.nome} da equipe?`)) {
+      deletarProfissional.mutate(profissional.id);
+    }
   };
 
   if (isLoading) {
@@ -383,7 +438,13 @@ export default function Profissionais() {
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDelete(profissional)}
+                        disabled={deletarProfissional.isPending}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -394,6 +455,169 @@ export default function Profissionais() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Cadastro */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              Cadastrar Novo Profissional
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Adicione um novo barbeiro ou recepcionista à sua equipe
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Nome */}
+            <div className="space-y-2">
+              <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                Nome completo *
+              </Label>
+              <Input
+                id="nome"
+                type="text"
+                value={formData.nome}
+                onChange={(e) => handleInputChange('nome', e.target.value)}
+                placeholder="Digite o nome completo"
+                className="w-full"
+                required
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Email *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="email@exemplo.com"
+                className="w-full"
+                required
+              />
+            </div>
+
+            {/* Telefone */}
+            <div className="space-y-2">
+              <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
+                Telefone
+              </Label>
+              <Input
+                id="telefone"
+                type="tel"
+                value={formData.telefone}
+                onChange={(e) => handleInputChange('telefone', e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="w-full"
+              />
+            </div>
+
+            {/* Senha */}
+            <div className="space-y-2">
+              <Label htmlFor="senha" className="text-sm font-medium text-gray-700">
+                Senha *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="senha"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.senha}
+                  onChange={(e) => handleInputChange('senha', e.target.value)}
+                  placeholder="Digite uma senha segura"
+                  className="w-full pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Tipo de Profissional */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">
+                Tipo de profissional *
+              </Label>
+              <RadioGroup 
+                value={formData.tipo} 
+                onValueChange={(value) => handleInputChange('tipo', value)}
+                className="space-y-3"
+              >
+                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <RadioGroupItem value="barbeiro" id="barbeiro" />
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <Label htmlFor="barbeiro" className="font-medium cursor-pointer">
+                        Barbeiro
+                      </Label>
+                      <p className="text-sm text-gray-500">Profissional que realiza serviços de corte e barbearia</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <RadioGroupItem value="recepcionista" id="recepcionista" />
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <UserCheck className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <Label htmlFor="recepcionista" className="font-medium cursor-pointer">
+                        Recepcionista
+                      </Label>
+                      <p className="text-sm text-gray-500">Profissional responsável pelo atendimento e agenda</p>
+                    </div>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                className="flex-1"
+                disabled={criarProfissional.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={criarProfissional.isPending}
+              >
+                {criarProfissional.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Cadastrando...
+                  </>
+                ) : (
+                  'Cadastrar'
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
