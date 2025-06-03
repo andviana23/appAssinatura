@@ -186,15 +186,37 @@ export default function Planos() {
         throw new Error('CPF deve ter exatamente 11 dígitos');
       }
       
-      // Enviar dados com valor correto do plano
-      const requestData = {
-        ...formData,
-        valorPlano: planoSelecionado.valor,
-        planoSelecionado: planoSelecionado.nome
-      };
+      // Nova implementação: Criar cliente e assinatura via API Asaas oficial
       
-      const response = await apiRequest("/api/asaas/checkout", "POST", requestData);
-      return response.json();
+      // 1. Primeiro criar o cliente no Asaas
+      const customerResponse = await apiRequest("/api/asaas/criar-cliente", "POST", {
+        name: formData.nome,
+        email: formData.email,
+        mobilePhone: formData.telefone,
+        cpfCnpj: formData.cpf
+      });
+      
+      const customerData = await customerResponse.json();
+      
+      if (!customerData.success) {
+        throw new Error(customerData.error || 'Erro ao criar cliente no Asaas');
+      }
+
+      // 2. Calcular próxima data de vencimento (30 dias a partir de hoje)
+      const nextDueDate = new Date();
+      nextDueDate.setDate(nextDueDate.getDate() + 30);
+
+      // 3. Criar assinatura no Asaas seguindo documentação oficial
+      const subscriptionResponse = await apiRequest("/api/asaas/criar-assinatura", "POST", {
+        customer: customerData.customer.id,
+        billingType: formData.billingType,
+        value: planoSelecionado.valor,
+        nextDueDate: nextDueDate.toISOString().split('T')[0], // YYYY-MM-DD
+        description: `${planoSelecionado.nome} - Trato de Barbados`,
+        cycle: 'MONTHLY'
+      });
+      
+      return subscriptionResponse.json();
     },
     onSuccess: (data: any) => {
       if (data.external) {
@@ -204,7 +226,16 @@ export default function Planos() {
         return;
       }
       
-      if (data.checkoutUrl) {
+      if (data.success) {
+        // Assinatura criada com sucesso via API Asaas
+        setShowCheckoutModal(false);
+        setCheckoutData({ nome: '', email: '', telefone: '', cpf: '', planoSelecionado: '', billingType: 'CREDIT_CARD' });
+        toast({
+          title: "Assinatura criada com sucesso!",
+          description: `${checkoutData.nome} foi cadastrado com assinatura ativa no Asaas.`,
+        });
+      } else if (data.checkoutUrl) {
+        // Fallback para checkout URLs antigos
         window.open(data.checkoutUrl, '_blank');
         setShowCheckoutModal(false);
         setCheckoutData({ nome: '', email: '', telefone: '', cpf: '', planoSelecionado: '', billingType: 'CREDIT_CARD' });

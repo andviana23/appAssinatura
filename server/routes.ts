@@ -5454,6 +5454,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Criar assinatura via API Asaas (seguindo documentação oficial)
+  app.post("/api/asaas/criar-assinatura", async (req: Request, res: Response) => {
+    try {
+      const { 
+        customer,
+        billingType,
+        value,
+        nextDueDate,
+        description,
+        cycle,
+        discount,
+        interest,
+        fine,
+        maxPayments
+      } = req.body;
+
+      if (!customer || !billingType || !value || !nextDueDate) {
+        return res.status(400).json({ 
+          error: 'Campos obrigatórios: customer, billingType, value, nextDueDate' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Chave da API Asaas não configurada. Configure ASAAS_TRATO nas variáveis de ambiente.' 
+        });
+      }
+
+      // Criar assinatura seguindo exatamente a documentação do Asaas
+      const subscriptionData = {
+        customer,
+        billingType,
+        value: parseFloat(value),
+        nextDueDate,
+        description: description || 'Assinatura Trato de Barbados',
+        cycle: cycle || 'MONTHLY',
+        ...(discount && { discount: {
+          value: parseFloat(discount.value),
+          dueDateLimitDays: discount.dueDateLimitDays || 0
+        }}),
+        ...(interest && { interest: { value: parseFloat(interest.value) }}),
+        ...(fine && { fine: { value: parseFloat(fine.value) }}),
+        ...(maxPayments && { maxPayments: parseInt(maxPayments) })
+      };
+
+      console.log('🔄 Criando assinatura no Asaas:', subscriptionData);
+
+      const response = await fetch('https://www.asaas.com/api/v3/subscriptions', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(subscriptionData)
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Erro ao criar assinatura:', responseData);
+        return res.status(response.status).json({
+          error: 'Erro ao criar assinatura no Asaas',
+          details: responseData
+        });
+      }
+
+      console.log('✅ Assinatura criada com sucesso:', responseData);
+
+      res.json({
+        success: true,
+        subscription: responseData,
+        message: 'Assinatura criada com sucesso!'
+      });
+
+    } catch (error) {
+      console.error('❌ Erro interno ao criar assinatura:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error.message 
+      });
+    }
+  });
+
+  // Criar cliente no Asaas (necessário antes de criar assinatura)
+  app.post("/api/asaas/criar-cliente", async (req: Request, res: Response) => {
+    try {
+      const {
+        name,
+        email,
+        phone,
+        mobilePhone,
+        cpfCnpj,
+        postalCode,
+        address,
+        addressNumber,
+        complement,
+        province,
+        city,
+        state,
+        country,
+        externalReference,
+        notificationDisabled,
+        additionalEmails,
+        municipalInscription,
+        stateInscription,
+        observations
+      } = req.body;
+
+      if (!name || !email) {
+        return res.status(400).json({ 
+          error: 'Nome e email são obrigatórios' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Chave da API Asaas não configurada. Configure ASAAS_TRATO nas variáveis de ambiente.' 
+        });
+      }
+
+      // Criar cliente seguindo a documentação do Asaas
+      const customerData = {
+        name,
+        email,
+        ...(phone && { phone }),
+        ...(mobilePhone && { mobilePhone }),
+        ...(cpfCnpj && { cpfCnpj }),
+        ...(postalCode && { postalCode }),
+        ...(address && { address }),
+        ...(addressNumber && { addressNumber }),
+        ...(complement && { complement }),
+        ...(province && { province }),
+        ...(city && { city }),
+        ...(state && { state }),
+        ...(country && { country }),
+        ...(externalReference && { externalReference }),
+        ...(notificationDisabled !== undefined && { notificationDisabled }),
+        ...(additionalEmails && { additionalEmails }),
+        ...(municipalInscription && { municipalInscription }),
+        ...(stateInscription && { stateInscription }),
+        ...(observations && { observations })
+      };
+
+      console.log('🔄 Criando cliente no Asaas:', { name, email });
+
+      const response = await fetch('https://www.asaas.com/api/v3/customers', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ Erro ao criar cliente:', responseData);
+        return res.status(response.status).json({
+          error: 'Erro ao criar cliente no Asaas',
+          details: responseData
+        });
+      }
+
+      console.log('✅ Cliente criado com sucesso:', responseData);
+
+      res.json({
+        success: true,
+        customer: responseData,
+        message: 'Cliente criado com sucesso!'
+      });
+
+    } catch (error) {
+      console.error('❌ Erro interno ao criar cliente:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
