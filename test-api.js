@@ -1,15 +1,28 @@
-// Teste da API REST do Asaas
+// Teste do checkout personalizado do Asaas
 const testData = {
-  name: "Assinatura Gold",
-  description: "Acesso premium mensal",
-  value: 97.90,
-  subscriptionCycle: "MONTHLY"
+  customerData: {
+    name: "João Silva",
+    email: "joao@teste.com",
+    phone: "11999999999",
+    cpfCnpj: "12345678901"
+  },
+  items: [{
+    description: "Assinatura Premium Mensal",
+    name: "Plano Premium",
+    quantity: 1,
+    value: 120.00
+  }],
+  subscription: {
+    cycle: "MONTHLY",
+    endDate: "2025-12-31 23:59:59",
+    nextDueDate: "2025-07-03 00:00:00"
+  }
 };
 
-console.log('Testando API: POST /api/asaas/criar-link-pagamento');
+console.log('Testando checkout personalizado: POST /api/asaas/criar-checkout-personalizado');
 console.log('Payload:', JSON.stringify(testData, null, 2));
 
-fetch('http://localhost:5000/api/asaas/criar-link-pagamento', {
+fetch('http://localhost:5000/api/asaas/criar-checkout-personalizado', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
