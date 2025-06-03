@@ -5738,18 +5738,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Criar link de pagamento recorrente usando o formato correto do Asaas
       const paymentLinkData = {
         billingType: "CREDIT_CARD",
-        chargeType: "RECURRENT",
+        chargeType: "RECURRENT", 
         name: planoSelecionado.nome,
         description: planoSelecionado.descricao || `Assinatura ${planoSelecionado.nome} - Receba os benefícios mensalmente`,
         value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
         subscriptionCycle: "MONTHLY",
         dueDateLimitDays: 7,
         maxInstallmentCount: 1,
-        notificationEnabled: true,
-        callback: {
-          successUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/sucesso`,
-          autoRedirect: true
-        }
+        notificationEnabled: true
+        // Removido callback para evitar erro de domínio não configurado
       };
 
       console.log('Criando link de pagamento recorrente:', JSON.stringify(paymentLinkData, null, 2));
