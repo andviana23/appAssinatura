@@ -5802,61 +5802,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscription = await subscriptionResponse.json();
       console.log('✅ Assinatura criada:', subscription.id);
 
-      // 3. Gerar link de checkout para a primeira cobrança
-      const checkoutResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions/${subscription.id}/paymentBook`, {
+      // 3. Criar checkout personalizado com dados do cliente
+      const checkoutData = {
+        billingType: "CREDIT_CARD",
+        dueDateLimitDays: 7,
+        maxInstallmentCount: 1,
+        callback: {
+          successUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/sucesso`,
+          autoRedirect: true
+        },
+        items: [{
+          name: planoSelecionado.nome,
+          description: `${planoSelecionado.nome} - Primeira cobrança da assinatura`,
+          quantity: 1,
+          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor)
+        }],
+        customer: {
+          name: nome,
+          email: email,
+          phone: telefone.replace(/\D/g, ''),
+          // CPF será solicitado na tela de checkout
+        },
+        subscription: {
+          id: subscription.id
+        }
+      };
+
+      console.log('3. Criando checkout personalizado:', checkoutData);
+
+      const checkoutResponse = await fetch('https://www.asaas.com/api/v3/checkout', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify(checkoutData)
       });
 
-      if (!checkoutResponse.ok) {
-        console.error('Erro ao gerar checkout, tentando alternativa...');
-        
-        // Alternativa: criar link de pagamento direto
-        const paymentLinkData = {
-          name: planoSelecionado.nome,
-          description: `${planoSelecionado.nome} - Primeira cobrança`,
-          billingType: "CREDIT_CARD",
-          chargeType: "DETACHED",
-          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
-          dueDateLimitDays: 7
-        };
-
-        const linkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
-          method: 'POST',
-          headers: {
-            'access_token': asaasApiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(paymentLinkData)
-        });
-
-        if (linkResponse.ok) {
-          const paymentLink = await linkResponse.json();
-          return res.json({
-            success: true,
-            checkoutUrl: paymentLink.url,
-            subscriptionId: subscription.id,
-            message: 'Assinatura criada! Use o link para ativar.'
-          });
-        }
-      } else {
+      if (checkoutResponse.ok) {
         const checkout = await checkoutResponse.json();
-        console.log('✅ Checkout gerado:', checkout.url);
+        console.log('✅ Checkout personalizado criado:', checkout.url);
 
         return res.json({
           success: true,
           checkoutUrl: checkout.url,
-          subscriptionId: subscription.id
+          subscriptionId: subscription.id,
+          customerId: customer.id
         });
+      } else {
+        // Fallback: usar link direto da assinatura
+        console.error('Erro ao criar checkout personalizado, usando link da assinatura...');
+        
+        const subscriptionLinkResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions/${subscription.id}/paymentBook`, {
+          method: 'POST',
+          headers: {
+            'access_token': asaasApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (subscriptionLinkResponse.ok) {
+          const subscriptionLink = await subscriptionLinkResponse.json();
+          console.log('✅ Link da assinatura gerado:', subscriptionLink.url);
+
+          return res.json({
+            success: true,
+            checkoutUrl: subscriptionLink.url,
+            subscriptionId: subscription.id,
+            customerId: customer.id
+          });
+        }
       }
 
-      // Se chegou até aqui, retornar pelo menos a assinatura criada
+      // Último recurso: retornar informações da assinatura criada
       res.json({
         success: true,
         subscriptionId: subscription.id,
+        customerId: customer.id,
         message: 'Assinatura criada! Cliente receberá cobrança por email.'
       });
 
