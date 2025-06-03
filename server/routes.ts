@@ -5958,16 +5958,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify(checkoutPayload)
       });
 
+      console.log('Response Status:', checkoutResponse.status);
+      console.log('Response Headers:', checkoutResponse.headers.get('content-type'));
+      
+      const responseText = await checkoutResponse.text();
+      console.log('Response Body (first 200 chars):', responseText.substring(0, 200));
+
       if (!checkoutResponse.ok) {
-        const errorData = await checkoutResponse.json();
-        console.error('Erro ao criar checkout personalizado:', errorData);
+        console.error('Erro HTTP:', checkoutResponse.status, checkoutResponse.statusText);
         return res.status(400).json({ 
           error: 'Erro ao criar checkout personalizado no Asaas',
-          details: errorData
+          status: checkoutResponse.status,
+          response: responseText.substring(0, 500)
         });
       }
 
-      const checkoutData = await checkoutResponse.json();
+      let checkoutData;
+      try {
+        checkoutData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Erro ao fazer parse do JSON:', parseError);
+        return res.status(500).json({
+          error: 'Resposta inválida do Asaas',
+          response: responseText.substring(0, 500)
+        });
+      }
       console.log('✅ Checkout personalizado criado:', checkoutData.url);
 
       res.json({
