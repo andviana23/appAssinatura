@@ -382,6 +382,121 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(planosAssinatura).where(eq(planosAssinatura.id, id));
     return result.length > 0;
   }
+
+  // Funções adicionais necessárias
+  async getAgendamentosByDate(data: string): Promise<Agendamento[]> {
+    return await db.select().from(agendamentos).where(like(agendamentos.dataHora, `${data}%`)).orderBy(agendamentos.dataHora);
+  }
+
+  async getServicosAssinatura(): Promise<Servico[]> {
+    return await db.select().from(servicos).where(eq(servicos.categoria, 'assinatura'));
+  }
+
+  async getAllClientesExternos(): Promise<Cliente[]> {
+    return await db.select().from(clientes).where(eq(clientes.origem, 'EXTERNO'));
+  }
+
+  async getClienteExternoById(id: number): Promise<Cliente | undefined> {
+    const [cliente] = await db.select().from(clientes).where(and(eq(clientes.id, id), eq(clientes.origem, 'EXTERNO')));
+    return cliente;
+  }
+
+  async updateClienteExterno(id: number, cliente: Partial<InsertCliente>): Promise<Cliente | undefined> {
+    const [updated] = await db.update(clientes).set(cliente).where(eq(clientes.id, id)).returning();
+    return updated;
+  }
+
+  async getDashboardMetrics(): Promise<any> {
+    const totalClientes = await db.select({ count: count() }).from(clientes);
+    const clientesAtivos = await db.select({ count: count() }).from(clientes).where(eq(clientes.statusAssinatura, 'ATIVO'));
+    return {
+      totalClientes: totalClientes[0]?.count || 0,
+      clientesAtivos: clientesAtivos[0]?.count || 0
+    };
+  }
+
+  async getBarbeiroRanking(): Promise<any[]> {
+    return await db.select().from(barbeiros).orderBy(barbeiros.nome);
+  }
+
+  async createComissao(comissao: InsertComissao): Promise<Comissao> {
+    const [created] = await db.insert(comissoes).values(comissao).returning();
+    return created;
+  }
+
+  async getAtendimentosByBarbeiro(barbeiroId: number): Promise<Atendimento[]> {
+    return await db.select().from(atendimentos).where(eq(atendimentos.barbeiroId, barbeiroId));
+  }
+
+  async getAtendimentosResumo(): Promise<any[]> {
+    return await db.select().from(atendimentos).orderBy(desc(atendimentos.dataAtendimento));
+  }
+
+  async updateAtendimento(id: number, atendimento: Partial<InsertAtendimento>): Promise<Atendimento | undefined> {
+    const [updated] = await db.update(atendimentos).set(atendimento).where(eq(atendimentos.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAtendimento(id: number): Promise<boolean> {
+    const result = await db.delete(atendimentos).where(eq(atendimentos.id, id));
+    return result.length > 0;
+  }
+
+  async getTotalServicosByMes(): Promise<TotalServico[]> {
+    return await db.select().from(totalServicos).orderBy(desc(totalServicos.createdAt));
+  }
+
+  async createOrUpdateTotalServico(totalServico: InsertTotalServico): Promise<TotalServico> {
+    const [created] = await db.insert(totalServicos).values(totalServico).returning();
+    return created;
+  }
+
+  async validateAtendimentoLimits(): Promise<boolean> {
+    return true; // Implementar validação se necessário
+  }
+
+  async getComissaoAtualBarbeiro(barbeiroId: number): Promise<Comissao | undefined> {
+    const [comissao] = await db.select().from(comissoes).where(eq(comissoes.barbeiroId, barbeiroId)).orderBy(desc(comissoes.createdAt));
+    return comissao;
+  }
+
+  async getComissoesByBarbeiro(barbeiroId: number): Promise<Comissao[]> {
+    return await db.select().from(comissoes).where(eq(comissoes.barbeiroId, barbeiroId)).orderBy(desc(comissoes.createdAt));
+  }
+
+  async getComissoesByMes(): Promise<Comissao[]> {
+    return await db.select().from(comissoes).orderBy(desc(comissoes.createdAt));
+  }
+
+  async getFilaMensal(): Promise<any[]> {
+    return await db.select().from(ordemFila).orderBy(ordemFila.posicao);
+  }
+
+  async reordenarFila(novaOrdem: any[]): Promise<void> {
+    await db.delete(ordemFila);
+    if (novaOrdem.length > 0) {
+      await db.insert(ordemFila).values(novaOrdem);
+    }
+  }
+
+  async toggleBarbeiroFila(barbeiroId: number): Promise<void> {
+    // Implementar toggle do barbeiro na fila
+    console.log(`Toggle barbeiro ${barbeiroId} na fila`);
+  }
+
+  async inicializarOrdemFila(): Promise<void> {
+    const barbeirosAtivos = await db.select().from(barbeiros);
+    const ordemInicial = barbeirosAtivos.map((barbeiro, index) => ({
+      barbeiroId: barbeiro.id,
+      posicao: index + 1,
+      ativo: true
+    }));
+    
+    await db.delete(ordemFila);
+    if (ordemInicial.length > 0) {
+      await db.insert(ordemFila).values(ordemInicial);
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
