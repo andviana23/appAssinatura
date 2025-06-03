@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays, subDays, isToday, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -58,10 +58,52 @@ export default function Agendamento() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [agendamentoToCancel, setAgendamentoToCancel] = useState<Agendamento | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; agendamento: Agendamento | null }>({ x: 0, y: 0, agendamento: null });
+  const [currentTime, setCurrentTime] = useState(new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const dateString = format(selectedDate, "yyyy-MM-dd");
+
+  // Update current time every second for timeline indicator
+  useEffect(() => {
+    const updateTime = () => {
+      // Get current time in Brasília timezone (GMT-3)
+      const now = new Date();
+      const brasiliaTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+      setCurrentTime(brasiliaTime);
+    };
+
+    updateTime(); // Initial update
+    const interval = setInterval(updateTime, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate timeline position based on current Brasília time
+  const getCurrentTimePosition = () => {
+    const now = currentTime;
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Convert to total minutes from 8:00 AM
+    const totalMinutes = (hours * 60) + minutes;
+    const startMinutes = 8 * 60; // 8:00 AM in minutes
+    const endMinutes = 20 * 60; // 8:00 PM in minutes
+    
+    // Calculate position as percentage within business hours
+    if (totalMinutes < startMinutes || totalMinutes > endMinutes) {
+      return null; // Outside business hours
+    }
+    
+    const businessMinutes = totalMinutes - startMinutes;
+    const totalBusinessMinutes = endMinutes - startMinutes; // 12 hours = 720 minutes
+    const percentage = (businessMinutes / totalBusinessMinutes) * 100;
+    
+    return percentage;
+  };
+
+  const timelinePosition = getCurrentTimePosition();
+  const isTodaySelected = isSameDay(selectedDate, currentTime);
 
   // Queries
   const { data: agendamentos = [] } = useQuery({
@@ -540,10 +582,31 @@ export default function Agendamento() {
         </div>
 
         {/* Grade da Agenda Dark Mode - Inspirada nas imagens de referência */}
-        <div className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden mx-6 mb-6">
+        <div className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden mx-6 mb-6 relative">
+          {/* Timeline Indicator - Current Time Line */}
+          {isTodaySelected && timelinePosition !== null && (
+            <div
+              className="absolute left-0 right-0 z-20 pointer-events-none"
+              style={{
+                top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 70))}px`, // 64px for header height
+              }}
+            >
+              <div className="flex items-center">
+                <div className="w-[120px] bg-red-500 h-1 relative">
+                  <div className="absolute right-0 top-0 w-3 h-3 bg-red-500 rounded-full transform -translate-y-1"></div>
+                </div>
+                <div className="flex-1 bg-red-500 h-1 relative">
+                  <div className="absolute left-2 top-0 bg-red-500 text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
+                    {format(currentTime, "HH:mm")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header com nomes dos barbeiros */}
           <div 
-            className="grid bg-muted border-b border-border"
+            className="grid bg-muted border-b border-border relative z-10"
             style={{ 
               gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
             }}
