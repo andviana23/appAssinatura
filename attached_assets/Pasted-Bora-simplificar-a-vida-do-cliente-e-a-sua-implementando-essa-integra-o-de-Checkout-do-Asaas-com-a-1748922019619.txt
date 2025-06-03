@@ -1,0 +1,174 @@
+Bora simplificar a vida do cliente e a sua, implementando essa integração de Checkout do Asaas com assinatura recorrente de forma rápida e segura. Siga este passo a passo para o Replit:
+
+Criar função para gerar Checkout Recorrente
+
+No seu projeto Node.js/Express, crie um arquivo (por exemplo, asaasCheckout.js) ou adicione em algum módulo de pagamentos.
+
+Essa função será chamada sempre que um cliente decidir assinar um plano.
+
+Configurar variáveis de ambiente
+
+No Replit, vá em “Secrets” (Variáveis de Ambiente) e crie:
+
+ASAAS_API_KEY = sua API Key de produção do Asaas
+
+BASE_URL = https://seusite.com (domínio que usará nos callbacks)
+
+Garanta que o projeto esteja rodando em HTTPS no seu domínio de produção.
+
+Implementar payload sem CPF no seu sistema
+
+Dentro da função de criação de checkout, monte o payload JSON sem o campo cpfCnpj.
+
+Apenas inclua:
+
+js
+Copiar
+Editar
+{
+  billingTypes: ["CREDIT_CARD"],
+  chargeTypes: ["RECURRENT"],
+  minutesToExpire: 60, // expira em 1 hora se o cliente não completar
+  callback: {
+    cancelUrl: `${process.env.BASE_URL}/pagamento/cancelado`,
+    expiredUrl: `${process.env.BASE_URL}/pagamento/expirado`,
+    successUrl: `${process.env.BASE_URL}/pagamento/sucesso`
+  },
+  items: [{
+    description: dadosPlano.descricao,
+    name: dadosPlano.nome,
+    quantity: 1,
+    value: parseFloat(dadosPlano.valor) // ex: 99.90
+  }],
+  customerData: {
+    email: dadosCliente.email,
+    name: dadosCliente.nome,
+    phone: dadosCliente.telefone?.replace(/\D/g, '') || ""
+    // NÃO ENVIE cpfCnpj aqui! Cliente preenche no checkout do Asaas
+  },
+  subscription: {
+    cycle: "MONTHLY",
+    endDate: dataUmAnoDepois(),      // ex: “2026-12-31 23:59:59”
+    nextDueDate: dataProximoMes()    // ex: “2025-07-03 23:59:59”
+  }
+}
+Crie funções utilitárias (ou use Date direto) para gerar nextDueDate e endDate conforme o plano (um mês e um ano a partir de hoje).
+
+Fazer requisição à API do Asaas
+
+Use fetch ou axios no Replit para chamar:
+
+yaml
+Copiar
+Editar
+POST https://api.asaas.com/v3/checkout
+Headers:
+  access_token: process.env.ASAAS_API_KEY
+  Content-Type: application/json
+Body: JSON.stringify(payload)
+Trate possíveis erros (validação do Asaas, problemas de rede). Se checkout.errors existir, retorne erro amigável para o cliente.
+
+Redirecionar cliente para o Checkout do Asaas
+
+A resposta do Asaas virá com checkoutUrl.
+
+No frontend (ou onde capturar o resultado), faça:
+
+js
+Copiar
+Editar
+const checkoutUrl = await criarCheckoutRecorrente(plano, cliente);
+return checkoutUrl; // para onde o cliente será redirecionado
+No lado do frontend (React, Next.js, etc.), basta usar window.location.href = checkoutUrl;.
+
+Configurar as rotas de callback no seu servidor
+
+No server.js ou onde estiver seu Express, crie rotas:
+
+js
+Copiar
+Editar
+app.get('/pagamento/sucesso', (req, res) => {
+  // exibe mensagem de sucesso, atualiza status da assinatura no seu banco
+  res.send("Pagamento realizado com sucesso!");
+});
+app.get('/pagamento/cancelado', (req, res) => {
+  // exibe página de cancelamento
+  res.send("Você cancelou o pagamento.");
+});
+app.get('/pagamento/expirado', (req, res) => {
+  // exibe página de expirado
+  res.send("O checkout expirou. Tente novamente.");
+});
+Garanta que essas URLs estejam em HTTPS e correspondam exatamente ao que colocou no payload.
+
+Configurar Webhooks do Asaas (opcional mas recomendado)
+
+No painel do Asaas, cadastre a URL do seu webhook (ex: https://seusite.com/webhook/asaas).
+
+No Replit, crie rota POST:
+
+js
+Copiar
+Editar
+app.post('/webhook/asaas', async (req, res) => {
+  const evento = req.body.event;
+  if (evento === "SUBSCRIPTION_CREATED") {
+    // marque assinatura como ativa no seu banco
+  }
+  if (evento === "PAYMENT_CREATED") {
+    // registro de nova fatura gerada
+  }
+  if (evento === "CHECKOUT_COMPLETED") {
+    // apenas confirmação de que o checkout rolou
+  }
+  res.status(200).send("OK");
+});
+Use express.json() para parsear o JSON do webhook. Teste localmente com ngrok ou Replit HTTPS.
+
+Ajustar front-end para não coletar CPF
+
+Na página de checkout do seu site, colete apenas: nome, email, telefone.
+
+Evite pedir CPF ali: informe ao cliente que ele preencherá CPF no checkout do Asaas.
+
+Remova validações de CPF do seu formulário.
+
+Testar fluxo completo no ambiente de produção
+
+Use uma chave de produção válida do Asaas.
+
+Crie um plano de assinatura de teste (valor baixo) e faça um pagamento real com cartão.
+
+Verifique no painel do Asaas: a assinatura criada, datas de cobrança, valores.
+
+Confira no seu próprio banco de dados se registrou corretamente SUBSCRIPTION_CREATED e PAYMENT_CREATED.
+
+Pontos finais de revisão
+
+📌 Certifique-se de que:
+
+A API Key é de produção e as URLs de callback estão em HTTPS.
+
+O payload enviado segue exatamente o formato exigido (sem cpfCnpj).
+
+O cliente é redirecionado e preenche CPF + cartão na página do Asaas.
+
+O webhook no seu Replit recebe e trata eventos corretamente.
+
+🔥 Teste casos de erro: CPF inválido, cartão recusado, checkout expirado. O Asaas já mostrará erro no próprio formulário.
+
+🌐 Disponibilize logs (console ou arquivo) pra monitorar falhas em produção.
+
+Próximos Passos para evolução
+
+Depois que estiver funcionando:
+
+Configure e-mails automáticos de confirmação de assinatura.
+
+Exiba no painel interno do seu sistema o status da assinatura de cada cliente (“ativo”, “expirado”, “cancelado”).
+
+Crie relatórios mensais de faturamento recorrente.
+
+Implemente rota para cancelar assinaturas (chamada PUT ou DELETE na API do Asaas).
+

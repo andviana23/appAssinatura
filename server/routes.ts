@@ -5802,85 +5802,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscription = await subscriptionResponse.json();
       console.log('✅ Assinatura criada:', subscription.id);
 
-      // 3. Criar checkout personalizado com dados do cliente
-      const checkoutData = {
+      // 3. Criar cobrança direta para a primeira mensalidade
+      const hoje = new Date();
+      const proximaCobranca = new Date(hoje);
+      proximaCobranca.setDate(proximaCobranca.getDate() + 7); // 7 dias para pagar
+
+      const cobrancaData = {
+        customer: customer.id,
         billingType: "CREDIT_CARD",
-        dueDateLimitDays: 7,
-        maxInstallmentCount: 1,
-        callback: {
-          successUrl: `${process.env.BASE_URL || 'https://your-domain.com'}/pagamento/sucesso`,
-          autoRedirect: true
-        },
-        items: [{
-          name: planoSelecionado.nome,
-          description: `${planoSelecionado.nome} - Primeira cobrança da assinatura`,
-          quantity: 1,
-          value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor)
-        }],
-        customer: {
-          name: nome,
-          email: email,
-          phone: telefone.replace(/\D/g, ''),
-          // CPF será solicitado na tela de checkout
-        },
-        subscription: {
-          id: subscription.id
-        }
+        value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
+        dueDate: proximaCobranca.toISOString().split('T')[0],
+        description: `${planoSelecionado.nome} - Primeira cobrança da assinatura`,
+        externalReference: `SUB_${subscription.id}`,
+        postalService: false
       };
 
-      console.log('3. Criando checkout personalizado:', checkoutData);
+      console.log('3. Criando cobrança para checkout:', cobrancaData);
 
-      const checkoutResponse = await fetch('https://www.asaas.com/api/v3/checkout', {
+      const cobrancaResponse = await fetch('https://www.asaas.com/api/v3/payments', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(checkoutData)
+        body: JSON.stringify(cobrancaData)
       });
 
-      if (checkoutResponse.ok) {
-        const checkout = await checkoutResponse.json();
-        console.log('✅ Checkout personalizado criado:', checkout.url);
+      if (!cobrancaResponse.ok) {
+        const errorData = await cobrancaResponse.json();
+        console.error('Erro ao criar cobrança:', errorData);
+        return res.status(400).json({ 
+          error: 'Erro ao gerar cobrança para checkout',
+          details: errorData
+        });
+      }
+
+      const cobranca = await cobrancaResponse.json();
+      console.log('✅ Cobrança criada:', cobranca.id);
+
+      // 4. Gerar link de checkout para a cobrança
+      const linkCheckoutResponse = await fetch(`https://www.asaas.com/api/v3/payments/${cobranca.id}/identificationField`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (linkCheckoutResponse.ok) {
+        const linkData = await linkCheckoutResponse.json();
+        console.log('✅ Link de checkout criado:', linkData.identificationField);
+
+        const checkoutUrl = `https://www.asaas.com/c/${linkData.identificationField}`;
 
         return res.json({
           success: true,
-          checkoutUrl: checkout.url,
+          checkoutUrl: checkoutUrl,
           subscriptionId: subscription.id,
-          customerId: customer.id
+          customerId: customer.id,
+          paymentId: cobranca.id
         });
       } else {
-        // Fallback: usar link direto da assinatura
-        console.error('Erro ao criar checkout personalizado, usando link da assinatura...');
-        
-        const subscriptionLinkResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions/${subscription.id}/paymentBook`, {
-          method: 'POST',
-          headers: {
-            'access_token': asaasApiKey,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (subscriptionLinkResponse.ok) {
-          const subscriptionLink = await subscriptionLinkResponse.json();
-          console.log('✅ Link da assinatura gerado:', subscriptionLink.url);
-
+        // Fallback: usar invoiceUrl se disponível
+        if (cobranca.invoiceUrl) {
           return res.json({
             success: true,
-            checkoutUrl: subscriptionLink.url,
+            checkoutUrl: cobranca.invoiceUrl,
             subscriptionId: subscription.id,
-            customerId: customer.id
+            customerId: customer.id,
+            paymentId: cobranca.id
           });
         }
-      }
 
-      // Último recurso: retornar informações da assinatura criada
-      res.json({
-        success: true,
-        subscriptionId: subscription.id,
-        customerId: customer.id,
-        message: 'Assinatura criada! Cliente receberá cobrança por email.'
-      });
+        // Último recurso: informar que a assinatura foi criada
+        return res.json({
+          success: true,
+          subscriptionId: subscription.id,
+          customerId: customer.id,
+          paymentId: cobranca.id,
+          message: 'Assinatura criada! Cliente receberá cobrança por email.'
+        });
+      }
 
     } catch (error) {
       console.error('Erro ao criar checkout recorrente:', error);

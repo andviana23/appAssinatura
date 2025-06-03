@@ -64,14 +64,9 @@ export default function Planos() {
     }
   });
 
-  // Buscar planos do Asaas
-  const { data: planosAsaas = [], isLoading: loadingAsaas } = useQuery({
-    queryKey: ['/api/asaas/planos'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/asaas/planos');
-      return response.json();
-    }
-  });
+  // Desabilitar planos do Asaas temporariamente para usar apenas planos locais
+  const planosAsaas: any[] = [];
+  const loadingAsaas = false;
 
   // Organizar todos os planos reais por categoria
   const organizarPlanosPorCategoria = () => {
