@@ -136,9 +136,9 @@ export default function ClientesStatusPage() {
   const getContaBadge = (conta: string) => {
     switch (conta) {
       case 'ASAAS_TRATO':
-        return <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">Trato</Badge>;
+        return <Badge variant="default" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">Trato</Badge>;
       case 'ASAAS_AND':
-        return <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-300">Andrey</Badge>;
+        return <Badge variant="default" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">Andrey</Badge>;
       default:
         return <Badge variant="outline">{conta}</Badge>;
     }
@@ -212,7 +212,7 @@ export default function ClientesStatusPage() {
                         size="sm"
                         onClick={() => cancelarAssinatura.mutate(cliente)}
                         disabled={cancelarAssinatura.isPending}
-                        className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                        className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 border-orange-300 hover:border-orange-400 dark:border-orange-600 dark:hover:border-orange-500"
                       >
                         <Ban className="h-4 w-4 mr-1" />
                         Cancelar
@@ -222,7 +222,7 @@ export default function ClientesStatusPage() {
                         size="sm"
                         onClick={() => deletarCliente.mutate(cliente)}
                         disabled={deletarCliente.isPending}
-                        className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400 dark:border-red-600 dark:hover:border-red-500"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Deletar
@@ -240,7 +240,7 @@ export default function ClientesStatusPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="min-h-screen bg-background p-4">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -251,7 +251,7 @@ export default function ClientesStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-6">
@@ -267,7 +267,7 @@ export default function ClientesStatusPage() {
           
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-foreground">
                 Clientes por Status
               </h1>
               <p className="text-muted-foreground">
@@ -279,7 +279,7 @@ export default function ClientesStatusPage() {
               onClick={() => refetch()}
               variant="default"
               size="sm"
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar Dados
