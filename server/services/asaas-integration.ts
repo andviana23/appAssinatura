@@ -268,7 +268,7 @@ export class AsaasIntegrationService {
       // Estatísticas das APIs Asaas
       const [principalStats, andreyStats] = await Promise.all([
         this.getStatsAsaas(process.env.ASAAS_API_KEY, 'Principal'),
-        this.getStatsAsaas(process.env.ASAAS_ANDREY_API_KEY, 'Andrey')
+        this.getStatsAsaas(process.env.ASAAS_API_KEY_ANDREY, 'Andrey')
       ]);
 
       return {
