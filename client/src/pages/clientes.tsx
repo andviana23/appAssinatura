@@ -248,7 +248,7 @@ export default function ClientesPage() {
                     Conta Trato de Barbados
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {statsLoading ? "..." : estatisticas?.asaasPrincipal?.assinaturasAtivas || 0}
+                    {statsLoading ? "..." : estatisticas?.asaasPrincipal?.clientesComCobrancas || 0}
                   </p>
                 </div>
               </div>
@@ -266,7 +266,7 @@ export default function ClientesPage() {
                     Conta Andrey
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {statsLoading ? "..." : estatisticas?.asaasAndrey?.assinaturasAtivas || 0}
+                    {statsLoading ? "..." : estatisticas?.asaasAndrey?.clientesComCobrancas || 0}
                   </p>
                 </div>
               </div>
