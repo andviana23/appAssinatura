@@ -33,26 +33,84 @@ export async function registerRoutes(app: Express): Promise<Express> {
     return 'ativo';
   }
 
-  // Função auxiliar para organizar cliente por status original (3 categorias)
-  function organizarClientePorStatus(cliente: any, ativos: any[], inativos: any[], aguardando: any[]) {
-    const dataCreated = new Date(cliente.dateCreated);
-    const agora = new Date();
-    const diasCriacao = Math.floor((agora.getTime() - dataCreated.getTime()) / (1000 * 3600 * 24));
-    
-    // Clientes com notificação desabilitada ou deletados = inativos
-    if (cliente.notificationDisabled || cliente.deleted) {
-      inativos.push({...cliente, status: 'inativo'});
-      return;
+  // Função auxiliar para verificar status do cliente baseado em cobranças
+  async function verificarStatusCliente(cliente: any, apiKey: string): Promise<'ativo' | 'inadimplente'> {
+    try {
+      const response = await fetch(`https://www.asaas.com/api/v3/payments?customer=${cliente.id}&limit=50`, {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`Erro ao buscar cobranças do cliente ${cliente.id}`);
+        return 'ativo'; // Default para ativo em caso de erro
+      }
+
+      const data = await response.json();
+      const cobrancas = data.data || [];
+      
+      if (cobrancas.length === 0) {
+        return 'ativo'; // Cliente sem cobranças = ativo
+      }
+
+      // Ordenar por data de vencimento (mais recente primeiro)
+      cobrancas.sort((a: any, b: any) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      // Buscar cobranças vencidas não pagas
+      const cobrancasVencidas = cobrancas.filter((cobranca: any) => {
+        const dataVencimento = new Date(cobranca.dueDate);
+        dataVencimento.setHours(0, 0, 0, 0);
+        return dataVencimento < hoje && cobranca.status !== 'RECEIVED';
+      });
+
+      // Se tem cobrança vencida não paga = inadimplente
+      if (cobrancasVencidas.length > 0) {
+        return 'inadimplente';
+      }
+
+      // Buscar última cobrança paga
+      const ultimaCobrancaPaga = cobrancas.find((cobranca: any) => cobranca.status === 'RECEIVED');
+      
+      if (!ultimaCobrancaPaga) {
+        // Se não tem nenhuma cobrança paga, verificar se tem cobrança pendente não vencida
+        const cobrancasPendentes = cobrancas.filter((cobranca: any) => {
+          const dataVencimento = new Date(cobranca.dueDate);
+          dataVencimento.setHours(0, 0, 0, 0);
+          return dataVencimento >= hoje && cobranca.status !== 'RECEIVED';
+        });
+        
+        return cobrancasPendentes.length > 0 ? 'ativo' : 'ativo';
+      }
+
+      // Verificar se a próxima cobrança ainda não venceu
+      const proximaCobranca = cobrancas.find((cobranca: any) => {
+        const dataVencimento = new Date(cobranca.dueDate);
+        dataVencimento.setHours(0, 0, 0, 0);
+        return dataVencimento >= hoje && cobranca.status !== 'RECEIVED';
+      });
+
+      if (proximaCobranca) {
+        const dataVencimentoProxima = new Date(proximaCobranca.dueDate);
+        dataVencimentoProxima.setHours(0, 0, 0, 0);
+        
+        // Se próxima cobrança ainda não venceu = ativo
+        if (dataVencimentoProxima >= hoje) {
+          return 'ativo';
+        }
+      }
+
+      // Por padrão, considera ativo
+      return 'ativo';
+      
+    } catch (error) {
+      console.error(`Erro ao verificar status do cliente ${cliente.id}:`, error);
+      return 'ativo'; // Default para ativo em caso de erro
     }
-    
-    // Clientes criados recentemente (últimos 7 dias) = aguardando pagamento
-    if (diasCriacao <= 7) {
-      aguardando.push({...cliente, status: 'aguardando_pagamento'});
-      return;
-    }
-    
-    // Clientes antigos sem problemas = ativos
-    ativos.push({...cliente, status: 'ativo'});
   }
   
   // =====================================================
@@ -132,32 +190,55 @@ export async function registerRoutes(app: Express): Promise<Express> {
         }
       }
       
-      // Organizar clientes por status original com três categorias
+      // Organizar clientes por status baseado em cobranças
       const ativos: any[] = [];
-      const inativos: any[] = [];
+      const inadimplentes: any[] = [];
       const aguardandoPagamento: any[] = [];
 
       // Combinar todos os clientes das duas contas
       const todosClientes = [...clientesAtivos, ...clientesAtrasados];
       
-      todosClientes.forEach(cliente => {
-        organizarClientePorStatus(cliente, ativos, inativos, aguardandoPagamento);
-      });
+      console.log(`🔍 Analisando ${todosClientes.length} clientes para verificar status baseado em cobranças...`);
+      
+      // Processar cada cliente para verificar status baseado em cobranças
+      for (const cliente of todosClientes) {
+        try {
+          const apiKey = cliente.conta === 'ASAAS_TRATO' ? asaasTrato : asaasAndrey;
+          if (apiKey) {
+            const status = await verificarStatusCliente(cliente, apiKey);
+            
+            if (status === 'inadimplente') {
+              inadimplentes.push({...cliente, status: 'inadimplente'});
+            } else {
+              ativos.push({...cliente, status: 'ativo'});
+            }
+          } else {
+            // Se não tem API key, considera ativo por padrão
+            ativos.push({...cliente, status: 'ativo'});
+          }
+        } catch (error) {
+          console.error(`Erro ao processar cliente ${cliente.id}:`, error);
+          // Em caso de erro, considera ativo
+          ativos.push({...cliente, status: 'ativo'});
+        }
+      }
+
+      console.log(`✅ Análise concluída: ${ativos.length} ativos, ${inadimplentes.length} inadimplentes`);
 
       res.json({
         success: true,
-        total: ativos.length + inativos.length + aguardandoPagamento.length,
+        total: ativos.length + inadimplentes.length,
         ativos: {
           total: ativos.length,
           clientes: ativos
         },
         inativos: {
-          total: inativos.length,
-          clientes: inativos
+          total: inadimplentes.length,
+          clientes: inadimplentes
         },
         aguardandoPagamento: {
-          total: aguardandoPagamento.length,
-          clientes: aguardandoPagamento
+          total: 0,
+          clientes: []
         },
         timestamp: new Date().toISOString()
       });
