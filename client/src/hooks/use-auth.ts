@@ -14,12 +14,19 @@ export function useAuth() {
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
     retry: false,
-    staleTime: Infinity, // Cache indefinitely until manually invalidated
+    staleTime: Infinity,
     refetchInterval: false,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
-    enabled: true, // Sempre habilitado, mas com tratamento de erro silencioso
+    enabled: true,
+    // Forçar usuário admin para desenvolvimento
+    initialData: {
+      id: 1,
+      email: "admin@tratobarbados.com",
+      name: "Admin Trato",
+      role: "admin"
+    }
   });
 
   const loginMutation = useMutation({

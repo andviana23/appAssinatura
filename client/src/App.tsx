@@ -15,7 +15,7 @@ import Barbeiros from "@/pages/barbeiros";
 import Profissionais from "@/pages/profissionais";
 import ClientesNovo from "@/pages/clientes";
 import ClientesDebug from "@/pages/clientes-debug";
-import ClientesStatus from "@/pages/clientes-status";
+import ClientesStatus from "@/pages/clientes-status-novo";
 import SistemaModerno from "@/pages/sistema-moderno";
 import Servicos from "@/pages/servicos";
 import Planos from "@/pages/planos";
