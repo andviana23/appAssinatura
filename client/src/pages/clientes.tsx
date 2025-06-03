@@ -234,38 +234,8 @@ export default function Clientes() {
         </div>
       </div>
 
-      {/* Card de Faturamento */}
+      {/* Cards de Status dos Clientes */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatarMoeda(dadosClientes?.faturamento?.totalFaturado || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {dadosClientes?.faturamento?.mes || format(new Date(), 'MMMM yyyy', { locale: ptBR })}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dadosClientes?.faturamento?.quantidadeAssinaturas || 0}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Clientes com pagamento confirmado
-            </p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
@@ -276,7 +246,37 @@ export default function Clientes() {
               {dadosClientes?.clientes?.length || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Incluindo pendentes e vencidos
+              Quantidade total de clientes cadastrados
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
+            <Users className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {dadosClientes?.clientes?.filter(c => c.statusPagamento === 'CONFIRMED').length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Assinaturas ativas no mês atual
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes Inadimplentes</CardTitle>
+            <Users className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {dadosClientes?.clientes?.filter(c => c.statusPagamento === 'OVERDUE').length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Cobranças em atraso no mês vigente
             </p>
           </CardContent>
         </Card>
