@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 import { db } from './db';
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<Express> {
   
   // =====================================================
   // TESTE DE CONECTIVIDADE ASAAS (APENAS PRODUÇÃO)
@@ -384,5 +384,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  return app.listen(5000, '0.0.0.0');
+  return app;
 }

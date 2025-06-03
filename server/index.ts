@@ -41,7 +41,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -49,6 +49,14 @@ app.use((req, res, next) => {
 
     res.status(status).json({ message });
     throw err;
+  });
+
+  // Create server instance
+  const server = app.listen(5000, "0.0.0.0", () => {
+    log(`serving on port 5000`);
+    
+    // Iniciar sincronização automática com Asaas
+    iniciarSincronizacaoAutomatica();
   });
 
   // importantly only setup vite in development and after
@@ -60,27 +68,12 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Iniciar sincronização automática com Asaas
-    iniciarSincronizacaoAutomatica();
-  });
-
   // Função para sincronização automática com Asaas
   async function syncAsaasAutomatico() {
     try {
       console.log('🔄 Executando sincronização automática com Asaas...');
       
-      const response = await fetch(`http://localhost:${port}/api/sync/clientes-asaas`, {
+      const response = await fetch(`http://localhost:5000/api/sync/clientes-asaas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -114,5 +107,5 @@ app.use((req, res, next) => {
   }
 
   // Exportar função para usar após criação de assinaturas
-  global.triggerAsaasSync = syncAsaasAutomatico;
+  (global as any).triggerAsaasSync = syncAsaasAutomatico;
 })();
