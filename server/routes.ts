@@ -3472,76 +3472,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           } else {
-            // Para conta principal, buscar assinaturas ativas primeiro
-            const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+            // Para conta principal, buscar TODOS os clientes diretamente
+            console.log(`📋 Buscando TODOS os clientes da conta ${account.name}`);
+            const customersResponse = await fetch(`${baseUrl}/customers?limit=100`, {
               headers: {
                 'access_token': account.apiKey,
                 'Content-Type': 'application/json'
               }
             });
 
-            let clientesProcessados = new Set();
+            if (customersResponse.ok) {
+              const customersData = await customersResponse.json();
+              console.log(`${account.name}: Total de clientes encontrados:`, customersData.totalCount);
+              console.log(`${account.name}: Clientes retornados:`, customersData.data?.length || 0);
 
-            console.log(`📱 Status da resposta ${account.name}:`, subscriptionsResponse.status);
-            console.log(`📱 Response OK ${account.name}:`, subscriptionsResponse.ok);
-            
+              // Buscar assinaturas ativas para enriquecer os dados
+              const subscriptionsResponse = await fetch(`${baseUrl}/subscriptions?status=ACTIVE&limit=100`, {
+                headers: {
+                  'access_token': account.apiKey,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              let subscriptionsByCustomer = new Map();
               if (subscriptionsResponse.ok) {
                 const subscriptionsData = await subscriptionsResponse.json();
-                console.log(`📊 Resposta da API ${account.name}:`, JSON.stringify(subscriptionsData, null, 2));
-                console.log(`${account.name}: Total de assinaturas encontradas:`, subscriptionsData.totalCount);
-                console.log(`${account.name}: Assinaturas retornadas:`, subscriptionsData.data?.length || 0);
+                subscriptionsData.data?.forEach((subscription: any) => {
+                  subscriptionsByCustomer.set(subscription.customer, subscription);
+                });
+              }
 
-                for (const subscription of subscriptionsData.data || []) {
-                  if (!clientesProcessados.has(subscription.customer)) {
-                    try {
-                      const customerResponse = await fetch(`${baseUrl}/customers/${subscription.customer}`, {
-                        headers: {
-                          'access_token': account.apiKey,
-                          'Content-Type': 'application/json'
-                        }
-                      });
+              for (const customer of customersData.data || []) {
+                // Verificar se o cliente já existe como externo (evitar duplicação)
+                if (emailsClientesExternos.has(customer.email.toLowerCase())) {
+                  console.log(`Cliente ${customer.name} já existe como externo, pulando da lista Asaas`);
+                  continue;
+                }
 
-                      if (customerResponse.ok) {
-                        const customer = await customerResponse.json();
-                        
-                        // Verificar se o cliente já existe como externo (evitar duplicação)
-                        if (emailsClientesExternos.has(customer.email.toLowerCase())) {
-                          console.log(`Cliente ${customer.name} já existe como externo, pulando da lista Asaas`);
-                          clientesProcessados.add(subscription.customer);
-                          continue;
-                        }
-                        
-                        // Calcular próxima data de vencimento
-                        const proximaCobranca = new Date(subscription.nextDueDate);
-                        const daysRemaining = Math.ceil((proximaCobranca.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-                        const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
+                const subscription = subscriptionsByCustomer.get(customer.id);
+                
+                if (subscription) {
+                  // Cliente com assinatura ativa
+                  const proximaCobranca = new Date(subscription.nextDueDate);
+                  const daysRemaining = Math.ceil((proximaCobranca.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                  const status = daysRemaining > 0 ? 'ATIVO' : 'VENCIDO';
 
-                        clientesUnificados.push({
-                          id: `asaas_${account.name}_${subscription.customer}`,
-                          nome: customer.name,
-                          email: customer.email,
-                          telefone: customer.phone || customer.mobilePhone,
-                          cpf: customer.cpfCnpj,
-                          planoNome: subscription.description || 'Assinatura Asaas',
-                          planoValor: subscription.value,
-                          formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
-                                         subscription.billingType === 'PIX' ? 'PIX' :
-                                         subscription.billingType === 'BOLETO' ? 'Boleto' : subscription.billingType,
-                          statusAssinatura: status,
-                          dataInicioAssinatura: new Date(subscription.dateCreated),
-                          dataVencimentoAssinatura: proximaCobranca,
-                          origem: `ASAAS_${account.name}`,
-                          createdAt: new Date(subscription.dateCreated)
-                        });
-
-                        clientesProcessados.add(subscription.customer);
-                      }
-                    } catch (customerError) {
-                      console.warn(`Erro ao buscar cliente ${subscription.customer} da conta ${account.name}:`, customerError);
-                    }
-                  }
+                  clientesUnificados.push({
+                    id: `asaas_${account.name}_${customer.id}`,
+                    nome: customer.name,
+                    email: customer.email,
+                    telefone: customer.phone || customer.mobilePhone,
+                    cpf: customer.cpfCnpj,
+                    planoNome: subscription.description || 'Assinatura Asaas',
+                    planoValor: subscription.value,
+                    formaPagamento: subscription.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' :
+                                   subscription.billingType === 'PIX' ? 'PIX' :
+                                   subscription.billingType === 'BOLETO' ? 'Boleto' : subscription.billingType,
+                    statusAssinatura: status,
+                    dataInicioAssinatura: new Date(subscription.dateCreated),
+                    dataVencimentoAssinatura: proximaCobranca,
+                    origem: `ASAAS_${account.name}`,
+                    createdAt: new Date(subscription.dateCreated)
+                  });
+                } else {
+                  // Cliente sem assinatura ativa
+                  clientesUnificados.push({
+                    id: `asaas_${account.name}_${customer.id}`,
+                    nome: customer.name,
+                    email: customer.email,
+                    telefone: customer.phone || customer.mobilePhone,
+                    cpf: customer.cpfCnpj,
+                    planoNome: 'Cliente Asaas - Sem Assinatura Ativa',
+                    planoValor: '0.00',
+                    formaPagamento: 'N/A',
+                    statusAssinatura: 'CLIENTE_CADASTRADO',
+                    dataInicioAssinatura: new Date(customer.dateCreated),
+                    dataVencimentoAssinatura: null,
+                    origem: `ASAAS_${account.name}`,
+                    createdAt: new Date(customer.dateCreated)
+                  });
                 }
               }
+            }
 
               // Buscar também pagamentos confirmados do mês atual (caso não tenham assinatura)
               const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
