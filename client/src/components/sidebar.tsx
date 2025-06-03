@@ -192,7 +192,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 title={collapsed ? item.name : undefined}
               >
                 <item.icon className={cn(
-                  "h-5 w-5 transition-all duration-200",
+                  "h-6 w-6 transition-all duration-200",
                   isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"
                 )} />
                 {!collapsed && <span>{item.name}</span>}
@@ -215,7 +215,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             title={collapsed ? "Configurações" : undefined}
           >
             <Settings className={cn(
-              "h-5 w-5 transition-all duration-200",
+              "h-6 w-6 transition-all duration-200",
               location === "/configuracoes" ? "text-white" : "text-muted-foreground group-hover:text-accent"
             )} />
             {!collapsed && <span>Configurações</span>}
