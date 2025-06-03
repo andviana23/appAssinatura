@@ -26,13 +26,15 @@ export default function GerenciarAssinaturas() {
     categoria: ""
   });
 
-  // Buscar planos existentes
+  // Buscar planos existentes com cache otimizado
   const { data: planos, isLoading } = useQuery({
     queryKey: ["/api/planos-assinatura"],
     queryFn: async () => {
       const response = await apiRequest("/api/planos-assinatura");
       return await response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos antes de considerar stale
+    cacheTime: 10 * 60 * 1000 // 10 minutos no cache
   });
 
   // Criar nova assinatura e gerar paymentLink automaticamente

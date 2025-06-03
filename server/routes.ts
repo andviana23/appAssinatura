@@ -985,6 +985,34 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // LISTAR PLANOS DE ASSINATURA
+  // =====================================================
+
+  app.get("/api/planos-assinatura", async (req: Request, res: Response) => {
+    try {
+      const planos = await db.select().from(schema.planosPersonalizados).where(eq(schema.planosPersonalizados.ativo, true));
+      
+      res.json(planos.map(plano => ({
+        id: plano.id,
+        nome: plano.nome,
+        descricao: plano.descricao,
+        valorMensal: parseFloat(plano.valor),
+        valor: parseFloat(plano.valor),
+        categoria: plano.categoria,
+        createdAt: plano.createdAt
+      })));
+
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // =====================================================
   // CRIAR ASSINATURA NO ASAAS (APENAS PRODUÇÃO)
   // =====================================================
 
