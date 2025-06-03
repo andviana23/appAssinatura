@@ -238,10 +238,27 @@ export async function registerRoutes(app: Express): Promise<Express> {
         console.error('Erro ao buscar clientes externos:', error);
       }
 
-      // Combinar todos os clientes das duas contas + externos
-      const todosClientes = [...clientesAtivos, ...clientesAtrasados, ...clientesExternos];
+      // Combinar todos os clientes das duas contas + externos e eliminar duplicatas
+      const todosClientesTemp = [...clientesAtivos, ...clientesAtrasados, ...clientesExternos];
       
-      console.log(`🔍 Analisando ${todosClientes.length} clientes para verificar status baseado em cobranças...`);
+      // Eliminar duplicatas usando email como chave única
+      const clientesUnicosMap = new Map();
+      todosClientesTemp.forEach(cliente => {
+        const chave = cliente.email || cliente.nome;
+        if (!clientesUnicosMap.has(chave)) {
+          clientesUnicosMap.set(chave, cliente);
+        } else {
+          // Manter o cliente com valor maior (assinatura mais recente/cara)
+          const clienteExistente = clientesUnicosMap.get(chave);
+          if (cliente.valor > clienteExistente.valor) {
+            clientesUnicosMap.set(chave, cliente);
+          }
+        }
+      });
+      
+      const todosClientes = Array.from(clientesUnicosMap.values());
+      
+      console.log(`🔍 Analisando ${todosClientes.length} clientes únicos para verificar status baseado em cobranças...`);
       
       // Processar cada cliente para verificar status baseado em cobranças
       for (const cliente of todosClientes) {
@@ -468,24 +485,33 @@ export async function registerRoutes(app: Express): Promise<Express> {
         console.error('Erro ao buscar clientes externos:', error);
       }
 
-      // Remover duplicatas baseado no ID + conta
+      // Remover duplicatas baseado no email (cliente único independente da conta)
       const clientesUnicos = clientesPagantes.reduce((acc, cliente) => {
-        const chave = `${cliente.id}-${cliente.conta}`;
+        const chave = cliente.email || cliente.nome; // Usar email como chave única, fallback para nome
         if (!acc.has(chave)) {
           acc.set(chave, cliente);
+        } else {
+          // Se cliente já existe, manter apenas o maior valor (assinatura mais recente/cara)
+          const clienteExistente = acc.get(chave);
+          if (cliente.valorPago > clienteExistente.valorPago) {
+            acc.set(chave, cliente);
+          }
         }
         return acc;
       }, new Map());
 
       const clientesPagantesUnicos = Array.from(clientesUnicos.values());
+      
+      // Recalcular valor total baseado apenas nos clientes únicos
+      const valorTotalUnico = clientesPagantesUnicos.reduce((total, cliente) => total + cliente.valorPago, 0);
 
       console.log(`✅ ${clientesPagantesUnicos.length} clientes pagantes encontrados no mês ${mesAtual}`);
-      console.log(`💰 Valor total pago: R$ ${valorTotalPago.toFixed(2)}`);
+      console.log(`💰 Valor total pago: R$ ${valorTotalUnico.toFixed(2)}`);
 
       res.json({
         success: true,
         totalClientes: clientesPagantesUnicos.length,
-        valorTotal: valorTotalPago,
+        valorTotal: valorTotalUnico,
         mes: mesAtual,
         clientes: clientesPagantesUnicos
       });
