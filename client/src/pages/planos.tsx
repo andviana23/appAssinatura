@@ -205,11 +205,19 @@ export default function Planos() {
           title: "Cliente cadastrado!",
           description: "Agora escolha o método de pagamento externo.",
         });
+      } else if (data.success && data.checkoutUrl) {
+        // Abrir checkout do Asaas
+        window.open(data.checkoutUrl, '_blank');
+        toast({
+          title: "Checkout criado!",
+          description: "Abrindo página de pagamento do Asaas.",
+        });
+        setShowCheckoutModal(false);
       } else if (data.success && data.subscription) {
-        // A assinatura foi criada com sucesso
+        // Assinatura criada mas sem checkout
         toast({
           title: "Assinatura criada!",
-          description: "Assinatura ativa no Asaas. O cliente receberá a cobrança por email.",
+          description: "Cliente receberá cobrança por email.",
         });
         setShowCheckoutModal(false);
         setLocation('/clientes');

@@ -5678,11 +5678,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('✅ Assinatura criada com sucesso:', responseData);
 
-      res.json({
-        success: true,
-        subscription: responseData,
-        message: 'Assinatura criada com sucesso!'
+      // Criar link de checkout para a assinatura
+      const checkoutResponse = await fetch(`https://www.asaas.com/api/v3/subscriptions/${responseData.id}/paymentBook`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (checkoutResponse.ok) {
+        const checkoutData = await checkoutResponse.json();
+        console.log('✅ Checkout da assinatura criado:', checkoutData);
+        
+        res.json({
+          success: true,
+          subscription: responseData,
+          checkoutUrl: checkoutData.url,
+          message: 'Assinatura e checkout criados com sucesso!'
+        });
+      } else {
+        console.log('⚠️ Assinatura criada, mas checkout não pôde ser gerado');
+        res.json({
+          success: true,
+          subscription: responseData,
+          message: 'Assinatura criada! Cliente receberá cobrança por email.'
+        });
+      }
 
     } catch (error) {
       console.error('❌ Erro interno ao criar assinatura:', error);
