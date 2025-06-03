@@ -5289,17 +5289,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Listar clientes da nova estrutura
+  // Listar clientes da nova estrutura - usando cobranças confirmadas
   app.get("/api/v2/clientes", async (req: Request, res: Response) => {
     try {
-      const clientesMasterService = new ClientesMasterService();
-      const clientes = await clientesMasterService.getClientesCompletos();
-      const total = clientes.length;
+      console.log('=== INICIANDO BUSCA DE CLIENTES COM COBRANÇAS CONFIRMADAS ===');
+      
+      const clientesConsolidados = [];
+      const contas = [
+        { nome: 'ASAAS_TRATO', apiKey: process.env.ASAAS_TRATO },
+        { nome: 'ASAAS_ANDREY', apiKey: process.env.ASAAS_API_KEY_ANDREY }
+      ];
+
+      for (const conta of contas) {
+        if (!conta.apiKey) {
+          console.log(`❌ API Key não configurada para ${conta.nome}`);
+          continue;
+        }
+
+        console.log(`🔍 Buscando cobranças confirmadas da conta ${conta.nome}...`);
+        
+        try {
+          // Buscar cobranças confirmadas
+          const paymentsResponse = await fetch('https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=100', {
+            headers: {
+              'access_token': conta.apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (paymentsResponse.ok) {
+            const paymentsData = await paymentsResponse.json();
+            console.log(`💰 ${conta.nome}: ${paymentsData.totalCount || 0} cobranças confirmadas encontradas`);
+
+            // Processar cada cobrança confirmada
+            for (const payment of paymentsData.data || []) {
+              try {
+                // Buscar dados do cliente
+                const customerResponse = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
+                  headers: {
+                    'access_token': conta.apiKey,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                if (customerResponse.ok) {
+                  const customer = await customerResponse.json();
+                  
+                  // Calcular próximo vencimento (30 dias a partir da última cobrança confirmada)
+                  const dataUltimaCobranca = new Date(payment.paymentDate || payment.dueDate);
+                  const proximoVencimento = new Date(dataUltimaCobranca);
+                  proximoVencimento.setDate(proximoVencimento.getDate() + 30);
+                  
+                  // Verificar se ainda está dentro do prazo (máximo 31 dias)
+                  const hoje = new Date();
+                  const diasRestantes = Math.ceil((proximoVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  if (diasRestantes > -31) { // Cliente ainda válido (não passou mais de 31 dias)
+                    const cliente = {
+                      id: customer.id,
+                      nome: customer.name,
+                      email: customer.email,
+                      telefone: customer.mobilePhone || customer.phone || '',
+                      cpf: customer.cpfCnpj || '',
+                      origem: conta.nome,
+                      planoNome: payment.description || 'Plano Asaas',
+                      planoValor: parseFloat(payment.value),
+                      formaPagamento: payment.billingType === 'CREDIT_CARD' ? 'Cartão de Crédito' : 
+                                     payment.billingType === 'PIX' ? 'PIX' : 'Boleto',
+                      status: diasRestantes > 0 ? 'ATIVO' : 'VENCIDO',
+                      dataUltimaCobranca: dataUltimaCobranca.toISOString(),
+                      proximoVencimento: proximoVencimento.toISOString(),
+                      diasRestantes,
+                      valorUltimaCobranca: parseFloat(payment.value)
+                    };
+                    
+                    clientesConsolidados.push(cliente);
+                  }
+                }
+              } catch (customerError) {
+                console.error(`Erro ao buscar dados do cliente ${payment.customer}:`, customerError);
+              }
+            }
+          }
+        } catch (contaError) {
+          console.error(`Erro ao buscar dados da conta ${conta.nome}:`, contaError);
+        }
+      }
+
+      console.log(`📊 Total de clientes consolidados: ${clientesConsolidados.length}`);
       
       res.json({
         success: true,
-        total,
-        clientes
+        total: clientesConsolidados.length,
+        clientes: clientesConsolidados
       });
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);

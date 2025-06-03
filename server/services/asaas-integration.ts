@@ -232,6 +232,47 @@ export class AsaasIntegrationService {
     }
   }
 
+  // Obter estatísticas de cobranças confirmadas
+  private async getStatsCobrancasConfirmadas(apiKey: string | undefined, conta: string): Promise<any> {
+    if (!apiKey) {
+      console.log(`❌ API Key não configurada para ${conta}`);
+      return { clientesComCobrancas: 0, receitaCobrancas: 0 };
+    }
+
+    try {
+      console.log(`📊 Calculando estatísticas de cobranças confirmadas para ${conta}...`);
+      
+      const paymentsResponse = await fetch('https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=100', {
+        headers: {
+          'access_token': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!paymentsResponse.ok) {
+        console.error(`Erro ao buscar cobranças de ${conta}: ${paymentsResponse.status}`);
+        return { clientesComCobrancas: 0, receitaCobrancas: 0 };
+      }
+
+      const paymentsData = await paymentsResponse.json();
+      const payments = paymentsData.data || [];
+      
+      // Calcular clientes únicos e receita total
+      const clientesUnicos = new Set(payments.map((p: any) => p.customer));
+      const receitaTotal = payments.reduce((sum: number, p: any) => sum + parseFloat(p.value || 0), 0);
+      
+      console.log(`💰 ${conta}: ${clientesUnicos.size} clientes únicos, R$ ${receitaTotal.toFixed(2)} em cobranças`);
+      
+      return {
+        clientesComCobrancas: clientesUnicos.size,
+        receitaCobrancas: receitaTotal
+      };
+    } catch (error) {
+      console.error(`Erro ao calcular estatísticas de ${conta}:`, error);
+      return { clientesComCobrancas: 0, receitaCobrancas: 0 };
+    }
+  }
+
   // Buscar dados completos do cliente
   private async buscarClienteAsaas(apiKey: string, customerId: string): Promise<AsaasCustomer | null> {
     try {
@@ -331,10 +372,10 @@ export class AsaasIntegrationService {
       // Clientes criados hoje
       const clientesHoje = await this.clientesMasterService.getClientesHoje();
       
-      // Estatísticas das APIs Asaas
+      // Estatísticas das APIs Asaas - usando cobranças confirmadas
       const [principalStats, andreyStats] = await Promise.all([
-        this.getStatsAsaas(process.env.ASAAS_API_KEY, 'Principal'),
-        this.getStatsAsaas(process.env.ASAAS_API_KEY_ANDREY, 'Andrey')
+        this.getStatsCobrancasConfirmadas(process.env.ASAAS_TRATO, 'ASAAS_TRATO'),
+        this.getStatsCobrancasConfirmadas(process.env.ASAAS_API_KEY_ANDREY, 'ASAAS_ANDREY')
       ]);
 
       return {
@@ -348,8 +389,8 @@ export class AsaasIntegrationService {
         asaasPrincipal: principalStats,
         asaasAndrey: andreyStats,
         consolidado: {
-          totalClientes: (principalStats.assinaturasAtivas || 0) + (andreyStats.assinaturasAtivas || 0),
-          receitaTotal: (principalStats.receitaAtiva || 0) + (andreyStats.receitaAtiva || 0)
+          totalClientes: (principalStats.clientesComCobrancas || 0) + (andreyStats.clientesComCobrancas || 0),
+          receitaTotal: (principalStats.receitaCobrancas || 0) + (andreyStats.receitaCobrancas || 0)
         }
       };
     } catch (error) {
