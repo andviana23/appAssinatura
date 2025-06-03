@@ -46,8 +46,18 @@ export default function Distribuicao() {
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
+  // Query para buscar barbeiros cadastrados da rota de profissionais
+  const { data: profissionaisResponse, isLoading: isLoadingProfissionais } = useQuery({
+    queryKey: ["/api/profissionais"],
+    queryFn: async () => {
+      const response = await fetch('/api/profissionais');
+      if (!response.ok) throw new Error('Erro ao carregar profissionais');
+      return response.json();
+    }
+  });
+
   // Query para buscar dados de comissão dos barbeiros com filtro por período
-  const { data: comissaoData, isLoading } = useQuery({
+  const { data: comissaoData, isLoading: isLoadingComissao } = useQuery({
     queryKey: ["/api/comissao/barbeiros", currentMonth, dataInicio, dataFim],
   });
 
@@ -56,7 +66,31 @@ export default function Distribuicao() {
     queryKey: ["/api/comissao/stats", currentMonth, dataInicio, dataFim],
   });
 
-  const barbeirosComissao: BarbeiroComissao[] = Array.isArray(comissaoData) ? comissaoData : [];
+  const isLoading = isLoadingProfissionais || isLoadingComissao;
+
+  // Combinar dados dos profissionais com dados de comissão
+  const barbeiros = profissionaisResponse?.data?.filter((prof: any) => prof.tipo === 'barbeiro' && prof.ativo) || [];
+  
+  const barbeirosComissao: BarbeiroComissao[] = barbeiros.map((barbeiro: any) => {
+    // Buscar dados de comissão para este barbeiro
+    const comissaoItem = Array.isArray(comissaoData) ? comissaoData.find((item: any) => 
+      item.barbeiro?.id === barbeiro.id
+    ) : null;
+
+    return {
+      barbeiro: {
+        id: barbeiro.id,
+        nome: barbeiro.nome,
+        ativo: barbeiro.ativo
+      },
+      faturamentoAssinatura: comissaoItem?.faturamentoAssinatura || 0,
+      comissaoAssinatura: comissaoItem?.comissaoAssinatura || 0,
+      minutosTrabalhadosMes: comissaoItem?.minutosTrabalhadosMes || 0,
+      horasTrabalhadasMes: comissaoItem?.horasTrabalhadasMes || "0h 0min",
+      numeroServicos: comissaoItem?.numeroServicos || 0,
+      percentualTempo: comissaoItem?.percentualTempo || 0
+    };
+  });
   const stats: ComissaoStats = (statsData && typeof statsData === 'object' && !Array.isArray(statsData)) ? statsData : {
     faturamentoTotalAssinatura: 0,
     totalMinutosGerais: 0,
@@ -86,12 +120,12 @@ export default function Distribuicao() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-background text-foreground p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -100,23 +134,23 @@ export default function Distribuicao() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#8B4513] mb-2">Comissão dos Barbeiros</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Comissão dos Barbeiros</h1>
+        <p className="text-muted-foreground">
           Distribuição automática baseada nos atendimentos finalizados
         </p>
         
         {/* Filtros por Período */}
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+        <div className="mt-4 p-4 bg-card rounded-lg border border-border">
           <div className="flex items-center gap-2 mb-3">
-            <Filter className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Filtrar por Período</span>
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filtrar por Período</span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
-              <Label htmlFor="dataInicio" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="dataInicio" className="text-sm font-medium text-foreground">
                 Data Início
               </Label>
               <Input
@@ -124,12 +158,12 @@ export default function Distribuicao() {
                 type="date"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
-                className="mt-1"
+                className="mt-1 bg-background border-border text-foreground"
               />
             </div>
             
             <div>
-              <Label htmlFor="dataFim" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="dataFim" className="text-sm font-medium text-foreground">
                 Data Fim
               </Label>
               <Input
@@ -137,7 +171,7 @@ export default function Distribuicao() {
                 type="date"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
-                className="mt-1"
+                className="mt-1 bg-background border-border text-foreground"
               />
             </div>
             

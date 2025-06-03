@@ -209,14 +209,6 @@ export default function ListaDaVez() {
               Mês: {dayjs(mesAtual).format("MMMM/YYYY")}
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setLocation("/comissao")}
-            className="bg-card border-border text-card-foreground hover:bg-accent"
-          >
-            <Trophy className="mr-2 h-4 w-4" />
-            Ver Comissão
-          </Button>
         </div>
 
         {/* Cards de Ação */}
