@@ -1,642 +1,393 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Users, 
   Search, 
-  Filter, 
   RefreshCw, 
-  Phone, 
-  Mail, 
-  CreditCard, 
-  Calendar,
-  TrendingUp,
-  Database,
-  Eye,
-  Download,
-  MoreVertical,
-  FileText,
-  MapPin,
-  Clock,
   DollarSign,
+  Trash2,
+  X,
   CheckCircle,
-  XCircle,
-  AlertCircle,
-  ArrowLeft,
-  ExternalLink
+  AlertCircle
 } from "lucide-react";
-import { useState, useMemo } from "react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LoadingClientsState, GenericErrorState } from "@/components/error-illustrations";
 
-interface Cliente {
-  id: number;
-  nome: string;
-  nomeCompleto?: string;
-  email?: string;
-  telefone?: string;
-  telefonePrincipal?: string;
-  cpf?: string;
-  numeroDocumento?: string;
-  planoNome?: string;
-  planoValor?: string;
-  valorPlanoAtual?: string;
-  formaPagamento?: string;
-  statusAssinatura?: string;
-  dataInicioAssinatura?: string;
-  dataVencimentoAssinatura?: string;
-  dataUltimoPagamento?: string;
-  origem: string;
-  asaasCustomerId?: string;
-  idAsaasPrincipal?: string;
-  idAsaasAndrey?: string;
-  cidade?: string;
-  estado?: string;
-  createdAt: string;
-  observacoes?: string;
-}
-
-interface ClienteExterno {
-  id: number;
+interface ClienteAssinatura {
+  id: string;
   nome: string;
   email?: string;
   telefone?: string;
-  cpf?: string;
-  planoNome: string;
-  planoValor: string;
-  formaPagamento: string;
-  statusAssinatura?: string;
-  dataInicioAssinatura: string;
-  dataVencimentoAssinatura: string;
-  origem: string;
-  createdAt: string;
-  observacoes?: string;
+  valorPago: number;
+  nomePlano: string;
+  statusPagamento: 'CONFIRMED' | 'PENDING' | 'OVERDUE';
+  dataVencimento: string;
+  assinaturaId: string;
+  conta: 'ASAAS_TRATO' | 'ASAAS_AND';
 }
 
-export default function ClientesPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("todos");
-  const [filterOrigem, setFilterOrigem] = useState("todas");
-  const [selectedTab, setSelectedTab] = useState("todos");
-  const queryClient = useQueryClient();
+interface FaturamentoMensal {
+  totalFaturado: number;
+  quantidadeAssinaturas: number;
+  mes: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  clientes: ClienteAssinatura[];
+  faturamento: FaturamentoMensal;
+}
+
+export default function Clientes() {
+  const [busca, setBusca] = useState("");
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
-  // Buscar estatísticas consolidadas
-  const { data: estatisticas, isLoading: statsLoading } = useQuery({
-    queryKey: ["/api/v2/estatisticas"],
+  // Buscar dados dos clientes com assinaturas
+  const { data: dadosClientes, isLoading, error, refetch } = useQuery<ApiResponse>({
+    queryKey: ["/api/clientes/assinaturas"],
+    queryFn: async () => {
+      const response = await fetch("/api/clientes/assinaturas");
+      if (!response.ok) {
+        throw new Error("Erro ao carregar dados dos clientes");
+      }
+      return response.json();
+    },
     refetchInterval: 30000,
   });
 
-  // Buscar clientes unificados (Asaas + Externos)
-  const { data: clientesUnificados, isLoading: clientesLoading } = useQuery({
-    queryKey: ["/api/clientes/unified"],
-    refetchInterval: 60000,
-  });
-
-  // Buscar clientes externos
-  const { data: clientesExternos, isLoading: externosLoading } = useQuery({
-    queryKey: ["/api/clientes-externos"],
-    refetchInterval: 30000,
-  });
-
-  // Mutations para sincronização
-  const syncPrincipalMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/v2/sync/asaas-principal", {
-        method: "POST"
+  // Mutation para cancelar assinatura
+  const cancelarAssinaturaMutation = useMutation({
+    mutationFn: async ({ clienteId, assinaturaId }: { clienteId: string; assinaturaId: string }) => {
+      const response = await fetch(`/api/assinaturas/${assinaturaId}/cancelar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ clienteId }),
       });
-      if (!response.ok) throw new Error("Erro na sincronização");
+      
+      if (!response.ok) {
+        throw new Error('Erro ao cancelar assinatura');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unified"] });
       toast({
-        title: "Sincronização concluída",
-        description: "Dados da conta principal atualizados com sucesso.",
+        title: "Assinatura cancelada",
+        description: "A assinatura foi cancelada com sucesso no Asaas",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes/assinaturas"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao cancelar",
+        description: error.message,
+        variant: "destructive",
       });
     },
-    onError: () => {
-      toast({
-        title: "Erro na sincronização",
-        description: "Não foi possível sincronizar os dados.",
-        variant: "destructive"
-      });
-    }
   });
 
-  const syncAndreyMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/v2/sync/asaas-andrey", {
-        method: "POST"
+  // Mutation para deletar cliente
+  const deletarClienteMutation = useMutation({
+    mutationFn: async (clienteId: string) => {
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'DELETE',
       });
-      if (!response.ok) throw new Error("Erro na sincronização");
+      
+      if (!response.ok) {
+        throw new Error('Erro ao deletar cliente');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unified"] });
       toast({
-        title: "Sincronização concluída",
-        description: "Dados da conta Andrey atualizados com sucesso.",
+        title: "Cliente removido",
+        description: "O cliente foi removido do sistema",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes/assinaturas"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao remover",
+        description: error.message,
+        variant: "destructive",
       });
     },
-    onError: () => {
-      toast({
-        title: "Erro na sincronização",
-        description: "Não foi possível sincronizar os dados.",
-        variant: "destructive"
-      });
-    }
   });
 
-  // Mutation para sincronização completa de todos os clientes Asaas
-  const syncTodosClientesMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/sync/clientes-asaas", {
-        method: "POST"
+  const handleCancelarAssinatura = (cliente: ClienteAssinatura) => {
+    if (confirm(`Deseja cancelar a assinatura de ${cliente.nome}? Esta ação não pode ser desfeita.`)) {
+      cancelarAssinaturaMutation.mutate({
+        clienteId: cliente.id,
+        assinaturaId: cliente.assinaturaId
       });
-      if (!response.ok) throw new Error("Erro na sincronização completa");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/v2/estatisticas"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unified"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes-externos"] });
-      toast({
-        title: "Sincronização completa concluída",
-        description: `${data.total} clientes processados das APIs Asaas.`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erro na sincronização completa",
-        description: "Não foi possível sincronizar todos os clientes.",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Consolidar todos os clientes
-  const todosClientes = useMemo(() => {
-    const clientes: Cliente[] = [];
-    
-    // Adicionar clientes unificados (Asaas)
-    if (clientesUnificados?.clientes) {
-      clientesUnificados.clientes.forEach((cliente: any) => {
-        clientes.push({
-          id: cliente.id,
-          nome: cliente.nomeCompleto || cliente.nome,
-          nomeCompleto: cliente.nomeCompleto,
-          email: cliente.email,
-          telefone: cliente.telefonePrincipal || cliente.telefone,
-          cpf: cliente.numeroDocumento,
-          planoNome: cliente.valorPlanoAtual ? `Plano R$ ${cliente.valorPlanoAtual}` : 'N/A',
-          planoValor: cliente.valorPlanoAtual,
-          formaPagamento: 'Asaas',
-          statusAssinatura: cliente.statusAssinatura || 'Ativo',
-          dataUltimoPagamento: cliente.dataUltimoPagamento,
-          origem: cliente.origem || 'Asaas',
-          asaasCustomerId: cliente.idAsaasPrincipal || cliente.idAsaasAndrey,
-          cidade: cliente.cidade,
-          estado: cliente.estado,
-          createdAt: cliente.createdAt || new Date().toISOString()
-        });
-      });
-    }
-    
-    // Adicionar clientes externos
-    if (clientesExternos?.clientes) {
-      clientesExternos.clientes.forEach((cliente: ClienteExterno) => {
-        clientes.push({
-          id: cliente.id + 10000, // Offset para evitar conflito de IDs
-          nome: cliente.nome,
-          email: cliente.email,
-          telefone: cliente.telefone,
-          cpf: cliente.cpf,
-          planoNome: cliente.planoNome,
-          planoValor: cliente.planoValor,
-          formaPagamento: cliente.formaPagamento,
-          statusAssinatura: cliente.statusAssinatura || 'Ativo',
-          dataInicioAssinatura: cliente.dataInicioAssinatura,
-          dataVencimentoAssinatura: cliente.dataVencimentoAssinatura,
-          origem: 'Externo',
-          createdAt: cliente.createdAt,
-          observacoes: cliente.observacoes
-        });
-      });
-    }
-    
-    return clientes;
-  }, [clientesUnificados, clientesExternos]);
-
-  // Filtrar clientes
-  const clientesFiltrados = useMemo(() => {
-    return todosClientes.filter((cliente: Cliente) => {
-      const matchSearch = !searchTerm || 
-        cliente.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cliente.telefone?.includes(searchTerm) ||
-        cliente.cpf?.includes(searchTerm);
-      
-      const matchStatus = filterStatus === "todos" || cliente.statusAssinatura === filterStatus;
-      const matchOrigem = filterOrigem === "todas" || cliente.origem === filterOrigem;
-      const matchTab = selectedTab === "todos" || 
-        (selectedTab === "asaas" && cliente.origem !== "Externo") ||
-        (selectedTab === "externos" && cliente.origem === "Externo");
-      
-      return matchSearch && matchStatus && matchOrigem && matchTab;
-    });
-  }, [todosClientes, searchTerm, filterStatus, filterOrigem, selectedTab]);
-
-  const getStatusBadge = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case 'ativo':
-      case 'active':
-        return <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">Ativo</Badge>;
-      case 'cancelado':
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      case 'vencido':
-      case 'expired':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300">Vencido</Badge>;
-      default:
-        return <Badge variant="outline">N/A</Badge>;
     }
   };
 
-  const getFormaPagamentoBadge = (forma?: string) => {
-    switch (forma?.toLowerCase()) {
-      case 'credit_card':
-      case 'cartão de crédito':
-        return <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">Cartão</Badge>;
-      case 'pix':
-        return <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-300">PIX</Badge>;
-      case 'debit':
-      case 'cartão de débito':
-        return <Badge variant="default" className="bg-indigo-100 text-indigo-800 border-indigo-300">Débito</Badge>;
-      case 'cash':
-      case 'dinheiro':
-        return <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">Dinheiro</Badge>;
-      case 'asaas':
-        return <Badge variant="default" className="bg-slate-100 text-slate-800 border-slate-300">Asaas</Badge>;
-      default:
-        return <Badge variant="outline">{forma || 'N/A'}</Badge>;
+  const handleDeletarCliente = (cliente: ClienteAssinatura) => {
+    if (confirm(`Deseja remover ${cliente.nome} do sistema? Esta ação não pode ser desfeita.`)) {
+      deletarClienteMutation.mutate(cliente.id);
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
-    } catch {
-      return 'Data inválida';
-    }
-  };
+  // Filtrar clientes pela busca
+  const clientesFiltrados = dadosClientes?.clientes?.filter(cliente => 
+    cliente.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    cliente.nomePlano.toLowerCase().includes(busca.toLowerCase()) ||
+    cliente.email?.toLowerCase().includes(busca.toLowerCase())
+  ) || [];
 
-  const formatCurrency = (value?: string) => {
-    if (!value) return 'R$ 0,00';
-    const num = parseFloat(value);
-    if (isNaN(num)) return 'R$ 0,00';
+  const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(num);
+    }).format(valor);
   };
 
-  const isLoading = clientesLoading || externosLoading || statsLoading;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Pago</Badge>;
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-800"><AlertCircle className="w-3 h-3 mr-1" />Pendente</Badge>;
+      case 'OVERDUE':
+        return <Badge className="bg-red-100 text-red-800"><X className="w-3 h-3 mr-1" />Vencido</Badge>;
+      default:
+        return <Badge variant="outline">-</Badge>;
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-xl px-4 py-2 hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-semibold">Voltar</span>
-            </button>
-          </div>
-          
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                Gestão de Clientes
-              </h1>
-              <p className="text-muted-foreground">
-                Visualize e gerencie todos os clientes do sistema
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                onClick={() => syncTodosClientesMutation.mutate()}
-                disabled={syncTodosClientesMutation.isPending}
-                variant="default"
-                size="sm"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-              >
-                <Database className={`h-4 w-4 mr-2 ${syncTodosClientesMutation.isPending ? 'animate-spin' : ''}`} />
-                Sincronizar Todos os Clientes
-              </Button>
-              <Button
-                onClick={() => syncPrincipalMutation.mutate()}
-                disabled={syncPrincipalMutation.isPending}
-                variant="outline"
-                size="sm"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${syncPrincipalMutation.isPending ? 'animate-spin' : ''}`} />
-                Sync Principal
-              </Button>
-              <Button
-                onClick={() => syncAndreyMutation.mutate()}
-                disabled={syncAndreyMutation.isPending}
-                variant="outline"
-                size="sm"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${syncAndreyMutation.isPending ? 'animate-spin' : ''}`} />
-                Sync Andrey
-              </Button>
-            </div>
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Clientes Assinantes</h1>
+            <p className="text-muted-foreground mt-2">
+              Gerencie assinaturas e faturamento dos clientes
+            </p>
           </div>
         </div>
+        <LoadingClientsState />
+      </div>
+    );
+  }
 
-        {/* Estatísticas */}
-        {estatisticas && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600">Total Clientes</p>
-                    <p className="text-2xl font-bold text-blue-900">
-                      {estatisticas.moderna?.totalClientes || 0}
-                    </p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Receita Total</p>
-                    <p className="text-2xl font-bold text-green-900">
-                      {formatCurrency(estatisticas.moderna?.receitaTotal)}
-                    </p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-orange-600">Asaas Principal</p>
-                    <p className="text-2xl font-bold text-orange-900">
-                      {estatisticas.asaasPrincipal?.totalClientes || 0}
-                    </p>
-                  </div>
-                  <Database className="h-8 w-8 text-orange-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-purple-600">Asaas Andrey</p>
-                    <p className="text-2xl font-bold text-purple-900">
-                      {estatisticas.asaasAndrey?.totalClientes || 0}
-                    </p>
-                  </div>
-                  <ExternalLink className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
+  if (error) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Clientes Assinantes</h1>
+            <p className="text-muted-foreground mt-2">
+              Gerencie assinaturas e faturamento dos clientes
+            </p>
           </div>
-        )}
+        </div>
+        <GenericErrorState onRetry={() => refetch()} />
+      </div>
+    );
+  }
 
-        {/* Filtros e Busca */}
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, email, telefone ou CPF..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos Status</SelectItem>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Cancelado">Cancelado</SelectItem>
-                    <SelectItem value="Vencido">Vencido</SelectItem>
-                  </SelectContent>
-                </Select>
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Clientes Assinantes</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie assinaturas e faturamento dos clientes
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
+        </div>
+      </div>
 
-                <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas Origens</SelectItem>
-                    <SelectItem value="Asaas">Asaas</SelectItem>
-                    <SelectItem value="Externo">Externos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Card de Faturamento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Faturamento Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatarMoeda(dadosClientes?.faturamento?.totalFaturado || 0)}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dadosClientes?.faturamento?.mes || format(new Date(), 'MMMM yyyy', { locale: ptBR })}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dadosClientes?.faturamento?.quantidadeAssinaturas || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Clientes com pagamento confirmado
+            </p>
           </CardContent>
         </Card>
 
-        {/* Tabs de Categorias */}
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-            <TabsTrigger value="todos">Todos ({todosClientes.length})</TabsTrigger>
-            <TabsTrigger value="asaas">
-              Asaas ({todosClientes.filter(c => c.origem !== "Externo").length})
-            </TabsTrigger>
-            <TabsTrigger value="externos">
-              Externos ({todosClientes.filter(c => c.origem === "Externo").length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={selectedTab} className="space-y-4">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Lista de Clientes ({clientesFiltrados.length})
-                </CardTitle>
-                <CardDescription>
-                  {isLoading ? "Carregando clientes..." : "Gerencie todos os seus clientes em um só lugar"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : clientesFiltrados.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-muted-foreground">Nenhum cliente encontrado</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Ajuste os filtros ou sincronize os dados para ver mais clientes.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead>Contato</TableHead>
-                          <TableHead>Plano</TableHead>
-                          <TableHead>Pagamento</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Última Atividade</TableHead>
-                          <TableHead>Origem</TableHead>
-                          <TableHead className="w-[50px]">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {clientesFiltrados.map((cliente) => (
-                          <TableRow key={`${cliente.origem}-${cliente.id}`} className="hover:bg-muted/50">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                    {cliente.nome?.charAt(0)?.toUpperCase() || 'C'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium">{cliente.nome}</p>
-                                  {cliente.cpf && (
-                                    <p className="text-sm text-muted-foreground">{cliente.cpf}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            
-                            <TableCell>
-                              <div className="space-y-1">
-                                {cliente.email && (
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <Mail className="h-3 w-3" />
-                                    {cliente.email}
-                                  </div>
-                                )}
-                                {cliente.telefone && (
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <Phone className="h-3 w-3" />
-                                    {cliente.telefone}
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{cliente.planoNome || 'N/A'}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatCurrency(cliente.planoValor)}
-                                </p>
-                              </div>
-                            </TableCell>
-                            
-                            <TableCell>
-                              {getFormaPagamentoBadge(cliente.formaPagamento)}
-                            </TableCell>
-                            
-                            <TableCell>
-                              {getStatusBadge(cliente.statusAssinatura)}
-                            </TableCell>
-                            
-                            <TableCell>
-                              <div className="text-sm">
-                                {cliente.dataUltimoPagamento ? (
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-3 w-3" />
-                                    {formatDate(cliente.dataUltimoPagamento)}
-                                  </div>
-                                ) : cliente.dataInicioAssinatura ? (
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="h-3 w-3" />
-                                    {formatDate(cliente.dataInicioAssinatura)}
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground">N/A</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            
-                            <TableCell>
-                              <Badge variant={cliente.origem === "Externo" ? "secondary" : "default"}>
-                                {cliente.origem}
-                              </Badge>
-                            </TableCell>
-                            
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Ver Detalhes
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Histórico
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dadosClientes?.clientes?.length || 0}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Incluindo pendentes e vencidos
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Busca */}
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, plano ou email..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {/* Lista de Clientes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Clientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {clientesFiltrados.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum cliente encontrado</h3>
+              <p className="text-muted-foreground">
+                {busca ? "Tente ajustar os termos de busca" : "Não há clientes com assinaturas ativas"}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Valor Pago</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clientesFiltrados.map((cliente) => (
+                  <TableRow key={cliente.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{cliente.nome}</div>
+                        {cliente.email && (
+                          <div className="text-sm text-muted-foreground">{cliente.email}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{cliente.nomePlano}</Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatarMoeda(cliente.valorPago)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(cliente.statusPagamento)}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(cliente.dataVencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={cliente.conta === 'ASAAS_TRATO' ? 'default' : 'secondary'}>
+                        {cliente.conta === 'ASAAS_TRATO' ? 'Trato' : 'Andrey'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelarAssinatura(cliente)}
+                          disabled={cancelarAssinaturaMutation.isPending}
+                          className="text-orange-600 hover:text-orange-700"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancelar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeletarCliente(cliente)}
+                          disabled={deletarClienteMutation.isPending}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Deletar
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Informações do Sistema */}
+      <Card className="border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Informações do Faturamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p>• <strong>Faturamento:</strong> Soma dos pagamentos confirmados do mês atual</p>
+            <p>• <strong>Cancelar:</strong> Cancela a assinatura imediatamente no Asaas</p>
+            <p>• <strong>Deletar:</strong> Remove o cliente do sistema local</p>
+            <p>• <strong>Atualização:</strong> Dados sincronizados automaticamente a cada 30 segundos</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

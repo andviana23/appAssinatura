@@ -134,6 +134,274 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // =====================================================
+  // API GESTÃO DE ASSINATURAS E CLIENTES
+  // =====================================================
+
+  app.get('/api/clientes/assinaturas', async (req: Request, res: Response) => {
+    try {
+      console.log('🔄 Buscando clientes com assinaturas ativas...');
+      
+      const asaasTrato = process.env.ASAAS_TRATO;
+      const asaasAnd = process.env.ASAAS_AND;
+      
+      if (!asaasTrato && !asaasAnd) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Chaves ASAAS não configuradas' 
+        });
+      }
+
+      const baseUrl = 'https://www.asaas.com/api/v3';
+      const mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const clientesComAssinaturas: any[] = [];
+      let totalFaturado = 0;
+      let quantidadeAssinaturas = 0;
+
+      // Buscar assinaturas da conta ASAAS_TRATO
+      if (asaasTrato) {
+        try {
+          const response = await fetch(`${baseUrl}/subscriptions?limit=100`, {
+            headers: {
+              'access_token': asaasTrato,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            for (const assinatura of data.data) {
+              // Buscar dados do cliente
+              const clienteResponse = await fetch(`${baseUrl}/customers/${assinatura.customer}`, {
+                headers: {
+                  'access_token': asaasTrato,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (clienteResponse.ok) {
+                const cliente = await clienteResponse.json();
+                
+                // Buscar último pagamento da assinatura
+                const pagamentosResponse = await fetch(`${baseUrl}/payments?subscription=${assinatura.id}&limit=1`, {
+                  headers: {
+                    'access_token': asaasTrato,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                let valorPago = 0;
+                let statusPagamento = 'PENDING';
+                let dataVencimento = assinatura.nextDueDate;
+
+                if (pagamentosResponse.ok) {
+                  const pagamentos = await pagamentosResponse.json();
+                  if (pagamentos.data.length > 0) {
+                    const ultimoPagamento = pagamentos.data[0];
+                    valorPago = ultimoPagamento.value;
+                    statusPagamento = ultimoPagamento.status;
+                    
+                    // Se pagamento confirmado no mês atual, conta no faturamento
+                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesAtual)) {
+                      totalFaturado += valorPago;
+                      quantidadeAssinaturas++;
+                    }
+                  }
+                }
+
+                clientesComAssinaturas.push({
+                  id: cliente.id,
+                  nome: cliente.name,
+                  email: cliente.email,
+                  telefone: cliente.phone,
+                  valorPago: valorPago,
+                  nomePlano: assinatura.description || 'Plano Standard',
+                  statusPagamento: statusPagamento,
+                  dataVencimento: dataVencimento,
+                  assinaturaId: assinatura.id,
+                  conta: 'ASAAS_TRATO'
+                });
+              }
+            }
+            
+            console.log(`✅ ${data.data.length} assinaturas processadas da conta ASAAS_TRATO`);
+          }
+        } catch (error) {
+          console.error('Erro ao buscar assinaturas ASAAS_TRATO:', error);
+        }
+      }
+
+      // Buscar assinaturas da conta ASAAS_AND
+      if (asaasAnd) {
+        try {
+          const response = await fetch(`${baseUrl}/subscriptions?limit=100`, {
+            headers: {
+              'access_token': asaasAnd,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            for (const assinatura of data.data) {
+              // Buscar dados do cliente
+              const clienteResponse = await fetch(`${baseUrl}/customers/${assinatura.customer}`, {
+                headers: {
+                  'access_token': asaasAnd,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (clienteResponse.ok) {
+                const cliente = await clienteResponse.json();
+                
+                // Buscar último pagamento da assinatura
+                const pagamentosResponse = await fetch(`${baseUrl}/payments?subscription=${assinatura.id}&limit=1`, {
+                  headers: {
+                    'access_token': asaasAnd,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                let valorPago = 0;
+                let statusPagamento = 'PENDING';
+                let dataVencimento = assinatura.nextDueDate;
+
+                if (pagamentosResponse.ok) {
+                  const pagamentos = await pagamentosResponse.json();
+                  if (pagamentos.data.length > 0) {
+                    const ultimoPagamento = pagamentos.data[0];
+                    valorPago = ultimoPagamento.value;
+                    statusPagamento = ultimoPagamento.status;
+                    
+                    // Se pagamento confirmado no mês atual, conta no faturamento
+                    if (statusPagamento === 'CONFIRMED' && ultimoPagamento.paymentDate?.startsWith(mesAtual)) {
+                      totalFaturado += valorPago;
+                      quantidadeAssinaturas++;
+                    }
+                  }
+                }
+
+                clientesComAssinaturas.push({
+                  id: cliente.id,
+                  nome: cliente.name,
+                  email: cliente.email,
+                  telefone: cliente.phone,
+                  valorPago: valorPago,
+                  nomePlano: assinatura.description || 'Plano Standard',
+                  statusPagamento: statusPagamento,
+                  dataVencimento: dataVencimento,
+                  assinaturaId: assinatura.id,
+                  conta: 'ASAAS_AND'
+                });
+              }
+            }
+            
+            console.log(`✅ ${data.data.length} assinaturas processadas da conta ASAAS_AND`);
+          }
+        } catch (error) {
+          console.error('Erro ao buscar assinaturas ASAAS_AND:', error);
+        }
+      }
+
+      res.json({
+        success: true,
+        clientes: clientesComAssinaturas,
+        faturamento: {
+          totalFaturado: totalFaturado,
+          quantidadeAssinaturas: quantidadeAssinaturas,
+          mes: new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar clientes com assinaturas:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro ao buscar dados dos clientes',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // Cancelar assinatura no Asaas
+  app.post('/api/assinaturas/:assinaturaId/cancelar', async (req: Request, res: Response) => {
+    try {
+      const { assinaturaId } = req.params;
+      const { clienteId } = req.body;
+
+      console.log(`🔄 Cancelando assinatura ${assinaturaId} do cliente ${clienteId}...`);
+      
+      const asaasTrato = process.env.ASAAS_TRATO;
+      const asaasAnd = process.env.ASAAS_AND;
+      
+      const baseUrl = 'https://www.asaas.com/api/v3';
+      let cancelado = false;
+
+      // Tentar cancelar na conta ASAAS_TRATO primeiro
+      if (asaasTrato && !cancelado) {
+        try {
+          const response = await fetch(`${baseUrl}/subscriptions/${assinaturaId}`, {
+            method: 'DELETE',
+            headers: {
+              'access_token': asaasTrato,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            cancelado = true;
+            console.log(`✅ Assinatura ${assinaturaId} cancelada na conta ASAAS_TRATO`);
+          }
+        } catch (error) {
+          console.log('Assinatura não encontrada na conta ASAAS_TRATO, tentando ASAAS_AND...');
+        }
+      }
+
+      // Se não cancelou na primeira conta, tentar na segunda
+      if (asaasAnd && !cancelado) {
+        try {
+          const response = await fetch(`${baseUrl}/subscriptions/${assinaturaId}`, {
+            method: 'DELETE',
+            headers: {
+              'access_token': asaasAnd,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            cancelado = true;
+            console.log(`✅ Assinatura ${assinaturaId} cancelada na conta ASAAS_AND`);
+          }
+        } catch (error) {
+          console.error('Erro ao cancelar assinatura na conta ASAAS_AND:', error);
+        }
+      }
+
+      if (cancelado) {
+        res.json({
+          success: true,
+          message: 'Assinatura cancelada com sucesso'
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: 'Assinatura não encontrada ou erro ao cancelar'
+        });
+      }
+
+    } catch (error) {
+      console.error('Erro ao cancelar assinatura:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
+  // =====================================================
   // TESTE DE CONECTIVIDADE ASAAS (APENAS PRODUÇÃO)
   // =====================================================
 
