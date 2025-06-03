@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,15 @@ import {
   XCircle,
   Clock,
   ArrowLeft,
-  Building2
+  Building2,
+  Trash2,
+  Ban
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ClienteUnificado {
   id: string;
@@ -52,11 +56,73 @@ interface ClientesPorStatus {
 
 export default function ClientesStatusPage() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Buscar clientes unificados por status
   const { data: clientesPorStatus, isLoading, refetch } = useQuery<ClientesPorStatus>({
     queryKey: ["/api/clientes/unificados-status"],
     refetchInterval: 30000,
+  });
+
+  // Mutation para cancelar assinatura
+  const cancelarAssinatura = useMutation({
+    mutationFn: async (cliente: any) => {
+      if (cliente.conta === 'PAGAMENTO_EXTERNO') {
+        // Para pagamento externo, marcar como cancelado
+        const response = await apiRequest(`/api/clientes-externos/${cliente.id}/cancelar`, "POST");
+        return response.json();
+      } else {
+        // Para Asaas, cancelar via API
+        const response = await apiRequest(`/api/assinaturas/${cliente.id}/cancelar`, "POST", {
+          clienteId: cliente.id
+        });
+        return response.json();
+      }
+    },
+    onSuccess: (data, cliente) => {
+      toast({
+        title: "Assinatura cancelada",
+        description: cliente.conta === 'PAGAMENTO_EXTERNO' 
+          ? "Cliente marcado como cancelado. Será removido automaticamente ao fim do período."
+          : "Assinatura cancelada na plataforma Asaas.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unificados-status"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cancelar assinatura",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation para deletar cliente
+  const deletarCliente = useMutation({
+    mutationFn: async (cliente: any) => {
+      if (cliente.conta === 'PAGAMENTO_EXTERNO') {
+        const response = await apiRequest(`/api/clientes-externos/${cliente.id}/deletar`, "DELETE");
+        return response.json();
+      } else {
+        const response = await apiRequest(`/api/clientes-asaas/${cliente.id}/deletar`, "DELETE");
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Cliente deletado",
+        description: "Cliente removido do sistema com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unificados-status"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao deletar cliente",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const formatDate = (dateString: string) => {
@@ -105,6 +171,7 @@ export default function ClientesStatusPage() {
                 <TableHead>Telefone</TableHead>
                 <TableHead>Conta</TableHead>
                 <TableHead>Data Criação</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,6 +203,30 @@ export default function ClientesStatusPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       {formatDate(cliente.dateCreated)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => cancelarAssinatura.mutate(cliente)}
+                        disabled={cancelarAssinatura.isPending}
+                        className="text-orange-600 hover:text-orange-700 border-orange-300 hover:border-orange-400"
+                      >
+                        <Ban className="h-4 w-4 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deletarCliente.mutate(cliente)}
+                        disabled={deletarCliente.isPending}
+                        className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Deletar
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
