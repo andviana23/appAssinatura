@@ -18,7 +18,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Testar ASAAS_TRATO (sempre produção)
       if (asaasTrato) {
         try {
-          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=1', {
+          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
             headers: {
               'access_token': asaasTrato,
               'Content-Type': 'application/json'
@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Testar ASAAS_ANDREY (sempre produção)
       if (asaasAndrey) {
         try {
-          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=1', {
+          const response = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
             headers: {
               'access_token': asaasAndrey,
               'Content-Type': 'application/json'
