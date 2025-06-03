@@ -5812,6 +5812,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API REST para criar links de pagamento personalizados - Asaas v3
+  app.post("/api/asaas/criar-link-pagamento", async (req: Request, res: Response) => {
+    try {
+      const { name, description, value, subscriptionCycle } = req.body;
+
+      // Validação dos parâmetros obrigatórios
+      if (!name || !description || !value || !subscriptionCycle) {
+        return res.status(400).json({ 
+          error: 'Parâmetros obrigatórios: name, description, value, subscriptionCycle' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          error: 'Token de API do Asaas não configurado' 
+        });
+      }
+
+      // Payload exatamente como na documentação do Asaas
+      const paymentLinkPayload = {
+        billingType: "CREDIT_CARD",
+        chargeType: "RECURRENT",
+        name: name,
+        description: description,
+        value: parseFloat(value),
+        subscriptionCycle: subscriptionCycle
+      };
+
+      console.log('Enviando para Asaas v3:', JSON.stringify(paymentLinkPayload, null, 2));
+
+      // Chamada para API do Asaas v3
+      const response = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentLinkPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro na API do Asaas:', errorData);
+        return res.status(response.status).json({ 
+          error: 'Erro ao criar link no Asaas',
+          details: errorData
+        });
+      }
+
+      const paymentLinkData = await response.json();
+      console.log('✅ Link criado com sucesso:', paymentLinkData.url);
+
+      // Retornar o link pronto para uso
+      res.json({
+        success: true,
+        paymentLink: paymentLinkData.url,
+        linkId: paymentLinkData.id,
+        data: paymentLinkData
+      });
+
+    } catch (error) {
+      console.error('Erro interno:', error);
+      res.status(500).json({ 
+        error: 'Erro interno do servidor' 
+      });
+    }
+  });
+
   // Checkout simplificado usando plano existente
   app.post("/api/asaas/criar-checkout-recorrente", async (req: Request, res: Response) => {
     try {
