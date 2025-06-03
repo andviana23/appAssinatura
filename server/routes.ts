@@ -11,7 +11,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.get('/api/test-asaas', async (req: Request, res: Response) => {
     try {
       const asaasTrato = process.env.ASAAS_TRATO;
-      const asaasAndrey = process.env.ASAAS_ANDREY;
+      const asaasAndrey = process.env.ASAAS_AND;
       
       const resultados = [];
 
@@ -40,7 +40,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         }
       }
 
-      // Testar ASAAS_ANDREY (sempre produção)
+      // Testar ASAAS_AND (sempre produção)
       if (asaasAndrey) {
         try {
           const response = await fetch('https://www.asaas.com/api/v3/customers?limit=100', {
@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
           });
           
           resultados.push({
-            conta: 'ASAAS_ANDREY',
+            conta: 'ASAAS_AND',
             status: response.status,
             ok: response.ok,
             url: 'https://www.asaas.com/api/v3/',
@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
           });
         } catch (error) {
           resultados.push({
-            conta: 'ASAAS_ANDREY',
+            conta: 'ASAAS_AND',
             erro: error instanceof Error ? error.message : 'Erro desconhecido'
           });
         }
@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       console.log('🔄 Sincronizando clientes da conta: ASAAS_TRATO');
       
       const asaasTrato = process.env.ASAAS_TRATO;
-      const asaasAndrey = process.env.ASAAS_ANDREY;
+      const asaasAndrey = process.env.ASAAS_AND;
       
       if (!asaasTrato && !asaasAndrey) {
         return res.status(500).json({ 
@@ -134,9 +134,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
         }
       }
 
-      // Sincronizar ASAAS_ANDREY
+      // Sincronizar ASAAS_AND
       if (asaasAndrey) {
-        console.log('🔄 Sincronizando clientes da conta: ASAAS_ANDREY');
+        console.log('🔄 Sincronizando clientes da conta: ASAAS_AND');
         
         const response = await fetch(`${baseUrl}/customers?limit=100`, {
           headers: {
@@ -149,14 +149,14 @@ export async function registerRoutes(app: Express): Promise<Express> {
           const data = await response.json();
           
           resultados.push({
-            conta: 'ASAAS_ANDREY',
+            conta: 'ASAAS_AND',
             total: data.totalCount || 0,
             url: baseUrl,
             status: 'sucesso'
           });
         } else {
           resultados.push({
-            conta: 'ASAAS_ANDREY',
+            conta: 'ASAAS_AND',
             erro: `HTTP ${response.status}`,
             url: baseUrl
           });
@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Nome é obrigatório' });
       }
 
-      const asaasApiKey = process.env.ASAAS_ANDREY;
+      const asaasApiKey = process.env.ASAAS_AND;
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Chave API ASAAS não configurada' });
       }
@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'customerId e value são obrigatórios' });
       }
 
-      const asaasApiKey = process.env.ASAAS_ANDREY;
+      const asaasApiKey = process.env.ASAAS_AND;
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Chave API ASAAS não configurada' });
       }
