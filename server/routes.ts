@@ -5812,15 +5812,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API REST para criar link de pagamento personalizado - Asaas v3 (formato /i/)
-  app.post("/api/create-payment-link", async (req: Request, res: Response) => {
+  // API REST para fluxo completo: cadastrar cliente + criar paymentLink
+  app.post("/api/create-customer-subscription", async (req: Request, res: Response) => {
     try {
-      const { name, description, value, subscriptionCycle, customer } = req.body;
+      const { cliente, assinatura } = req.body;
       
       // Validação dos dados obrigatórios
-      if (!name || !description || !value || !subscriptionCycle) {
+      if (!cliente || !assinatura) {
         return res.status(400).json({
-          error: 'Dados obrigatórios: name, description, value, subscriptionCycle'
+          error: 'Dados obrigatórios: cliente e assinatura'
+        });
+      }
+      
+      const { name, email, cpfCnpj, phone } = cliente;
+      const { name: planName, description, value, subscriptionCycle } = assinatura;
+      
+      if (!name || !email || !cpfCnpj || !phone) {
+        return res.status(400).json({
+          error: 'Dados obrigatórios do cliente: name, email, cpfCnpj, phone'
+        });
+      }
+      
+      if (!planName || !description || !value || !subscriptionCycle) {
+        return res.status(400).json({
+          error: 'Dados obrigatórios da assinatura: name, description, value, subscriptionCycle'
         });
       }
       
@@ -5845,72 +5860,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Etapa 1: Criar uma cobrança primeiro
-      const paymentData = {
-        customer: customer || undefined,
-        billingType: "CREDIT_CARD",
-        value: parseFloat(value.toString()),
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
-        description: description,
-        externalReference: `payment_${Date.now()}`
-      };
+      console.log('🔍 Verificando se cliente já existe no Asaas:', cpfCnpj);
       
-      console.log('🚀 Criando cobrança no Asaas:', JSON.stringify(paymentData, null, 2));
-      
-      const paymentResponse = await fetch('https://www.asaas.com/api/v3/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'access_token': asaasApiKey,
-          'User-Agent': 'ReplitApp/1.0'
-        },
-        body: JSON.stringify(paymentData)
-      });
-      
-      console.log('📥 Status da resposta (payment):', paymentResponse.status);
-      
-      const paymentResponseData = await paymentResponse.json();
-      
-      if (!paymentResponse.ok) {
-        console.error('❌ Erro ao criar cobrança:', paymentResponseData);
-        return res.status(paymentResponse.status).json({
-          error: 'Erro ao criar cobrança no Asaas',
-          asaasError: paymentResponseData
-        });
-      }
-      
-      console.log('✅ Cobrança criada:', paymentResponseData.id);
-      
-      // Etapa 2: Gerar paymentBook para obter link formato /i/
-      const checkoutResponse = await fetch(`https://www.asaas.com/api/v3/payments/${paymentResponseData.id}/paymentBook`, {
-        method: 'POST',
+      // Etapa 1: Verificar se cliente já existe no Asaas
+      let customerId = null;
+      const existingCustomerResponse = await fetch(`https://www.asaas.com/api/v3/customers?cpfCnpj=${cpfCnpj}`, {
         headers: {
           'access_token': asaasApiKey,
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('📥 Status da resposta (paymentBook):', checkoutResponse.status);
+      if (existingCustomerResponse.ok) {
+        const existingCustomerData = await existingCustomerResponse.json();
+        if (existingCustomerData.data && existingCustomerData.data.length > 0) {
+          customerId = existingCustomerData.data[0].id;
+          console.log('✅ Cliente já existe no Asaas:', customerId);
+        }
+      }
       
-      const checkoutData = await checkoutResponse.json();
+      // Etapa 2: Cadastrar cliente no Asaas se não existir
+      if (!customerId) {
+        console.log('🚀 Cadastrando novo cliente no Asaas:', JSON.stringify(cliente, null, 2));
+        
+        const customerData = {
+          name: name,
+          email: email,
+          cpfCnpj: cpfCnpj.replace(/\D/g, ''), // Remove caracteres não numéricos
+          phone: phone.replace(/\D/g, '') // Remove caracteres não numéricos
+        };
+        
+        const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'access_token': asaasApiKey
+          },
+          body: JSON.stringify(customerData)
+        });
+        
+        const customerResponseData = await customerResponse.json();
+        
+        if (!customerResponse.ok) {
+          console.error('❌ Erro ao cadastrar cliente:', customerResponseData);
+          return res.status(customerResponse.status).json({
+            error: 'Erro ao cadastrar cliente no Asaas',
+            asaasError: customerResponseData
+          });
+        }
+        
+        customerId = customerResponseData.id;
+        console.log('✅ Cliente cadastrado no Asaas:', customerId);
+      }
       
-      if (!checkoutResponse.ok) {
-        console.error('❌ Erro ao criar paymentBook:', checkoutData);
-        return res.status(checkoutResponse.status).json({
-          error: 'Erro ao criar checkout no Asaas',
-          details: checkoutData
+      // Etapa 3: Criar paymentLink com o cliente
+      console.log('🚀 Criando paymentLink no Asaas:', JSON.stringify({
+        customer: customerId,
+        name: planName,
+        description,
+        value,
+        subscriptionCycle
+      }, null, 2));
+      
+      const paymentLinkData = {
+        billingType: "CREDIT_CARD",
+        chargeType: "RECURRENT",
+        name: planName,
+        description: description,
+        value: parseFloat(value.toString()),
+        subscriptionCycle: subscriptionCycle,
+        customer: customerId,
+        dueDateLimitDays: 7,
+        maxInstallmentCount: 1,
+        notificationEnabled: true
+      };
+      
+      const paymentLinkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': asaasApiKey
+        },
+        body: JSON.stringify(paymentLinkData)
+      });
+      
+      const paymentLinkResponseData = await paymentLinkResponse.json();
+      
+      if (!paymentLinkResponse.ok) {
+        console.error('❌ Erro ao criar paymentLink:', paymentLinkResponseData);
+        return res.status(paymentLinkResponse.status).json({
+          error: 'Erro ao criar link de pagamento no Asaas',
+          asaasError: paymentLinkResponseData
         });
       }
       
-      console.log('✅ PaymentBook criado com sucesso:', checkoutData.url);
+      console.log('✅ PaymentLink criado com sucesso:', paymentLinkResponseData.url);
       
-      // Retornar link no formato correto /i/
+      // Retornar dados completos
       res.json({
         success: true,
-        paymentUrl: checkoutData.url,
-        paymentId: paymentResponseData.id,
-        checkoutId: checkoutData.id,
-        message: 'Link de pagamento criado com sucesso'
+        customer: {
+          id: customerId,
+          name: name,
+          email: email,
+          cpfCnpj: cpfCnpj,
+          phone: phone
+        },
+        paymentLink: {
+          id: paymentLinkResponseData.id,
+          url: paymentLinkResponseData.url,
+          name: planName,
+          description: description,
+          value: value,
+          subscriptionCycle: subscriptionCycle
+        },
+        message: 'Cliente e link de pagamento criados com sucesso'
       });
       
     } catch (error) {
