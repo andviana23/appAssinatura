@@ -961,14 +961,11 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }
 
       // Salvar plano no banco de dados local
-      const novoPlano = await db.insert(planosAssinatura).values({
+      const novoPlano = await db.insert(schema.planosPersonalizados).values({
         nome,
         descricao: descricao || `Plano ${nome} - ${categoria}`,
-        valorMensal: parseFloat(valorMensal),
-        categoria,
-        servicosIncluidos: servicosIncluidos || [],
-        ativo: true,
-        criadoEm: new Date()
+        valor: valorMensal.toString(),
+        categoria
       }).returning();
 
       res.json({
