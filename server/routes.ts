@@ -1676,7 +1676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/asaas/pix-keys', async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnvironment = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
@@ -1795,7 +1795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verificar se existem clientes com assinaturas ativas via API do Asaas
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT;
+      const asaasEnvironment = "production";
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Chave API do Asaas não configurada' });
@@ -1894,7 +1894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           console.log(`Buscando clientes da conta: ${account.name}`);
-          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+          const baseUrl = true 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
 
@@ -2179,7 +2179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const asaasApiKey = process.env.ASAAS_ANDREY;
       if (asaasApiKey) {
         try {
-          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+          const baseUrl = true 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
 
@@ -2830,7 +2830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/asaas/checkout', async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnvironment = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
@@ -2976,7 +2976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/asaas/planos', async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnvironment = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnvironment = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: 'Configuração da API Asaas não encontrada' });
@@ -3648,7 +3648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/asaas/clientes", requireAuth, requireAdmin, async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnv = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
@@ -3834,7 +3834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/asaas/stats", requireAuth, requireAdmin, async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnv = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
@@ -3944,7 +3944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { mes } = req.query; // formato YYYY-MM
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnv = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
@@ -4007,7 +4007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/asaas/faturamento-diario", requireAuth, requireAdmin, async (req, res) => {
     try {
       const asaasApiKey = process.env.ASAAS_ANDREY;
-      const asaasEnv = process.env.ASAAS_ENVIRONMENT || 'sandbox';
+      const asaasEnv = 'production';
       
       if (!asaasApiKey) {
         return res.status(500).json({ message: "Chave da API do Asaas não configurada" });
@@ -4558,9 +4558,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 2. Buscar clientes do Asaas APENAS com assinaturas ativas e pagamentos confirmados
-      if (process.env.ASAAS_ANDREY && process.env.ASAAS_ENVIRONMENT) {
+      if (process.env.ASAAS_ANDREY && "production") {
         try {
-          const asaasUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+          const asaasUrl = true 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
           
@@ -4807,7 +4807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.ASAAS_ANDREY) {
         try {
           const asaasApiKey = process.env.ASAAS_ANDREY;
-          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+          const baseUrl = true 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
 
@@ -4942,7 +4942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const asaasApiKey = process.env.ASAAS_ANDREY;
       if (asaasApiKey) {
         try {
-          const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+          const baseUrl = true 
             ? 'https://www.asaas.com/api/v3' 
             : 'https://www.asaas.com/api/v3';
 
@@ -5628,7 +5628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
 
-      const baseUrl = process.env.ASAAS_ENVIRONMENT === 'production' 
+      const baseUrl = true 
         ? 'https://www.asaas.com/api/v3' 
         : 'https://www.asaas.com/api/v3';
 
