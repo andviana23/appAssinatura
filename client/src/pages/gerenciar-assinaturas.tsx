@@ -22,13 +22,9 @@ export default function GerenciarAssinaturas() {
   const [editingPlano, setEditingPlano] = useState(null);
   const [formData, setFormData] = useState({
     nome: "",
-    descricao: "",
     valor: "",
     categoria: "",
-    billingType: "CREDIT_CARD",
-    cycle: "MONTHLY",
-    limitesServicos: "",
-    beneficios: ""
+    dataVencimento: ""
   });
 
   // Buscar planos existentes
@@ -143,13 +139,9 @@ export default function GerenciarAssinaturas() {
     setEditingPlano(plano);
     setFormData({
       nome: plano.nome,
-      descricao: plano.descricao || "",
-      valor: plano.valor.toString(),
+      valor: plano.valorMensal?.toString() || plano.valor?.toString() || "",
       categoria: plano.categoria,
-      billingType: plano.billingType || "CREDIT_CARD",
-      cycle: plano.cycle || "MONTHLY",
-      limitesServicos: JSON.stringify(plano.limitesServicos || {}),
-      beneficios: plano.beneficios ? plano.beneficios.join(', ') : ""
+      dataVencimento: ""
     });
     setIsDialogOpen(true);
   };
@@ -186,7 +178,7 @@ export default function GerenciarAssinaturas() {
     "⭐One",
     "👑Gold", 
     "🚀Multi",
-    "Exclusiva clientes antigo"
+    "Exclusivo"
   ];
 
   const getBadgeColor = (categoria: string) => {
@@ -194,7 +186,7 @@ export default function GerenciarAssinaturas() {
       "⭐One": "bg-blue-100 text-blue-800",
       "👑Gold": "bg-yellow-100 text-yellow-800", 
       "🚀Multi": "bg-purple-100 text-purple-800",
-      "Exclusiva clientes antigo": "bg-green-100 text-green-800"
+      "Exclusivo": "bg-green-100 text-green-800"
     };
     return colors[categoria] || "bg-gray-100 text-gray-800";
   };
@@ -283,37 +275,12 @@ export default function GerenciarAssinaturas() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="billingType">Forma de Pagamento</Label>
-                  <Select value={formData.billingType} onValueChange={(value) => setFormData({...formData, billingType: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
-                      <SelectItem value="PIX">PIX</SelectItem>
-                      <SelectItem value="BOLETO">Boleto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="descricao">Descrição</Label>
-                  <Textarea
-                    id="descricao"
-                    value={formData.descricao}
-                    onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                    placeholder="Descreva os benefícios e detalhes da assinatura..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="beneficios">Benefícios (separados por vírgula)</Label>
+                  <Label htmlFor="dataVencimento">Data de Vencimento *</Label>
                   <Input
-                    id="beneficios"
-                    value={formData.beneficios}
-                    onChange={(e) => setFormData({...formData, beneficios: e.target.value})}
-                    placeholder="Ex: Cortes ilimitados, Desconto em produtos, Atendimento prioritário"
+                    id="dataVencimento"
+                    type="date"
+                    value={formData.dataVencimento}
+                    onChange={(e) => setFormData({...formData, dataVencimento: e.target.value})}
                   />
                 </div>
               </div>
