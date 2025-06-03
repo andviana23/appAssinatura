@@ -197,37 +197,37 @@ export default function Distribuicao() {
 
       {/* Cards de estatísticas gerais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total de Assinatura</CardTitle>
-            <DollarSign className="h-4 w-4 text-[#8B4513]" />
+            <CardTitle className="text-sm font-medium text-foreground">Receita Total de Assinatura</CardTitle>
+            <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#8B4513]">
+            <div className="text-2xl font-bold text-primary">
               {formatCurrency(stats.faturamentoTotalAssinatura)}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Horas Trabalhadas</CardTitle>
-            <Clock className="h-4 w-4 text-[#8B4513]" />
+            <CardTitle className="text-sm font-medium text-foreground">Total de Horas Trabalhadas</CardTitle>
+            <Clock className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#8B4513]">
+            <div className="text-2xl font-bold text-primary">
               {formatMinutesToHours(stats.totalMinutosGerais)}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Comissão</CardTitle>
-            <Users className="h-4 w-4 text-[#8B4513]" />
+            <CardTitle className="text-sm font-medium text-foreground">Total de Comissão</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#8B4513]">
+            <div className="text-2xl font-bold text-primary">
               {formatCurrency(stats.totalComissao)}
             </div>
           </CardContent>
@@ -236,19 +236,19 @@ export default function Distribuicao() {
 
       {/* Lista de barbeiros ordenada por faturamento */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-[#8B4513] mb-4">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
           Ranking de Barbeiros (por Faturamento de Assinatura)
         </h2>
         
         {barbeirosComissao.length === 0 ? (
-          <Card>
+          <Card className="bg-card border-border">
             <CardContent className="p-6 text-center">
-              <p className="text-gray-500">Nenhum barbeiro com atendimentos finalizados este mês</p>
+              <p className="text-muted-foreground">Nenhum barbeiro cadastrado</p>
             </CardContent>
           </Card>
         ) : (
           barbeirosComissao.map((item, index) => (
-            <Card key={item.barbeiro.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={item.barbeiro.id} className="hover:shadow-md transition-shadow cursor-pointer bg-card border-border">
               <CardContent className="p-6">
                 <div
                   className="flex items-center justify-between"
@@ -256,37 +256,43 @@ export default function Distribuicao() {
                 >
                   <div className="flex items-center space-x-4">
                     {/* Posição no ranking */}
-                    <div className="flex items-center justify-center w-8 h-8 bg-[#8B4513] text-white rounded-full font-bold">
+                    <div className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full font-bold">
                       {index + 1}
                     </div>
                     
                     {/* Info do barbeiro */}
                     <div>
-                      <h3 className="text-lg font-semibold text-[#8B4513]">
+                      <h3 className="text-lg font-semibold text-foreground">
                         {item.barbeiro.nome}
                       </h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <span className="flex items-center">
                           <DollarSign className="h-4 w-4 mr-1" />
-                          {formatCurrency(item.faturamentoAssinatura)}
+                          <span className={item.faturamentoAssinatura === 0 ? "opacity-60" : ""}>
+                            {item.faturamentoAssinatura === 0 ? "R$ 0,00" : formatCurrency(item.faturamentoAssinatura)}
+                          </span>
                         </span>
                         <span className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
-                          {formatMinutesToHours(item.minutosTrabalhadosMes)}
+                          <span className={item.minutosTrabalhadosMes === 0 ? "opacity-60" : ""}>
+                            {item.minutosTrabalhadosMes === 0 ? "0h 0min" : formatMinutesToHours(item.minutosTrabalhadosMes)}
+                          </span>
                         </span>
                         <span className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          {item.numeroServicos} serviços
+                          <span className={item.numeroServicos === 0 ? "opacity-60" : ""}>
+                            {item.numeroServicos} serviços
+                          </span>
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-3">
-                    <Badge variant="secondary" className="bg-[#8B4513]/10 text-[#8B4513]">
+                    <Badge variant="secondary" className={`${item.comissaoAssinatura === 0 ? "bg-muted text-muted-foreground opacity-60" : "bg-primary/10 text-primary"}`}>
                       {item.percentualTempo.toFixed(1)}% do tempo total
                     </Badge>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -297,11 +303,11 @@ export default function Distribuicao() {
 
       {/* Sheet lateral com detalhes do barbeiro */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent className="sm:max-w-md bg-background border-border">
           {selectedBarbeiro && (
             <>
               <SheetHeader>
-                <SheetTitle className="text-[#8B4513]">
+                <SheetTitle className="text-foreground">
                   Detalhes de Comissão
                 </SheetTitle>
               </SheetHeader>
@@ -309,71 +315,71 @@ export default function Distribuicao() {
               <div className="mt-6 space-y-6">
                 {/* Nome do barbeiro */}
                 <div>
-                  <h3 className="text-2xl font-bold text-[#8B4513] mb-2">
+                  <h3 className="text-2xl font-bold text-foreground mb-2">
                     {selectedBarbeiro.barbeiro.nome}
                   </h3>
-                  <p className="text-gray-600">Período: {currentMonth}</p>
+                  <p className="text-muted-foreground">Período: {currentMonth}</p>
                 </div>
 
                 {/* Métricas principais */}
                 <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Faturamento de Assinatura</span>
-                      <DollarSign className="h-4 w-4 text-[#8B4513]" />
+                      <span className="text-sm font-medium text-muted-foreground">Faturamento de Assinatura</span>
+                      <DollarSign className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="text-2xl font-bold text-[#8B4513]">
-                      {formatCurrency(selectedBarbeiro.faturamentoAssinatura)}
+                    <div className={`text-2xl font-bold ${selectedBarbeiro.faturamentoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-primary"}`}>
+                      {selectedBarbeiro.faturamentoAssinatura === 0 ? "R$ 0,00" : formatCurrency(selectedBarbeiro.faturamentoAssinatura)}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       {selectedBarbeiro.percentualTempo.toFixed(2)}% do faturamento total
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Comissão de Assinatura</span>
-                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-muted-foreground">Comissão de Assinatura</span>
+                      <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(selectedBarbeiro.comissaoAssinatura)}
+                    <div className={`text-2xl font-bold ${selectedBarbeiro.comissaoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-green-600 dark:text-green-400"}`}>
+                      {selectedBarbeiro.comissaoAssinatura === 0 ? "R$ 0,00" : formatCurrency(selectedBarbeiro.comissaoAssinatura)}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       40% do faturamento individual
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Tempo Total Trabalhado</span>
-                      <Clock className="h-4 w-4 text-[#8B4513]" />
+                      <span className="text-sm font-medium text-muted-foreground">Tempo Total Trabalhado</span>
+                      <Clock className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="text-2xl font-bold text-[#8B4513]">
-                      {selectedBarbeiro.horasTrabalhadasMes}
+                    <div className={`text-2xl font-bold ${selectedBarbeiro.minutosTrabalhadosMes === 0 ? "text-muted-foreground opacity-60" : "text-primary"}`}>
+                      {selectedBarbeiro.minutosTrabalhadosMes === 0 ? "0h 0min" : selectedBarbeiro.horasTrabalhadasMes}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       {selectedBarbeiro.minutosTrabalhadosMes} minutos no total
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-muted p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">Serviços Finalizados</span>
-                      <Users className="h-4 w-4 text-[#8B4513]" />
+                      <span className="text-sm font-medium text-muted-foreground">Serviços Finalizados</span>
+                      <Users className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="text-2xl font-bold text-[#8B4513]">
+                    <div className={`text-2xl font-bold ${selectedBarbeiro.numeroServicos === 0 ? "text-muted-foreground opacity-60" : "text-primary"}`}>
                       {selectedBarbeiro.numeroServicos}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-muted-foreground mt-1">
                       atendimentos concluídos no mês
                     </div>
                   </div>
                 </div>
 
                 {/* Explicação do cálculo */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 mb-2">Como é calculado:</h4>
-                  <div className="text-sm text-blue-700 space-y-1">
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Como é calculado:</h4>
+                  <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                     <p>• Faturamento = (Tempo trabalhado ÷ Tempo total) × Receita total</p>
                     <p>• Comissão = Faturamento × 40%</p>
                     <p>• Baseado apenas em atendimentos finalizados</p>
