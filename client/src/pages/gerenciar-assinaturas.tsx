@@ -322,7 +322,7 @@ export default function GerenciarAssinaturas() {
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-[#365e78]">
-                        R$ {typeof plano.valor === 'number' ? plano.valor.toFixed(2) : parseFloat(plano.valor || '0').toFixed(2)}
+                        R$ {typeof plano.valorMensal === 'number' ? plano.valorMensal.toFixed(2) : parseFloat(plano.valorMensal || '0').toFixed(2)}
                       </div>
                       <div className="text-sm text-gray-500">por mês</div>
                     </div>
