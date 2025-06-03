@@ -70,14 +70,26 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Verificar se cliente tem período ativo baseado na última cobrança paga
       if (ultimaCobrancaPaga) {
         const dataPagamento = new Date(ultimaCobrancaPaga.paymentDate || ultimaCobrancaPaga.dueDate);
-        const dataVencimentoAssinatura = new Date(dataPagamento);
         
-        // Adicionar 1 mês completo (considerando dias do mês)
-        dataVencimentoAssinatura.setMonth(dataVencimentoAssinatura.getMonth() + 1);
+        // Verificar se existe próxima cobrança registrada
+        const proximaCobranca = cobrancas.find((c: any) => 
+          c.status !== 'RECEIVED' && new Date(c.dueDate) > dataPagamento
+        );
         
-        // Se ainda está dentro do período de 1 mês = ativo
+        let dataVencimentoAssinatura: Date;
+        
+        if (proximaCobranca) {
+          // Se tem próxima cobrança, usar a data de vencimento dela
+          dataVencimentoAssinatura = new Date(proximaCobranca.dueDate);
+        } else {
+          // Se não tem próxima cobrança, considerar 30 dias a partir do pagamento
+          dataVencimentoAssinatura = new Date(dataPagamento);
+          dataVencimentoAssinatura.setDate(dataVencimentoAssinatura.getDate() + 30);
+        }
+        
+        // Se ainda está dentro do período válido = ativo
         if (hoje <= dataVencimentoAssinatura) {
-          console.log(`Cliente ${cliente.id} ativo: dentro do período de 1 mês da última cobrança paga`);
+          console.log(`Cliente ${cliente.id} ativo: dentro do período válido da assinatura`);
           return 'ativo';
         }
       }
