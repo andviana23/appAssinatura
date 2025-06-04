@@ -92,8 +92,10 @@ export default function Agendamento() {
     }
   }
 
-  // Get active barbeiros
-  const activeBarbeiros = (profissionaisData?.data || []).filter((barbeiro: Barbeiro) => barbeiro.ativo);
+  // Get active barbeiros only (filter by role)
+  const activeBarbeiros = (profissionaisData?.data || []).filter((profissional: any) => 
+    profissional.ativo && profissional.role === 'barbeiro'
+  );
 
   // Update current time
   useEffect(() => {
@@ -597,7 +599,7 @@ export default function Agendamento() {
                   className="w-full mt-2 px-3 py-2 border border-border rounded-md text-sm"
                 >
                   <option value="">Selecionar barbeiro</option>
-                  {(profissionaisData?.data || []).map((barbeiro: any) => (
+                  {activeBarbeiros.map((barbeiro: any) => (
                     <option key={barbeiro.id} value={barbeiro.id.toString()}>
                       {barbeiro.nome}
                     </option>
