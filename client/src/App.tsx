@@ -154,16 +154,12 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark" storageKey="trato-barbados-theme">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <div className="min-h-screen bg-background text-foreground">
-              <AppContent />
-              <Toaster />
-            </div>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen bg-slate-50 text-slate-900">
+          <AppContent />
+          <Toaster />
+        </div>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
