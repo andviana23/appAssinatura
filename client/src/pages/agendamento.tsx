@@ -587,7 +587,7 @@ export default function Agendamento() {
         </div>
 
         {/* Grade da Agenda Dark Mode - Full Height */}
-        <div className="bg-card border-t border-border relative flex-1 overflow-y-auto">
+        <div className="bg-card relative flex-1 overflow-y-auto">
           {/* Timeline Indicator - Current Time Line */}
           {isTodaySelected && timelinePosition !== null && (
             <div
@@ -609,22 +609,22 @@ export default function Agendamento() {
             </div>
           )}
 
-          {/* Header com nomes dos barbeiros */}
+          {/* Header com nomes dos barbeiros - Altura reduzida */}
           <div 
             className="grid bg-muted border-b border-border relative z-10"
             style={{ 
               gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
             }}
           >
-            <div className="p-4 border-r border-border font-semibold flex items-center gap-2 text-foreground">
-              <Clock className="h-4 w-4" />
+            <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
+              <Clock className="h-3 w-3" />
               <span className="text-xs">Horário</span>
             </div>
             {activeBarbeiros.map((barbeiro: Barbeiro) => (
-              <div key={barbeiro.id} className="p-4 border-r border-border text-center">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
-                    <span className="text-primary font-bold text-sm">
+              <div key={barbeiro.id} className="p-2 border-r border-border text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
+                    <span className="text-primary font-bold text-xs">
                       {barbeiro.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
