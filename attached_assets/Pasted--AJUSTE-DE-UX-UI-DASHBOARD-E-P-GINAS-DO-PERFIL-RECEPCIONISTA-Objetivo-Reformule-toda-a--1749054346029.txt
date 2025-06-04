@@ -1,0 +1,45 @@
+⚡ AJUSTE DE UX/UI — DASHBOARD E PÁGINAS DO PERFIL RECEPCIONISTA ⚡
+
+**Objetivo:**  
+Reformule toda a interface visual das páginas de acesso da recepcionista para que fiquem mais limpas, focadas, e sigam o design system já aprovado.  
+⚠️ **NÃO mexer em nada de backend/função, é só interface/UX/UI.**
+
+---
+
+1. **Dashboard inicial (pós-login) da recepcionista:**
+   - Ao logar, exibir um **dashboard exclusivo para recepcionista**.
+   - O conteúdo do container central deve mostrar apenas as informações realmente úteis para esse perfil:
+      • Atalhos rápidos: “Novo Agendamento”, “Ver Lista da Vez”, “Gerenciar Clientes”, “Ver Planos”.
+      • Métricas básicas: número de clientes ativos, agendamentos do dia, próximos atendimentos, etc.
+      • NÃO repetir menus ou cards que levam para telas que a recepcionista já tem no menu lateral.
+      • Layout deve ser limpo, sem poluição visual, tudo bem espaçado.
+
+2. **Sidebar/menu lateral:**
+   - Exibir SOMENTE as opções que a recepcionista pode acessar:
+      • Dashboard (home)
+      • Agendamentos
+      • Lista da Vez (SEM botão de resetar/zerar lista)
+      • Clientes
+      • Planos
+
+3. **Header:**
+   - Mostrar nome, e-mail e tipo de perfil ("RECEPCIONISTA").
+   - Botão de modo claro/escuro em local padrão.
+
+4. **Padrão Visual:**
+   - Use rigorosamente o **design system** já implementado (cores, cards, tipografia, espaçamento, etc).
+   - Componentes devem ser responsivos e fáceis de navegar, tanto em desktop quanto mobile.
+   - Botões de ação grandes, destacados, só onde necessário.
+   - Evite cards duplicados ou desnecessários na home — foco só no que a recepcionista usa de verdade.
+
+5. **Fluxo de navegação:**
+   - Ao clicar nas opções do menu, o container central deve trocar para a tela referente, sem misturar outras informações.
+   - O dashboard da recepcionista (home) deve ser exclusivo, **não misturado** com dashboards de outros perfis.
+
+6. **Checklist para validação visual:**
+   - Nada de cards/métricas/buttons que não tenham função para recepcionista.
+   - Não mostrar botões de ações que não pertencem a esse perfil (ex: “zerar lista”, relatórios avançados, etc).
+   - Modo escuro/claro funcionando normal.
+   - Layout centralizado, limpo, navegação intuitiva.
+
+Quando finalizar o ajuste visual, me avise para validar!

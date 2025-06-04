@@ -26,7 +26,7 @@ import Comissao from "@/pages/comissao";
 import DistribuicaoNova from "@/pages/distribuicao-nova";
 import TotalServicos from "@/pages/total-servicos";
 import BarbeiroDashboard from "@/pages/barbeiro-dashboard-final";
-import RecepcionistaDashboard from "@/pages/recepcionista-dashboard";
+import DashboardRecepcionista from "@/pages/dashboard-recepcionista";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
 import ListaDaVez from "@/pages/lista-da-vez";
@@ -51,7 +51,7 @@ function AuthenticatedRoutes() {
       case "barbeiro":
         return <BarbeiroDashboard />;
       case "recepcionista":
-        return <RecepcionistaDashboard />;
+        return <DashboardRecepcionista />;
       default:
         // Fallback para admin em caso de role indefinido
         return <AdminDashboard />;
