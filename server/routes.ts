@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { eq, like, sql, and } from 'drizzle-orm';
+import { eq, like, sql, and, gte, lte } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 // Middleware de autorização baseado exclusivamente no campo role

@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { LogOut, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import logoTratoBarbados from "@/assets/logo-trato-barbados.jpg";
 
 const pageInfo = {
