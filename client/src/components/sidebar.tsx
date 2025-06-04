@@ -60,6 +60,11 @@ const navigation = [
     icon: Crown,
   },
   {
+    name: "Planos Assinatura",
+    href: "/planos-assinatura",
+    icon: CreditCard,
+  },
+  {
     name: "Agendamento",
     href: "/agendamento",
     icon: Calendar,
