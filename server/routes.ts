@@ -1507,14 +1507,22 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Criar o agendamento usando SQL direto para evitar problemas de conversão
-      const resultadoAgendamento = await db.execute(
-        sql`INSERT INTO agendamentos (cliente_id, barbeiro_id, servico_id, data_hora, observacoes, status, created_at, updated_at)
-            VALUES (${clienteIdFinal}, ${barbeiroId}, ${servicoId}, ${dataHora}::timestamp, ${observacoes || null}, 'AGENDADO', NOW(), NOW())
-            RETURNING id`
-      );
+      // Converter string para Date object
+      const dataHoraDate = new Date(dataHora);
+      
+      // Criar o agendamento usando Drizzle ORM
+      const [novoAgendamento] = await db.insert(schema.agendamentos)
+        .values({
+          clienteId: clienteIdFinal,
+          barbeiroId: barbeiroId,
+          servicoId: servicoId,
+          dataHora: dataHoraDate,
+          observacoes: observacoes || null,
+          status: 'AGENDADO'
+        })
+        .returning({ id: schema.agendamentos.id });
 
-      const agendamentoId = resultadoAgendamento[0].id;
+      const agendamentoId = novoAgendamento.id;
       console.log(`Agendamento criado com ID: ${agendamentoId}`);
 
       // Resposta conforme especificado
