@@ -34,25 +34,41 @@ export default function BarbeiroDashboardReformulado() {
   // Buscar estatísticas do mês atual
   const { data: estatisticasMes } = useQuery({
     queryKey: ["/api/barbeiro/estatisticas-mes", user?.id],
-    queryFn: () => apiRequest(`/api/barbeiro/estatisticas-mes?barbeiroId=${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/barbeiro/estatisticas-mes?barbeiroId=${user?.id}`);
+      if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+      return response.json();
+    },
   });
 
   // Buscar dados da agenda do dia selecionado
   const { data: agendaDia } = useQuery({
     queryKey: ["/api/barbeiro/agenda", user?.id, dataFormatada],
-    queryFn: () => apiRequest(`/api/barbeiro/agenda?barbeiroId=${user?.id}&data=${dataFormatada}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/barbeiro/agenda?barbeiroId=${user?.id}&data=${dataFormatada}`);
+      if (!response.ok) throw new Error('Erro ao carregar agenda');
+      return response.json();
+    },
   });
 
   // Buscar dados da lista da vez
   const { data: listaDaVez } = useQuery({
     queryKey: ["/api/barbeiro/lista-da-vez", user?.id],
-    queryFn: () => apiRequest(`/api/barbeiro/lista-da-vez?barbeiroId=${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/barbeiro/lista-da-vez?barbeiroId=${user?.id}`);
+      if (!response.ok) throw new Error('Erro ao carregar lista da vez');
+      return response.json();
+    },
   });
 
   // Buscar comissão do mês
   const { data: comissaoMes } = useQuery({
     queryKey: ["/api/barbeiro/comissao-mes", user?.id],
-    queryFn: () => apiRequest(`/api/barbeiro/comissao-mes?barbeiroId=${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/barbeiro/comissao-mes?barbeiroId=${user?.id}`);
+      if (!response.ok) throw new Error('Erro ao carregar comissão');
+      return response.json();
+    },
   });
 
   // Navegação de datas
@@ -78,10 +94,10 @@ export default function BarbeiroDashboardReformulado() {
         </DialogHeader>
         <div className="space-y-4">
           {estatisticasMes?.servicosPorTipo?.map((servico: any, index: number) => (
-            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div>
                 <p className="font-medium">{servico.nome}</p>
-                <p className="text-sm text-gray-600">{servico.quantidade} serviços</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{servico.quantidade} serviços</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium">{servico.tempoTotal}min</p>
@@ -266,7 +282,7 @@ export default function BarbeiroDashboardReformulado() {
                 agendaDia.agendamentos.map((agendamento: any, index: number) => (
                   <div 
                     key={index} 
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-sm font-medium">
@@ -274,7 +290,7 @@ export default function BarbeiroDashboardReformulado() {
                       </div>
                       <div>
                         <p className="font-medium">{agendamento.cliente?.nome}</p>
-                        <p className="text-sm text-gray-600">{agendamento.servico?.nome}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{agendamento.servico?.nome}</p>
                       </div>
                     </div>
                     <Badge 
@@ -286,7 +302,7 @@ export default function BarbeiroDashboardReformulado() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>Nenhum agendamento para este dia</p>
                 </div>
