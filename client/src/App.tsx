@@ -25,7 +25,7 @@ import Planos from "@/pages/planos";
 import Comissao from "@/pages/comissao";
 import DistribuicaoNova from "@/pages/distribuicao-nova";
 import TotalServicos from "@/pages/total-servicos";
-import BarbeiroDashboard from "@/pages/barbeiro-dashboard-final";
+import BarbeiroDashboard from "@/pages/barbeiro-dashboard-reformulado";
 import DashboardRecepcionista from "@/pages/dashboard-recepcionista";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";

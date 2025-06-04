@@ -3539,5 +3539,244 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // Endpoints para o painel reformulado do barbeiro
+
+  // GET - Estatísticas do mês para o barbeiro
+  app.get('/api/barbeiro/estatisticas-mes', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId } = req.query;
+      
+      if (!barbeiroId) {
+        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      }
+
+      const hoje = new Date();
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59);
+
+      // Buscar agendamentos finalizados do barbeiro no mês
+      const agendamentosFinalizados = await db.select()
+        .from(schema.agendamentos)
+        .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+        .where(and(
+          eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
+          eq(schema.agendamentos.status, 'FINALIZADO'),
+          gte(schema.agendamentos.dataHora, inicioMes),
+          lte(schema.agendamentos.dataHora, fimMes)
+        ));
+
+      // Calcular estatísticas
+      const servicosFinalizados = agendamentosFinalizados.length;
+      const tempoTrabalhadoMinutos = agendamentosFinalizados.reduce((total, ag) => {
+        return total + (ag.servicos?.tempoMinutos || 30);
+      }, 0);
+
+      // Agrupar por tipo de serviço
+      const servicosPorTipo = agendamentosFinalizados.reduce((acc: any[], ag) => {
+        const nomeServico = ag.servicos?.nome || 'Serviço Padrão';
+        const tempoServico = ag.servicos?.tempoMinutos || 30;
+        
+        const existente = acc.find(s => s.nome === nomeServico);
+        if (existente) {
+          existente.quantidade += 1;
+          existente.tempoTotal += tempoServico;
+        } else {
+          acc.push({
+            nome: nomeServico,
+            quantidade: 1,
+            tempoTotal: tempoServico
+          });
+        }
+        return acc;
+      }, []);
+
+      // Calcular métricas adicionais
+      const diasUteis = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+      const tempoMedioPorServico = servicosFinalizados > 0 ? Math.round(tempoTrabalhadoMinutos / servicosFinalizados) : 0;
+      const mediaAtendimentosPorDia = servicosFinalizados > 0 ? (servicosFinalizados / diasUteis).toFixed(1) : '0';
+
+      res.json({
+        servicosFinalizados,
+        tempoTrabalhadoMinutos,
+        servicosPorTipo,
+        tempoMedioPorServico,
+        mediaAtendimentosPorDia: parseFloat(mediaAtendimentosPorDia),
+        produtividade: Math.min(Math.round((servicosFinalizados / (diasUteis * 8)) * 100), 100), // Máximo 8 atendimentos por dia
+        crescimentoMensal: 0 // Seria necessário comparar com mês anterior
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas do barbeiro:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // GET - Agenda do barbeiro para um dia específico
+  app.get('/api/barbeiro/agenda', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId, data } = req.query;
+      
+      if (!barbeiroId || !data) {
+        return res.status(400).json({ message: 'BarbeiroId e data são obrigatórios' });
+      }
+
+      const dataInicio = new Date(data as string + 'T00:00:00');
+      const dataFim = new Date(data as string + 'T23:59:59');
+
+      const agendamentos = await db.select({
+        id: schema.agendamentos.id,
+        dataHora: schema.agendamentos.dataHora,
+        status: schema.agendamentos.status,
+        observacoes: schema.agendamentos.observacoes,
+        cliente: {
+          id: schema.clientes.id,
+          nome: schema.clientes.nome
+        },
+        servico: {
+          id: schema.servicos.id,
+          nome: schema.servicos.nome,
+          tempoMinutos: schema.servicos.tempoMinutos
+        }
+      })
+      .from(schema.agendamentos)
+      .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
+      .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+      .where(and(
+        eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
+        gte(schema.agendamentos.dataHora, dataInicio),
+        lte(schema.agendamentos.dataHora, dataFim)
+      ))
+      .orderBy(schema.agendamentos.dataHora);
+
+      res.json({ agendamentos });
+
+    } catch (error) {
+      console.error('Erro ao buscar agenda do barbeiro:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // GET - Dados da lista da vez do barbeiro
+  app.get('/api/barbeiro/lista-da-vez', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId } = req.query;
+      
+      if (!barbeiroId) {
+        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      }
+
+      const hoje = new Date();
+      const mesAno = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+      // Buscar registros da lista da vez do barbeiro no mês atual
+      const registros = await db.select()
+        .from(schema.listaVezAtendimentos)
+        .where(and(
+          eq(schema.listaVezAtendimentos.barbeiroId, parseInt(barbeiroId as string)),
+          eq(schema.listaVezAtendimentos.mesAno, mesAno)
+        ));
+
+      const atendimentos = registros.filter(r => r.tipoAcao === 'ATENDIMENTO').length;
+      const passouVez = registros.filter(r => r.tipoAcao === 'PASSOU_VEZ').length;
+
+      // Calcular posição atual (simplificado)
+      const posicaoAtual = Math.max(1, atendimentos - passouVez);
+
+      res.json({
+        posicaoAtual,
+        atendimentos,
+        passouVez
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar dados da lista da vez:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // GET - Comissão do mês do barbeiro
+  app.get('/api/barbeiro/comissao-mes', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId } = req.query;
+      
+      if (!barbeiroId) {
+        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      }
+
+      const hoje = new Date();
+      const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59);
+
+      // Buscar agendamentos finalizados do barbeiro no mês
+      const agendamentosFinalizados = await db.select()
+        .from(schema.agendamentos)
+        .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+        .where(and(
+          eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
+          eq(schema.agendamentos.status, 'FINALIZADO'),
+          gte(schema.agendamentos.dataHora, inicioMes),
+          lte(schema.agendamentos.dataHora, fimMes)
+        ));
+
+      // Calcular tempo trabalhado em minutos
+      const tempoTrabalhadoMinutos = agendamentosFinalizados.reduce((total, ag) => {
+        return total + (ag.servicos?.tempoMinutos || 30);
+      }, 0);
+
+      // Buscar faturamento total de assinaturas no mês para calcular comissão
+      const clientesAtivos = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.statusAssinatura, 'ATIVO'));
+
+      const faturamentoTotalAssinatura = clientesAtivos.reduce((total, cliente) => {
+        return total + (parseFloat(cliente.planoValor) || 0);
+      }, 0);
+
+      // Buscar total de minutos trabalhados por todos os barbeiros
+      const todosBarbeiros = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ));
+
+      let totalMinutosGerais = 0;
+      for (const barbeiro of todosBarbeiros) {
+        const agendamentosBarbeiro = await db.select()
+          .from(schema.agendamentos)
+          .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+          .where(and(
+            eq(schema.agendamentos.barbeiroId, barbeiro.id),
+            eq(schema.agendamentos.status, 'FINALIZADO'),
+            gte(schema.agendamentos.dataHora, inicioMes),
+            lte(schema.agendamentos.dataHora, fimMes)
+          ));
+
+        const minutosBareiro = agendamentosBarbeiro.reduce((total, ag) => {
+          return total + (ag.servicos?.tempoMinutos || 30);
+        }, 0);
+
+        totalMinutosGerais += minutosBareiro;
+      }
+
+      // Calcular comissão proporcional
+      const porcentagemComissao = 0.40; // 40%
+      const proporcaoTempo = totalMinutosGerais > 0 ? tempoTrabalhadoMinutos / totalMinutosGerais : 0;
+      const valorComissao = faturamentoTotalAssinatura * porcentagemComissao * proporcaoTempo;
+
+      res.json({
+        valorComissao: Math.max(0, valorComissao),
+        faturamentoTotalAssinatura,
+        tempoTrabalhadoMinutos,
+        totalMinutosGerais,
+        proporcaoTempo: (proporcaoTempo * 100).toFixed(2)
+      });
+
+    } catch (error) {
+      console.error('Erro ao calcular comissão do barbeiro:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   return app;
 }

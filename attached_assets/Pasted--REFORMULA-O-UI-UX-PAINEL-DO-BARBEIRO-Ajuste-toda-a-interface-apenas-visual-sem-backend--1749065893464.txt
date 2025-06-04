@@ -1,0 +1,50 @@
+✂️ REFORMULAÇÃO UI/UX — PAINEL DO BARBEIRO ✂️
+
+Ajuste toda a interface (apenas visual, sem backend) das páginas e dashboards acessados pela conta de barbeiro, seguindo estas regras:
+
+1. **Dashboard Resumido (Home do barbeiro):**
+   - Card: **Número de Serviços Finalizados**
+     - Mostra o total de serviços finalizados no mês atual.
+     - Ao clicar, abre um painel/modal detalhado: separa por tipo de serviço (ex: quantos cortes, quantas barbas, etc) e mostra quanto tempo foi gasto em cada tipo.
+   - Card: **Tempo Trabalhado**
+     - Total de horas/minutos trabalhados no mês (só contando agendamentos finalizados).
+   - Card: **Comissão do Mês**
+     - Mostra o valor da comissão do barbeiro no mês.
+   - Card: **Lista da Vez**
+     - Mostra quantos atendimentos foram adicionados manualmente para ele, qual sua posição atual na fila e quantas vezes ele passou a vez.
+     - Apenas visualização, sem opção de alterar nada.
+
+2. **Agenda Pessoal:**
+   - Exibe só os agendamentos do próprio barbeiro.
+   - Mostra clientes finalizados e agendados do dia atual.
+   - Possibilidade de navegar para dias anteriores e seguintes (exemplo: setas para avançar/voltar o dia).
+   - Apenas visualização: NÃO permite alterar ou cancelar agendamento.
+   - Layout claro, agenda enxuta e de fácil leitura.
+
+3. **Relatório/Dashboard Pessoal (botão de acesso):**
+   - Botão destacado para abrir um dashboard analítico.
+   - No dashboard, mostrar:
+     - Tempo médio por serviço no mês.
+     - Média de atendimentos por dia no mês.
+     - Outras métricas úteis se já existirem no sistema.
+
+4. **Padrão Visual:**
+   - Use rigorosamente o design system já cadastrado (cores, fontes, espaçamentos, componentes).
+   - Componentes devem ser responsivos e fáceis de usar em celular, computador e tablet.
+   - Cards e listas alinhados, com info clara e fácil de achar.
+   - Modais/painéis devem seguir o padrão do sistema.
+
+5. **Restrições:**
+   - Barbeiro NÃO pode alterar agendamentos, nem editar a lista da vez, nem mudar dados de comissão.
+   - Só visualizar.
+
+6. **Checklist visual:**
+   - Home (dashboard): cards de destaque (serviços, tempo, comissão, lista da vez)
+   - Modal de detalhes de serviços
+   - Agenda do dia (navegável entre datas)
+   - Botão para relatório/dashboard pessoal, com métricas
+   - 100% responsivo em todas as telas
+
+**Não implemente nenhuma lógica ou integração de backend neste momento, só a interface/UI/UX!**
+
+Quando terminar, me avise para validar o layout.
