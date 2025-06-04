@@ -101,11 +101,11 @@ export default function Agendamento() {
     profissional.ativo && profissional.tipo === 'barbeiro'
   );
 
-  // Update current time
+  // Update current time - update every 30 seconds for better precision
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 30000); // Update every 30 seconds
 
     return () => clearInterval(timer);
   }, []);
@@ -355,15 +355,15 @@ export default function Agendamento() {
                 <div
                   className="absolute left-0 right-0 z-20 pointer-events-none"
                   style={{
-                    top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 35))}px`,
+                    top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 24))}px`,
                   }}
                 >
                   <div className="flex items-center">
-                    <div className="w-[120px] bg-primary h-1 relative">
-                      <div className="absolute right-0 top-0 w-3 h-3 bg-primary rounded-full transform -translate-y-1"></div>
+                    <div className="w-[120px] bg-blue-500 h-0.5 relative">
+                      <div className="absolute right-0 top-0 w-2 h-2 bg-blue-500 rounded-full transform -translate-y-0.5"></div>
                     </div>
-                    <div className="flex-1 bg-primary h-1 relative">
-                      <div className="absolute left-2 top-0 bg-primary text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
+                    <div className="flex-1 bg-blue-500 h-0.5 relative">
+                      <div className="absolute left-2 top-0 bg-blue-500 text-white text-xs px-2 py-1 rounded transform -translate-y-5 font-medium shadow-lg">
                         {format(currentTime, "HH:mm")}
                       </div>
                     </div>
