@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, Plus, Check, X, Search, CalendarDays, Settings, User, Star } from "lucide-react";
 
 interface Agendamento {
@@ -60,6 +61,7 @@ export default function Agendamento() {
   const [timelinePosition, setTimelinePosition] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Padronizar formato da data para evitar divergências
   const dataPadronizada = format(selectedDate, "yyyy-MM-dd");
@@ -221,7 +223,41 @@ export default function Agendamento() {
     },
   });
 
-  // Update mutation
+  // Update mutation para finalizar agendamento
+  const finalizarMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/agendamentos/${id}/finalizar`, {
+        method: "PATCH",
+      });
+      if (!response.ok) throw new Error("Erro ao finalizar agendamento");
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Invalidar cache e refetch para atualização imediata
+      const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      
+      toast({
+        title: "Atendimento finalizado!",
+        description: "O status do agendamento foi atualizado com sucesso.",
+      });
+      
+      setIsComandaOpen(false);
+      setSelectedAgendamento(null);
+    },
+    onError: (error) => {
+      console.error("Erro ao finalizar agendamento:", error);
+      toast({
+        title: "Erro ao finalizar",
+        description: "Não foi possível finalizar o atendimento. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update mutation para outros status
   const updateMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const response = await fetch(`/api/agendamentos/${id}`, {
@@ -232,8 +268,12 @@ export default function Agendamento() {
       if (!response.ok) throw new Error("Erro ao atualizar status");
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+    onSuccess: async () => {
+      const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      
       setIsComandaOpen(false);
     },
   });
@@ -269,7 +309,13 @@ export default function Agendamento() {
 
   const updateStatus = (status: string) => {
     if (selectedAgendamento) {
-      updateMutation.mutate({ id: selectedAgendamento.id, status });
+      if (status === "FINALIZADO") {
+        // Usar o endpoint específico para finalização
+        finalizarMutation.mutate(selectedAgendamento.id);
+      } else {
+        // Usar endpoint genérico para outros status
+        updateMutation.mutate({ id: selectedAgendamento.id, status });
+      }
     }
   };
 
