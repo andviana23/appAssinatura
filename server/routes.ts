@@ -3682,7 +3682,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       console.log(`[Barbeiro Agenda] Buscando agendamentos entre: ${dataInicio.toISOString()} e ${dataFim.toISOString()}`);
 
-      const agendamentos = await db.select({
+      const agendamentosRaw = await db.select({
         id: schema.agendamentos.id,
         dataHora: schema.agendamentos.dataHora,
         status: schema.agendamentos.status,
@@ -3706,6 +3706,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
         lte(schema.agendamentos.dataHora, dataFim)
       ))
       .orderBy(schema.agendamentos.dataHora);
+
+      // Corrigir timezone - interpretar como horário brasileiro (UTC-3)
+      const agendamentos = agendamentosRaw.map(agendamento => ({
+        ...agendamento,
+        dataHora: new Date(agendamento.dataHora.getTime() + (3 * 60 * 60 * 1000)).toISOString()
+      }));
 
       console.log(`[Barbeiro Agenda] Agendamentos encontrados: ${agendamentos.length}`);
 
