@@ -60,11 +60,14 @@ export default function Servicos() {
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Erro ao cadastrar serviço");
+        // Lançar erro com mensagem específica do backend
+        throw new Error(result.message || "Erro ao cadastrar serviço");
       }
 
-      return response.json();
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
@@ -75,11 +78,11 @@ export default function Servicos() {
         description: "O novo serviço foi adicionado à lista.",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Erro ao cadastrar serviço:", error);
       toast({
         title: "Erro ao cadastrar serviço",
-        description: "Tente novamente em alguns instantes.",
+        description: error.message || "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
     },
