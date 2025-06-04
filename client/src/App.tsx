@@ -91,7 +91,6 @@ function AuthenticatedRoutes() {
         
         {/* Rotas específicas do Barbeiro */}
         <Route path="/barbeiro" component={BarbeiroDashboard} />
-        <Route path="/recepcionista-dashboard" component={RecepcionistaDashboard} />
 
         {/* Fallback para qualquer rota não encontrada */}
         <Route>

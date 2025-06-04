@@ -214,7 +214,7 @@ export default function ListaDaVez() {
         </div>
 
         {/* Cards de Ação */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
           {/* Próximo da Fila */}
           <Card className="bg-card border-border">
             <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-t-xl">
@@ -310,35 +310,37 @@ export default function ListaDaVez() {
             </CardContent>
           </Card>
 
-          {/* Resetar Fila */}
-          <Card className="bg-card border-border">
-            <CardHeader className="bg-gradient-to-r from-destructive to-destructive/80 text-white rounded-t-xl">
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Resetar Fila
-              </CardTitle>
-              <CardDescription className="text-destructive-foreground/80">
-                Zerar contadores do mês
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <Button 
-                variant="destructive"
-                onClick={() => resetarFila.mutate()}
-                disabled={resetarFila.isPending}
-                className="w-full"
-              >
-                {resetarFila.isPending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Resetando...
-                  </div>
-                ) : (
-                  "Resetar Fila"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Resetar Fila - Apenas para Admin */}
+          {isAdmin && (
+            <Card className="bg-card border-border">
+              <CardHeader className="bg-gradient-to-r from-destructive to-destructive/80 text-white rounded-t-xl">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Resetar Fila
+                </CardTitle>
+                <CardDescription className="text-destructive-foreground/80">
+                  Zerar contadores do mês
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <Button 
+                  variant="destructive"
+                  onClick={() => resetarFila.mutate()}
+                  disabled={resetarFila.isPending}
+                  className="w-full"
+                >
+                  {resetarFila.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Resetando...
+                    </div>
+                  ) : (
+                    "Resetar Fila"
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Tabela de Atendimento Mensal */}
