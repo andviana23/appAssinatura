@@ -2267,6 +2267,30 @@ export async function registerRoutes(app: Express): Promise<Express> {
         })
         .where(eq(schema.profissionais.id, parseInt(id)));
 
+      // Sincronizar com tabela users para manter consistência no login
+      const userExistente = await db.select()
+        .from(schema.users)
+        .where(eq(schema.users.email, profissional[0].email))
+        .limit(1);
+
+      if (userExistente.length > 0) {
+        // Atualizar usuário existente na tabela users
+        await db.update(schema.users)
+          .set({
+            password: novaSenhaHash,
+            nome: profissional[0].nome
+          })
+          .where(eq(schema.users.email, profissional[0].email));
+      } else {
+        // Criar usuário na tabela users se não existir
+        await db.insert(schema.users).values({
+          nome: profissional[0].nome,
+          email: profissional[0].email,
+          password: novaSenhaHash,
+          role: profissional[0].tipo
+        });
+      }
+
       res.json({
         success: true,
         message: `Senha ${usarSenhaPadrao ? 'redefinida para padrão' : 'alterada'} com sucesso`,
