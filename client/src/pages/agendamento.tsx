@@ -182,6 +182,9 @@ export default function Agendamento() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidar cache específico da data selecionada
+      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", format(selectedDate, "yyyy-MM-dd")] });
+      // Invalidar também queries gerais de agendamentos
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       setIsModalOpen(false);
       resetForm();
