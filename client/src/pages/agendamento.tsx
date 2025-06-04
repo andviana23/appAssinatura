@@ -397,7 +397,7 @@ export default function Agendamento() {
               <div 
                 className="grid bg-muted border-b border-border relative z-10"
                 style={{ 
-                  gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
+                  gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
                 }}
               >
                 <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
@@ -405,7 +405,7 @@ export default function Agendamento() {
                   <span className="text-xs">Horário</span>
                 </div>
                 {activeBarbeiros.map((barbeiro: Barbeiro) => (
-                  <div key={barbeiro.id} className="p-2 border-r border-border text-center">
+                  <div key={barbeiro.id} className="p-2 border-r border-border text-center min-w-[130px] max-w-[150px]">
                     <div className="flex flex-col items-center gap-1">
                       <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
                         <span className="text-primary font-bold text-xs">
@@ -428,7 +428,7 @@ export default function Agendamento() {
                   key={timeSlot} 
                   className="grid border-b border-border min-h-[24px] hover:bg-muted/30 transition-colors group"
                   style={{ 
-                    gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
+                    gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
                   }}
                 >
                   <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
@@ -442,7 +442,7 @@ export default function Agendamento() {
                     const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
-                      <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5">
+                      <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5 min-w-[130px] max-w-[150px] overflow-hidden">
                         {agendamento ? (
                           <div 
                             className={`
@@ -451,13 +451,14 @@ export default function Agendamento() {
                               ${agendamento.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
                               ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
                               rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
-                              w-full h-full min-h-[22px] flex flex-col justify-center px-1.5 py-1
+                              w-full h-full min-h-[22px] flex flex-col justify-center px-1.5 py-1 overflow-hidden
                             `}
                             onClick={() => abrirComanda(agendamento)}
                             onContextMenu={(e) => handleContextMenu(e, agendamento)}
+                            title={`${agendamento.cliente?.nome} - ${agendamento.servico?.nome}`}
                           >
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between w-full overflow-hidden">
+                              <div className="flex-1 min-w-0 overflow-hidden">
                                 <div className="font-medium text-white text-[10px] leading-tight truncate">
                                   {agendamento.cliente?.nome}
                                 </div>
