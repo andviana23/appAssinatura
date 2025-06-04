@@ -1,0 +1,48 @@
+⚖️ LÓGICA DE DISTRIBUIÇÃO DE COMISSÃO POR TEMPO TRABALHADO — PÁGINA DE COMISSÃO ⚖️
+
+Implemente na página de comissão a seguinte regra de cálculo para os barbeiros:
+
+---
+
+**1. Coleta dos Dados:**
+- Para cada barbeiro cadastrado:
+  - Liste TODOS os agendamentos que foram **finalizados** para esse barbeiro (status = FINALIZADO) na página de agendamento.
+  - Para cada agendamento, pegue o tempo do serviço (cada serviço já tem tempo cadastrado).
+  - **Some o total de minutos/trabalho finalizado** para cada barbeiro individualmente.
+
+**2. Cálculo do tempo total trabalhado:**
+- Calcule o total de minutos/hora de TODOS os barbeiros juntos no período selecionado (exemplo: mês).
+  - Exemplo: Barbeiro 1 = 40 min, Barbeiro 2 = 20 min → Total = 60 min.
+
+**3. Cálculo do percentual (%) de trabalho de cada barbeiro:**
+- Para cada barbeiro, calcule:
+  - Percentual = (tempo trabalhado pelo barbeiro) / (tempo total trabalhado por todos) × 100
+  - Exemplo:  
+    - Vinicius = 20min/60min = 33%
+    - Renato = 40min/60min = 67%
+
+**4. Distribuição da comissão:**
+- A comissão total (40% da Receita Total de Assinatura) deve ser distribuída proporcionalmente pelo percentual do tempo trabalhado de cada barbeiro.
+  - Exemplo: Comissão total = R$ 2.000
+    - Vinicius: 33% × 2.000 = R$ 660
+    - Renato: 67% × 2.000 = R$ 1.340
+
+**5. Distribuição do faturamento:**
+- O faturamento de cada barbeiro é calculado também proporcionalmente, usando o mesmo percentual do tempo trabalhado sobre a Receita Total de Assinatura.
+  - Exemplo: Receita total = R$ 5.000
+    - Vinicius: 33% × 5.000 = R$ 1.650
+    - Renato: 67% × 5.000 = R$ 3.350
+
+**6. Importante:**
+- Apenas agendamentos com status FINALIZADO entram no cálculo.
+- Cada serviço finalizado soma seu tempo apenas para o barbeiro correspondente.
+- Os percentuais devem fechar 100%.
+- O resultado deve ser exibido na página de comissão:
+  - Total de minutos trabalhados de cada barbeiro.
+  - Percentual de trabalho de cada barbeiro.
+  - Valor de comissão proporcional de cada barbeiro.
+  - Valor de faturamento proporcional de cada barbeiro.
+
+**7. Não altere lógica de outras páginas. Aplique só na página de comissão.**
+
+Quando terminar, me avise para validar os resultados.

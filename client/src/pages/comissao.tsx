@@ -90,7 +90,7 @@ export default function Comissao() {
       numeroServicos: comissaoItem?.numeroServicos || 0,
       percentualTempo: comissaoItem?.percentualTempo || 0
     };
-  }).sort((a, b) => b.faturamentoAssinatura - a.faturamentoAssinatura);
+  }).sort((a: any, b: any) => b.minutosTrabalhadosMes - a.minutosTrabalhadosMes);
   const stats: ComissaoStats = (statsData && typeof statsData === 'object' && !Array.isArray(statsData)) ? statsData : {
     faturamentoTotalAssinatura: 0,
     totalMinutosGerais: 0,
@@ -196,7 +196,7 @@ export default function Comissao() {
       </div>
 
       {/* Cards de estatísticas gerais - Focado em Assinaturas Pagas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 dark:from-green-900/20 dark:to-green-800/20 dark:border-green-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">
@@ -230,13 +230,33 @@ export default function Comissao() {
             </p>
           </CardContent>
         </Card>
+
+        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 dark:from-purple-900/20 dark:to-purple-800/20 dark:border-purple-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-200">
+              Tempo Total Trabalhado
+            </CardTitle>
+            <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+              {formatMinutesToHours(stats.totalMinutosGerais)}
+            </div>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+              Agendamentos finalizados
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Lista de barbeiros ordenada por faturamento */}
+      {/* Lista de barbeiros ordenada por tempo trabalhado */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-foreground mb-4">
-          Ranking de Barbeiros (por Faturamento de Assinatura)
+          Distribuição de Comissão por Tempo Trabalhado
         </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Baseado em agendamentos finalizados e tempo real de trabalho de cada barbeiro
+        </p>
         
         {barbeirosComissao.length === 0 ? (
           <Card className="bg-card border-border">

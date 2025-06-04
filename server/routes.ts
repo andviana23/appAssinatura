@@ -3113,7 +3113,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // ENDPOINTS DE COMISSÃO
   // =====================================================
 
-  // GET - Estatísticas de comissão baseadas em assinaturas pagas
+  // GET - Estatísticas de comissão baseadas em assinaturas pagas e tempo trabalhado
   app.get('/api/comissao/stats', async (req: Request, res: Response) => {
     try {
       // Buscar todas as assinaturas com status ATIVO (pagas)
@@ -3132,10 +3132,22 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Calcular comissão total (40% da receita)
       const totalComissao = receitaTotalAssinatura * 0.4;
 
+      // Buscar total de minutos trabalhados de agendamentos finalizados
+      const agendamentosFinalizados = await db.select({
+        tempoMinutos: schema.servicos.tempoMinutos
+      })
+      .from(schema.agendamentos)
+      .innerJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+      .where(eq(schema.agendamentos.status, 'FINALIZADO'));
+
+      const totalMinutosGerais = agendamentosFinalizados.reduce((total, agendamento) => {
+        return total + (agendamento.tempoMinutos || 0);
+      }, 0);
+
       res.json({
         faturamentoTotalAssinatura: receitaTotalAssinatura,
         totalComissao: totalComissao,
-        totalMinutosGerais: 0 // Manter compatibilidade
+        totalMinutosGerais: totalMinutosGerais
       });
 
     } catch (error) {
@@ -3144,7 +3156,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // GET - Dados de comissão por barbeiro
+  // GET - Dados de comissão por barbeiro baseado em tempo trabalhado
   app.get('/api/comissao/barbeiros', async (req: Request, res: Response) => {
     try {
       // Buscar barbeiros ativos
@@ -3166,27 +3178,78 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return total + (parseFloat(assinatura.valor || '0'));
       }, 0);
 
-      // Calcular comissão total
+      // Calcular comissão total (40% da receita)
       const comissaoTotal = receitaTotalAssinatura * 0.4;
 
-      // Distribuir comissão proporcionalmente entre barbeiros ativos
-      const numeroBarbeiros = barbeiros.length;
-      const comissaoPorBarbeiro = numeroBarbeiros > 0 ? comissaoTotal / numeroBarbeiros : 0;
-      const faturamentoPorBarbeiro = numeroBarbeiros > 0 ? receitaTotalAssinatura / numeroBarbeiros : 0;
+      // Buscar agendamentos finalizados com tempo de serviço por barbeiro
+      const agendamentosFinalizados = await db.select({
+        barbeiroId: schema.agendamentos.barbeiroId,
+        tempoMinutos: schema.servicos.tempoMinutos
+      })
+      .from(schema.agendamentos)
+      .innerJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+      .where(eq(schema.agendamentos.status, 'FINALIZADO'));
 
-      const resultado = barbeiros.map(barbeiro => ({
-        barbeiro: {
-          id: barbeiro.id,
-          nome: barbeiro.nome,
-          ativo: barbeiro.ativo
-        },
-        faturamentoAssinatura: faturamentoPorBarbeiro,
-        comissaoAssinatura: comissaoPorBarbeiro,
-        minutosTrabalhadosMes: 0,
-        horasTrabalhadasMes: "0h 0min",
-        numeroServicos: 0,
-        percentualTempo: numeroBarbeiros > 0 ? (100 / numeroBarbeiros) : 0
-      }));
+      // Calcular tempo trabalhado por barbeiro
+      const tempoTrabalhadoPorBarbeiro = new Map<number, number>();
+      let totalMinutosTrabalhados = 0;
+
+      agendamentosFinalizados.forEach(agendamento => {
+        const minutos = agendamento.tempoMinutos || 0;
+        const barbeiroId = agendamento.barbeiroId;
+        
+        tempoTrabalhadoPorBarbeiro.set(
+          barbeiroId, 
+          (tempoTrabalhadoPorBarbeiro.get(barbeiroId) || 0) + minutos
+        );
+        totalMinutosTrabalhados += minutos;
+      });
+
+      // Calcular número de serviços por barbeiro
+      const servicosPorBarbeiro = new Map<number, number>();
+      agendamentosFinalizados.forEach(agendamento => {
+        const barbeiroId = agendamento.barbeiroId;
+        servicosPorBarbeiro.set(
+          barbeiroId,
+          (servicosPorBarbeiro.get(barbeiroId) || 0) + 1
+        );
+      });
+
+      // Gerar resultado com distribuição proporcional
+      const resultado = barbeiros.map(barbeiro => {
+        const minutosTrabalhadosBarbeiro = tempoTrabalhadoPorBarbeiro.get(barbeiro.id) || 0;
+        const numeroServicos = servicosPorBarbeiro.get(barbeiro.id) || 0;
+        
+        // Calcular percentual de trabalho
+        const percentualTempo = totalMinutosTrabalhados > 0 
+          ? (minutosTrabalhadosBarbeiro / totalMinutosTrabalhados) * 100 
+          : 0;
+
+        // Distribuir comissão e faturamento proporcionalmente
+        const comissaoAssinatura = (percentualTempo / 100) * comissaoTotal;
+        const faturamentoAssinatura = (percentualTempo / 100) * receitaTotalAssinatura;
+
+        // Formatar horas trabalhadas
+        const horas = Math.floor(minutosTrabalhadosBarbeiro / 60);
+        const minutosRestantes = minutosTrabalhadosBarbeiro % 60;
+        const horasTrabalhadasMes = horas > 0 
+          ? `${horas}h ${minutosRestantes}min` 
+          : `${minutosRestantes}min`;
+
+        return {
+          barbeiro: {
+            id: barbeiro.id,
+            nome: barbeiro.nome,
+            ativo: barbeiro.ativo
+          },
+          faturamentoAssinatura: faturamentoAssinatura,
+          comissaoAssinatura: comissaoAssinatura,
+          minutosTrabalhadosMes: minutosTrabalhadosBarbeiro,
+          horasTrabalhadasMes: horasTrabalhadasMes,
+          numeroServicos: numeroServicos,
+          percentualTempo: percentualTempo
+        };
+      });
 
       res.json(resultado);
 
