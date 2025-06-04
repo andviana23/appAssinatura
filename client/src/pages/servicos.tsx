@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,374 +12,239 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Clock, Scissors, ArrowLeft } from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Clock, Scissors, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Servico } from "@shared/schema";
 
 interface ServicoFormData {
   nome: string;
   tempoMinutos: number;
-  percentualComissao: number;
 }
 
 export default function Servicos() {
   const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingServico, setEditingServico] = useState<Servico | null>(null);
   const [formData, setFormData] = useState<ServicoFormData>({
     nome: "",
     tempoMinutos: 30,
-    percentualComissao: 40,
   });
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const { data: servicos, isLoading } = useQuery<Servico[]>({
     queryKey: ["/api/servicos"],
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: ServicoFormData) =>
-      fetch("/api/servicos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }).then(res => {
-        if (!res.ok) throw new Error("Erro ao criar serviço");
-        return res.json();
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
-      setIsDialogOpen(false);
-      resetForm();
-      toast({
-        title: "Serviço criado com sucesso",
-      });
-    },
-    onError: (error) => {
-      console.error("Erro ao criar serviço:", error);
-      toast({
-        title: "Não foi possível criar o serviço",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<ServicoFormData> }) =>
-      fetch(`/api/servicos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }).then(res => {
-        if (!res.ok) throw new Error("Erro ao atualizar serviço");
-        return res.json();
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
-      setIsDialogOpen(false);
-      resetForm();
-      toast({
-        title: "Serviço atualizado com sucesso",
-      });
-    },
-    onError: (error) => {
-      console.error("Erro ao atualizar serviço:", error);
-      toast({
-        title: "Não foi possível atualizar o serviço",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => fetch(`/api/servicos/${id}`, {
-      method: "DELETE",
-    }).then(res => {
-      if (!res.ok) throw new Error("Erro ao excluir serviço");
-      return res.json();
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
-      toast({
-        title: "Serviço excluído com sucesso",
-      });
-    },
-    onError: (error) => {
-      console.error("Erro ao excluir serviço:", error);
-      toast({
-        title: "Não foi possível excluir este serviço",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDeleteServico = (servico: Servico) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o serviço "${servico.nome}"?`)) {
-      return;
-    }
-    deleteMutation.mutate(servico.id);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Apenas estrutura visual - não implementar lógica de cadastro ainda
+    console.log("Formulário submetido:", formData);
+    setIsDialogOpen(false);
+    resetForm();
   };
 
   const resetForm = () => {
-    setFormData({ nome: "", tempoMinutos: 30, percentualComissao: 40 });
-    setEditingServico(null);
+    setFormData({ nome: "", tempoMinutos: 30 });
   };
 
-  const openDialog = (servico?: Servico) => {
-    if (servico) {
-      setEditingServico(servico);
-      setFormData({
-        nome: servico.nome,
-        tempoMinutos: servico.tempoMinutos,
-        percentualComissao: Number(servico.percentualComissao) || 40,
-      });
-    } else {
-      resetForm();
-    }
+  const openDialog = () => {
+    resetForm();
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validação dos campos obrigatórios
-    if (!formData.nome || !formData.tempoMinutos || !formData.percentualComissao) {
-      toast({
-        title: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.tempoMinutos <= 0) {
-      toast({
-        title: "O tempo deve ser maior que zero",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.percentualComissao < 0 || formData.percentualComissao > 100) {
-      toast({
-        title: "O percentual de comissão deve estar entre 0 e 100",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (editingServico) {
-      updateMutation.mutate({ id: editingServico.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
-  };
-
-
-
   if (isLoading) {
     return (
-      <div className="space-y-24">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-32" />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-xl" />
+            ))}
+          </div>
         </div>
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-24">
-      {/* Botão Voltar */}
-      <button
-        onClick={() => setLocation("/")}
-        className="flex items-center gap-2 mb-4 text-[#365e78] hover:text-[#2a4a5e] transition-colors"
-        style={{
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          fontSize: "16px",
-        }}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </button>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Gestão de Serviços</h2>
-          <p className="text-muted-foreground">Configure os serviços oferecidos pela barbearia</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Serviço
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingServico ? "Editar Serviço" : "Novo Serviço"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="nome">Nome do Serviço</Label>
-                <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  placeholder="Ex: Corte Masculino"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="tempoMinutos">Tempo Padrão (minutos)</Label>
-                <Input
-                  id="tempoMinutos"
-                  type="number"
-                  min="5"
-                  max="300"
-                  value={formData.tempoMinutos}
-                  onChange={(e) => setFormData({ ...formData, tempoMinutos: parseInt(e.target.value) })}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="percentualComissao">% Comissão</Label>
-                <Input
-                  id="percentualComissao"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={formData.percentualComissao}
-                  onChange={(e) => setFormData({ ...formData, percentualComissao: Number(e.target.value) })}
-                  placeholder="40"
-                  required
-                />
-              </div>
-              
-              <div className="flex space-x-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {editingServico ? "Atualizar" : "Salvar"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Serviços</CardTitle>
-        </CardHeader>
-        
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Serviço</TableHead>
-                <TableHead>Tempo</TableHead>
-                <TableHead>% Comissão</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {servicos?.map((servico) => (
-                <TableRow key={servico.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
-                        <Scissors className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground">{servico.nome}</div>
-                        <div className="text-sm text-muted-foreground">ID: #{servico.id}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{servico.tempoMinutos} min</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="default">
-                      {Number(servico.percentualComissao || 40)}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openDialog(servico)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteServico(servico)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {/* Header */}
+        <div className="space-y-6">
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </button>
           
-          {servicos?.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Nenhum serviço cadastrado</p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-foreground">Serviços</h1>
+              <p className="text-lg text-muted-foreground">
+                Gerencie os serviços oferecidos pela barbearia
+              </p>
             </div>
+            
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={openDialog}
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Novo Serviço
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md bg-card border-0 shadow-2xl rounded-2xl">
+                <DialogHeader className="space-y-4 pb-6">
+                  <DialogTitle className="text-2xl font-bold text-center text-foreground">
+                    Novo Serviço
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="nome" className="text-sm font-semibold text-foreground">
+                      Nome do Serviço
+                    </Label>
+                    <Input
+                      id="nome"
+                      value={formData.nome}
+                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                      placeholder="Ex: Corte Masculino"
+                      className="h-12 rounded-xl border-2 border-border focus:border-primary transition-colors"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Label htmlFor="tempo" className="text-sm font-semibold text-foreground">
+                      Tempo do Serviço
+                    </Label>
+                    <Select 
+                      value={formData.tempoMinutos.toString()} 
+                      onValueChange={(value) => setFormData({ ...formData, tempoMinutos: parseInt(value) })}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl border-2 border-border focus:border-primary">
+                        <SelectValue placeholder="Selecione o tempo" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="15">15 minutos</SelectItem>
+                        <SelectItem value="30">30 minutos</SelectItem>
+                        <SelectItem value="45">45 minutos</SelectItem>
+                        <SelectItem value="60">1 hora</SelectItem>
+                        <SelectItem value="90">1h 30min</SelectItem>
+                        <SelectItem value="120">2 horas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <DialogFooter className="flex gap-3 pt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="flex-1 h-12 rounded-xl border-2 hover:bg-muted font-semibold"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      Cadastrar
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Lista de Serviços */}
+        <div className="space-y-6">
+          {servicos && servicos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {servicos.map((servico) => (
+                <Card 
+                  key={servico.id} 
+                  className="group hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-0 shadow-lg rounded-2xl overflow-hidden"
+                >
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
+                        <Scissors className="h-6 w-6 text-white" />
+                      </div>
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-primary/10 text-primary border-0 px-3 py-1 rounded-full font-semibold"
+                      >
+                        #{servico.id}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                        {servico.nome}
+                      </h3>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">{servico.tempoMinutos} minutos</span>
+                      </div>
+                    </div>
+                    
+                    {servico.percentualComissao && (
+                      <div className="pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Comissão</span>
+                          <Badge className="bg-green-100 text-green-700 border-0 rounded-full">
+                            {Number(servico.percentualComissao)}%
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-0 shadow-lg rounded-2xl">
+              <CardContent className="p-12 text-center space-y-4">
+                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                  <Scissors className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground">Nenhum serviço cadastrado</h3>
+                  <p className="text-muted-foreground">
+                    Comece cadastrando o primeiro serviço da sua barbearia
+                  </p>
+                </div>
+                <Button 
+                  onClick={openDialog}
+                  className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Cadastrar Primeiro Serviço
+                </Button>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
