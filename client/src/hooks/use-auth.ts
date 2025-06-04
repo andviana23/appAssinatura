@@ -55,8 +55,9 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user && !error,
+    // Validação EXCLUSIVA por campo role do banco
     isAdmin: user?.role === "admin",
-    isBarbeiro: user?.role === "barbeiro",
+    isBarbeiro: user?.role === "barbeiro", 
     isRecepcionista: user?.role === "recepcionista",
     login: loginMutation.mutate,
     logout: logoutMutation.mutate,

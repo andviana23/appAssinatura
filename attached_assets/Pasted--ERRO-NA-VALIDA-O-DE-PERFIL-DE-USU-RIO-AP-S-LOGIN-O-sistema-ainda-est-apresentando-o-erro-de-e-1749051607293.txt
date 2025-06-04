@@ -1,0 +1,44 @@
+❗ ERRO NA VALIDAÇÃO DE PERFIL DE USUÁRIO APÓS LOGIN ❗
+
+O sistema ainda está apresentando o erro de exibir telas de recepcionista mesmo logando com a conta de administrador. Veja o print anexo para referência.
+
+**Analise detalhadamente COMO está sendo feita a validação de perfil hoje.**
+
+- O sistema está checando o perfil APENAS pelo e-mail do usuário?  
+  → Se sim, isso é perigoso e dá problema fácil (por exemplo, se mudar o e-mail, perde o perfil, ou se o mesmo e-mail existir em mais de um perfil, mistura tudo).
+- A validação de permissão/acesso está correta?  
+  → Não pode depender só do e-mail. Deve ser feita via um campo de identificação de perfil, ex:  
+    - `role`, `tipo`, `perfil`, `roleId` ou outro campo específico, armazenado no banco/jwt/contexto.
+    - Exemplo de roles: `ADMIN`, `RECEPCIONISTA`, `BARBEIRO` etc.
+
+**O que fazer:**
+
+1. **Ajuste o modelo de usuário para cada conta ter um campo de perfil/role/tipo.**
+    - Exemplo:  
+      ```json
+      {
+        "id": "uuid_do_usuario",
+        "email": "andrey@tratodebarbados.com.br",
+        "nome": "Andrey",
+        "role": "ADMIN" // ou "RECEPCIONISTA", "BARBEIRO", etc.
+      }
+      ```
+
+2. **Ao logar, a autenticação deve buscar esse perfil e salvar no contexto/sessão/token/JWT.**
+    - Ao fazer login, salve o `role` (perfil) junto do usuário autenticado.
+    - Sempre use o campo `role` para renderizar as permissões, menus, redirecionamento de páginas e acesso a recursos.
+
+3. **Redirecione e carregue a tela correta sempre baseado no `role` (e nunca só no e-mail):**
+    - Se `role` for `"ADMIN"`, carrega todas as telas/admin, NUNCA telas de recepcionista.
+    - Se `role` for `"RECEPCIONISTA"`, só carrega as telas específicas desse perfil.
+    - Se `role` for `"BARBEIRO"`, idem.
+
+4. **Valide também no backend (nas rotas protegidas) que só quem tem o perfil correto pode acessar cada recurso.**
+
+5. **Só use o e-mail para autenticação/login. NUNCA use e-mail para determinar perfil.**
+
+**Resumo:**  
+- Troque toda validação baseada em e-mail por validação baseada em campo de perfil/role/tipo do usuário.
+- Teste login/admin, login/recepcionista, login/barbeiro. Cada um tem que ver SÓ o que tem permissão.
+
+Me avise quando ajustar e testar.

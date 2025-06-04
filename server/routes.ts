@@ -5,6 +5,32 @@ import * as schema from '../shared/schema';
 import { eq, like, sql, and } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
+// Middleware de autorização baseado exclusivamente no campo role
+function requireRole(allowedRoles: string[]) {
+  return (req: any, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    const userRole = req.user.role;
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ 
+        message: 'Acesso negado',
+        requiredRole: allowedRoles,
+        userRole: userRole
+      });
+    }
+
+    next();
+  };
+}
+
+// Middleware específicos para cada role
+const requireAdmin = requireRole(['admin']);
+const requireBarbeiro = requireRole(['admin', 'barbeiro']);
+const requireRecepcionista = requireRole(['admin', 'recepcionista']);
+const requireAnyRole = requireRole(['admin', 'barbeiro', 'recepcionista']);
+
 export async function registerRoutes(app: Express): Promise<Express> {
   
   // Nova função para determinar status baseado no mês e lógica de pagamentos vencidos

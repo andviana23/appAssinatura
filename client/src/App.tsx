@@ -40,28 +40,31 @@ import NotFound from "@/pages/not-found";
 function AuthenticatedRoutes() {
   const { user } = useAuth();
 
-  // Função para garantir que admin sempre tem acesso total
-  const isAdminUser = user?.role === "admin" || user?.email === "andrey@tratodebarbados.com.br";
-  const isBarbeiroUser = user?.role === "barbeiro";
-  const isRecepcionistaUser = user?.role === "recepcionista";
+  // Validação EXCLUSIVA por campo role do banco de dados
+  const userRole = user?.role;
+
+  // Componente para renderizar dashboard baseado no role
+  const renderDashboard = () => {
+    switch (userRole) {
+      case "admin":
+        return <AdminDashboard />;
+      case "barbeiro":
+        return <BarbeiroDashboard />;
+      case "recepcionista":
+        return <RecepcionistaDashboard />;
+      default:
+        // Fallback para admin em caso de role indefinido
+        return <AdminDashboard />;
+    }
+  };
 
   // Todas as páginas protegidas SEMPRE usam o Layout principal
   return (
     <Layout>
       <Switch>
-        {/* Dashboard principal - ADMINISTRADOR tem prioridade ABSOLUTA */}
-        <Route path="/">
-          {isAdminUser && <AdminDashboard />}
-          {!isAdminUser && isBarbeiroUser && <BarbeiroDashboard />}
-          {!isAdminUser && !isBarbeiroUser && isRecepcionistaUser && <RecepcionistaDashboard />}
-          {!isAdminUser && !isBarbeiroUser && !isRecepcionistaUser && <AdminDashboard />}
-        </Route>
-        <Route path="/dashboard">
-          {isAdminUser && <AdminDashboard />}
-          {!isAdminUser && isBarbeiroUser && <BarbeiroDashboard />}
-          {!isAdminUser && !isBarbeiroUser && isRecepcionistaUser && <RecepcionistaDashboard />}
-          {!isAdminUser && !isBarbeiroUser && !isRecepcionistaUser && <AdminDashboard />}
-        </Route>
+        {/* Dashboard principal - baseado exclusivamente no campo role */}
+        <Route path="/" component={renderDashboard} />
+        <Route path="/dashboard" component={renderDashboard} />
 
         {/* Rotas específicas do Admin - sem condicionais aninhadas */}
         <Route path="/barbeiros" component={Barbeiros} />
