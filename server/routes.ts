@@ -33,6 +33,32 @@ const requireAnyRole = requireRole(['admin', 'barbeiro', 'recepcionista']);
 
 export async function registerRoutes(app: Express): Promise<Express> {
   
+  // Middleware de autenticação para anexar usuário à requisição
+  app.use(async (req: any, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.cookies?.user_id;
+      
+      if (userId) {
+        // Buscar usuário no banco
+        const [user] = await db.select().from(schema.users).where(eq(schema.users.id, parseInt(userId)));
+        
+        if (user) {
+          req.user = {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            nome: user.nome
+          };
+        }
+      }
+      
+      next();
+    } catch (error) {
+      console.error('Erro no middleware de autenticação:', error);
+      next();
+    }
+  });
+  
   // Nova função para determinar status baseado no mês e lógica de pagamentos vencidos
   function determinarStatusClientePorMes(cliente: any, mesFiltro: string): string {
     // Regra: Cliente é ATIVO se está em dia ou cobrança ainda não venceu
