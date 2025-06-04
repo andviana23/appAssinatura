@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, Clock, CreditCard, Plus } from "lucide-react";
+import { CalendarDays, Users, Clock, CreditCard, Plus, Calendar } from "lucide-react";
 import { Link } from "wouter";
 
 export default function DashboardRecepcionista() {
@@ -14,17 +14,17 @@ export default function DashboardRecepcionista() {
     queryKey: ["/api/agendamentos"],
   });
 
-  const clientesAtivos = clientes?.filter((c: any) => c.ativo)?.length || 0;
-  const agendamentosHoje = agendamentos?.filter((a: any) => {
-    const hoje = new Date().toDateString();
-    return new Date(a.dataHora).toDateString() === hoje;
-  })?.length || 0;
+  const clientesAtivos = Array.isArray(clientes) ? clientes.filter((c: any) => c.ativo).length : 0;
+  
+  // Buscar agendamentos com parâmetro de data
+  const hoje = new Date().toISOString().split('T')[0];
+  const { data: agendamentosHoje } = useQuery({
+    queryKey: ["/api/agendamentos", hoje],
+    queryFn: () => fetch(`/api/agendamentos?data=${hoje}`).then(res => res.json()),
+  });
 
-  const proximosAtendimentos = agendamentos?.filter((a: any) => {
-    const agora = new Date();
-    const agendamento = new Date(a.dataHora);
-    return agendamento > agora;
-  })?.slice(0, 3) || [];
+  const agendamentosCount = Array.isArray(agendamentosHoje?.data) ? agendamentosHoje.data.length : 0;
+  const proximosAtendimentos = Array.isArray(agendamentosHoje?.data) ? agendamentosHoje.data.slice(0, 3) : [];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -102,7 +102,7 @@ export default function DashboardRecepcionista() {
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agendamentosHoje}</div>
+            <div className="text-2xl font-bold">{agendamentosCount}</div>
             <p className="text-xs text-muted-foreground">
               Atendimentos programados para hoje
             </p>
@@ -124,45 +124,50 @@ export default function DashboardRecepcionista() {
       </div>
 
       {/* Lista de Próximos Atendimentos */}
-      {proximosAtendimentos.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximos Atendimentos</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle>Próximos Atendimentos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {proximosAtendimentos.length > 0 ? (
             <div className="space-y-3">
               {proximosAtendimentos.map((agendamento: any) => (
                 <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="space-y-1">
-                    <p className="font-medium">{agendamento.nomeCliente}</p>
+                    <p className="font-medium">{agendamento.nomeCliente || 'Cliente'}</p>
                     <p className="text-sm text-muted-foreground">
-                      {agendamento.servico} • {agendamento.profissional}
+                      {agendamento.servicoId || 'Serviço'} • {agendamento.barbeiroId || 'Profissional'}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      {new Date(agendamento.dataHora).toLocaleDateString()}
+                      {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleDateString() : 'Data'}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(agendamento.dataHora).toLocaleTimeString([], { 
+                      {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleTimeString([], { 
                         hour: '2-digit', 
                         minute: '2-digit' 
-                      })}
+                      }) : 'Horário'}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-4">
-              <Link href="/agendamentos">
-                <Button variant="outline" className="w-full">
-                  Ver Todos os Agendamentos
-                </Button>
-              </Link>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p>Nenhum agendamento encontrado para hoje</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+          <div className="mt-4">
+            <Link href="/agendamento">
+              <Button variant="outline" className="w-full">
+                Ver Todos os Agendamentos
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
