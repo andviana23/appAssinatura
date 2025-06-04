@@ -91,14 +91,16 @@ export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {
 
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden md:block text-right">
-                <p className="font-semibold text-foreground text-sm">{user?.email}</p>
+                <p className="font-semibold text-foreground text-sm">
+                  {user?.nome || user?.email}
+                </p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {user?.role === "admin" ? "Administrador" : "Barbeiro"}
+                  {user?.role === "admin" ? "ADMINISTRADOR" : user?.role === "barbeiro" ? "BARBEIRO" : "RECEPCIONISTA"}
                 </p>
               </div>
               <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-accent to-secondary rounded-2xl flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-sm sm:text-lg">
-                  {user?.email?.charAt(0).toUpperCase()}
+                  {(user?.nome || user?.email)?.charAt(0).toUpperCase()}
                 </span>
               </div>
               <Button

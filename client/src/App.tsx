@@ -44,66 +44,44 @@ function AuthenticatedRoutes() {
   return (
     <Layout>
       <Switch>
-        {/* Rotas do Admin */}
-        {isAdmin && (
-          <>
-            <Route path="/" component={AdminDashboard} />
-            <Route path="/dashboard" component={AdminDashboard} />
-            <Route path="/barbeiros" component={Barbeiros} />
-            <Route path="/profissionais" component={Profissionais} />
-            <Route path="/profissionais/novo" component={Profissionais} />
-            <Route path="/profissionais/editar/:id" component={Profissionais} />
-            <Route path="/clientes" component={ClientesNovo} />
-            <Route path="/clientes-debug" component={ClientesDebug} />
-            <Route path="/clientes-status" component={ClientesStatus} />
-            <Route path="/sistema-moderno" component={SistemaModerno} />
-            <Route path="/servicos" component={Servicos} />
-            <Route path="/planos" component={Planos} />
-            <Route path="/agendamento" component={Agendamento} />
-            <Route path="/comissao" component={Comissao} />
-            <Route path="/relatorio" component={TotalServicos} />
-            <Route path="/relatorios" component={TotalServicos} />
-            <Route path="/total-servicos" component={TotalServicos} />
-            <Route path="/lista-da-vez" component={ListaDaVez} />
-            <Route path="/gerenciar-fila" component={GerenciarFila} />
-            <Route path="/gerenciar-assinaturas" component={GerenciarAssinaturas} />
-            <Route path="/planos-assinatura" component={PlanosAssinatura} />
-            <Route path="/test-asaas" component={TestAsaas} />
-            <Route path="/configuracoes" component={Configuracoes} />
-          </>
-        )}
+        {/* Dashboard principal - sempre Admin Dashboard para admins */}
+        <Route path="/" exact>
+          {isAdmin ? <AdminDashboard /> : isBarbeiro ? <BarbeiroDashboard /> : <RecepcionistaDashboard />}
+        </Route>
+        <Route path="/dashboard" exact>
+          {isAdmin ? <AdminDashboard /> : isBarbeiro ? <BarbeiroDashboard /> : <RecepcionistaDashboard />}
+        </Route>
 
-        {/* Rotas do Barbeiro */}
-        {isBarbeiro && (
-          <>
-            <Route path="/" component={BarbeiroDashboard} />
-            <Route path="/dashboard" component={BarbeiroDashboard} />
-            <Route path="/barbeiro" component={BarbeiroDashboard} />
-            <Route path="/lista-da-vez" component={ListaDaVez} />
-            <Route path="/configuracoes" component={Configuracoes} />
-          </>
-        )}
+        {/* Rotas específicas do Admin - sem condicionais aninhadas */}
+        <Route path="/barbeiros" component={Barbeiros} />
+        <Route path="/profissionais" component={Profissionais} />
+        <Route path="/profissionais/novo" component={Profissionais} />
+        <Route path="/profissionais/editar/:id" component={Profissionais} />
+        <Route path="/clientes" component={ClientesNovo} />
+        <Route path="/clientes-debug" component={ClientesDebug} />
+        <Route path="/clientes-status" component={ClientesStatus} />
+        <Route path="/sistema-moderno" component={SistemaModerno} />
+        <Route path="/servicos" component={Servicos} />
+        <Route path="/planos" component={Planos} />
+        <Route path="/agendamento" component={Agendamento} />
+        <Route path="/comissao" component={Comissao} />
+        <Route path="/relatorio" component={TotalServicos} />
+        <Route path="/relatorios" component={TotalServicos} />
+        <Route path="/total-servicos" component={TotalServicos} />
+        <Route path="/lista-da-vez" component={ListaDaVez} />
+        <Route path="/gerenciar-fila" component={GerenciarFila} />
+        <Route path="/gerenciar-assinaturas" component={GerenciarAssinaturas} />
+        <Route path="/planos-assinatura" component={PlanosAssinatura} />
+        <Route path="/test-asaas" component={TestAsaas} />
+        <Route path="/configuracoes" component={Configuracoes} />
+        
+        {/* Rotas específicas do Barbeiro */}
+        <Route path="/barbeiro" component={BarbeiroDashboard} />
+        <Route path="/recepcionista-dashboard" component={RecepcionistaDashboard} />
 
-        {/* Rotas da Recepcionista */}
-        {isRecepcionista && (
-          <>
-            <Route path="/" component={RecepcionistaDashboard} />
-            <Route path="/dashboard" component={RecepcionistaDashboard} />
-            <Route path="/recepcionista-dashboard" component={RecepcionistaDashboard} />
-            <Route path="/agendamento" component={Agendamento} />
-            <Route path="/clientes" component={ClientesNovo} />
-            <Route path="/planos" component={Planos} />
-            <Route path="/lista-da-vez" component={ListaDaVez} />
-            <Route path="/configuracoes" component={Configuracoes} />
-          </>
-        )}
-
-        {/* Fallback - redirecionar para dashboard baseado no role */}
+        {/* Fallback para qualquer rota não encontrada */}
         <Route>
-          {isAdmin && <Redirect to="/dashboard" />}
-          {isBarbeiro && <Redirect to="/dashboard" />}
-          {isRecepcionista && <Redirect to="/dashboard" />}
-          {!isAdmin && !isBarbeiro && !isRecepcionista && <Redirect to="/dashboard" />}
+          <Redirect to="/dashboard" />
         </Route>
       </Switch>
     </Layout>
