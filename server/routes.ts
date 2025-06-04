@@ -2278,26 +2278,21 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Hash da senha com bcrypt
-      const saltRounds = 12;
-      const senhaHash = await bcrypt.hash(senha, saltRounds);
+      // Hash da senha padrão com bcrypt
+      const saltRounds = 10;
+      const senhaHash = await bcrypt.hash(senhaAprovada, saltRounds);
 
-      // Inserir profissional no banco
-      const novoProfissional = await db.insert(schema.profissionais).values({
+      // Inserir profissional na tabela users
+      const novoProfissional = await db.insert(schema.users).values({
         nome,
-        telefone,
         email,
-        senha: senhaHash,
-        tipo,
-        ativo: ativo ?? true
+        password: senhaHash,
+        role: tipo // barbeiro ou recepcionista
       }).returning({
-        id: schema.profissionais.id,
-        nome: schema.profissionais.nome,
-        telefone: schema.profissionais.telefone,
-        email: schema.profissionais.email,
-        tipo: schema.profissionais.tipo,
-        ativo: schema.profissionais.ativo,
-        dataCadastro: schema.profissionais.dataCadastro
+        id: schema.users.id,
+        nome: schema.users.nome,
+        email: schema.users.email,
+        role: schema.users.role
       });
 
       res.status(201).json({
