@@ -172,7 +172,7 @@ export default function Agendamento() {
       timeZone: "America/Sao_Paulo"
     });
     
-
+    console.log(`Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora: ${agendamento.dataHora}`);
     
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
@@ -184,6 +184,9 @@ export default function Agendamento() {
     
     return acc;
   }, {}) : {};
+  
+  console.log("AgendamentosByBarbeiro final:", agendamentosByBarbeiro);
+  console.log("ActiveBarbeiros:", activeBarbeiros);
   
 
 
