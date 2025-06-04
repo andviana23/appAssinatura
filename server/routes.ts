@@ -1389,12 +1389,17 @@ export async function registerRoutes(app: Express): Promise<Express> {
     const [novoCliente] = await db.insert(schema.clientes)
       .values({
         nome: nome || 'Cliente',
-        email: email || null,
+        email: email || 'cliente@email.com',
         telefone: telefone || null,
         cpf: cpf || cnpj || null,
         asaasCustomerId: asaasCustomerId || null,
+        origem: 'AGENDAMENTO_AUTOMATICO',
+        planoNome: 'Plano Básico',
+        planoValor: '50.00',
+        formaPagamento: 'PIX',
         statusAssinatura: 'ATIVO',
-        origem: 'AGENDAMENTO_AUTOMATICO'
+        dataInicioAssinatura: new Date(),
+        dataVencimentoAssinatura: new Date(new Date().setMonth(new Date().getMonth() + 1))
       })
       .returning();
 
