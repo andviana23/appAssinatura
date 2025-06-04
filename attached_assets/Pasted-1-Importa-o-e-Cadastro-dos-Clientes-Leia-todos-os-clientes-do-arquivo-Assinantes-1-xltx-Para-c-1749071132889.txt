@@ -1,0 +1,82 @@
+1. Importação e Cadastro dos Clientes
+Leia todos os clientes do arquivo Assinantes (1).xltx.
+
+Para cada cliente, pegue todos os dados necessários (nome, telefone, e-mail, CPF, próximo vencimento, etc).
+
+Antes de cadastrar: confira duplicidade pelo CPF, e-mail ou telefone.
+
+Se já existe: PULE para o próximo.
+
+Se não existe: CADASTRE igual já faz com os clientes vindos do Asaas, no mesmo banco/tabela.
+
+2. Status e Geração de Cobrança
+Se o próximo vencimento do cliente já passou, marque o cliente como “INATIVO”.
+
+Para clientes inativos, exiba um botão “Gerar Cobrança”.
+
+Quando clicar nesse botão:
+
+Abra um popup para o usuário escolher o plano desejado.
+
+Antes de criar a cobrança, peça para o usuário digitar o CPF do cliente (campo obrigatório).
+
+O sistema deve usar o CPF digitado e os DEMAIS dados já cadastrados para criar a cobrança no Asaas via API.
+
+Após gerar a cobrança:
+
+Se o pagamento for confirmado (Asaas), o cliente vira ATIVO e ganha +30 dias no status.
+
+Se o pagamento for externo, ao marcar como pago, também atualize para ATIVO (+30 dias).
+
+3. Local de Cadastro
+Todos os clientes devem ser salvos na mesma tabela/lista que já recebe os clientes do Asaas.
+
+Manter todos os campos necessários para agendamento, cobrança, etc.
+
+4. Checagem de Arquivo
+Se o Replit NÃO conseguir ler .xltx, permita cadastrar os clientes manualmente no formato abaixo:
+
+json
+Copiar
+Editar
+[
+  {
+    "nome": "Fulano de Tal",
+    "cpf": "000.000.000-00",
+    "email": "fulano@email.com",
+    "telefone": "(31) 99999-9999",
+    "proximoVencimento": "2025-06-01",
+    "plano": "Barba Mensal"
+  }
+]
+5. Lógica Resumida
+Para cada cliente:
+
+Se já cadastrado (CPF, e-mail, telefone): pule.
+
+Se não, cadastre.
+
+Se próximo vencimento < hoje: status = INATIVO, mostrar “Gerar Cobrança”.
+
+Ao clicar em “Gerar Cobrança”:
+
+Usuário escolhe plano.
+
+Sistema pede o CPF do cliente.
+
+Crie cobrança no Asaas usando o CPF digitado e demais dados já cadastrados.
+
+Se pago, status = ATIVO (+30 dias).
+
+6. Resumindo (pra você colar):
+Importe clientes da planilha e evite duplicidade.
+
+Cadastre só quem não existe.
+
+Cliente vencido = INATIVO, mostra “Gerar Cobrança”.
+
+Ao clicar, escolha plano, pede CPF, usa CPF digitado e dados já cadastrados para criar cobrança no Asaas.
+
+Se pago (Asaas ou externo), ativa o cliente por +30 dias.
+
+Salve tudo junto dos clientes do Asaas.
