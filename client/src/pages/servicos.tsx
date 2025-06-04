@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Clock, Scissors, ArrowLeft, AlertCircle } from "lucide-react";
+import { Plus, Clock, Scissors, ArrowLeft, AlertCircle, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import type { Servico } from "@shared/schema";
@@ -423,12 +423,24 @@ export default function Servicos() {
                       <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
                         <Scissors className="h-6 w-6 text-white" />
                       </div>
-                      <Badge 
-                        variant="secondary" 
-                        className="bg-primary/10 text-primary border-0 px-3 py-1 rounded-full font-semibold"
-                      >
-                        #{servico.id}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <Badge 
+                          variant={servico.isAssinatura ? "default" : "secondary"}
+                          className={`px-3 py-1 rounded-full font-semibold ${
+                            servico.isAssinatura 
+                              ? "bg-green-100 text-green-700 border-green-200" 
+                              : "bg-red-100 text-red-700 border-red-200"
+                          }`}
+                        >
+                          {servico.isAssinatura ? "Ativo" : "Inativo"}
+                        </Badge>
+                        <Badge 
+                          variant="secondary" 
+                          className="bg-primary/10 text-primary border-0 px-3 py-1 rounded-full font-semibold"
+                        >
+                          #{servico.id}
+                        </Badge>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -449,6 +461,20 @@ export default function Servicos() {
                             {Number(servico.percentualComissao)}%
                           </Badge>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Botão de reativação para serviços inativos */}
+                    {!servico.isAssinatura && (
+                      <div className="pt-4 border-t border-border/50">
+                        <Button
+                          onClick={() => setServicoParaReativar(servico)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold"
+                          size="sm"
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Reativar Serviço
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -478,6 +504,56 @@ export default function Servicos() {
             </Card>
           )}
         </div>
+        
+        {/* Modal de Confirmação para Reativação */}
+        {servicoParaReativar && (
+          <Dialog open={!!servicoParaReativar} onOpenChange={() => setServicoParaReativar(null)}>
+            <DialogContent className="max-w-md rounded-2xl border-0 shadow-2xl">
+              <DialogHeader className="space-y-4 text-center">
+                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <RotateCcw className="h-8 w-8 text-green-600" />
+                </div>
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  Reativar Serviço
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="text-center space-y-2">
+                  <p className="text-muted-foreground">
+                    Deseja reativar o serviço:
+                  </p>
+                  <div className="bg-muted rounded-lg p-3">
+                    <p className="font-semibold text-lg">{servicoParaReativar.nome}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {servicoParaReativar.tempoMinutos} minutos
+                    </p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    O serviço ficará disponível novamente para agendamentos.
+                  </p>
+                </div>
+              </div>
+              
+              <DialogFooter className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setServicoParaReativar(null)}
+                  className="flex-1 h-12 rounded-xl border-2"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => reativarMutation.mutate(servicoParaReativar.id)}
+                  disabled={reativarMutation.isPending}
+                  className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold"
+                >
+                  {reativarMutation.isPending ? "Reativando..." : "Reativar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );
