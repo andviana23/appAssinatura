@@ -85,14 +85,14 @@ export function Layout({ children }: LayoutProps) {
       </div>
       
       <div className="flex flex-1 pt-16"> {/* pt-16 para compensar header fixo */}
-        {/* Sidebar fixo na lateral */}
-        <div className="fixed left-0 top-16 bottom-0 z-30 bg-card border-r border-border/50 shadow-lg">
+        {/* Sidebar fixo na lateral com rolagem própria */}
+        <div className="fixed left-0 top-16 bottom-0 w-72 z-30 bg-card border-r border-border/50 shadow-lg overflow-y-auto">
           <Sidebar collapsed={false} />
         </div>
         
-        {/* Área de conteúdo central com rolagem */}
+        {/* Área de conteúdo central com rolagem independente */}
         <div className="flex-1 ml-72"> {/* ml-72 para compensar sidebar */}
-          <main className="h-full overflow-y-auto bg-background">
+          <main className="h-[calc(100vh-4rem)] overflow-y-auto bg-background">
             <div className="container-responsive py-6 px-6">
               <div className="max-w-7xl mx-auto">
                 {children}

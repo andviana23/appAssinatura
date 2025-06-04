@@ -155,7 +155,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   };
 
   return (
-    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300 relative`}>
+    <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'h-full'} transition-all duration-300 relative`}>
       
       {/* Toggle Button - Apenas para mobile */}
       {mobile && (
@@ -171,7 +171,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
       )}
 
       {/* Logo */}
-      <div className={`${isCollapsed ? 'p-4' : 'p-6'}`}>
+      <div className={`${isCollapsed ? 'p-4' : 'p-6'} flex-shrink-0`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center mb-6' : 'space-x-4 mb-8'} pb-6 border-b border-border/50`}>
           <div className={`${isCollapsed ? 'h-12 w-12' : 'h-14 w-14'} bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg`}>
             <span className={`text-white font-bold ${isCollapsed ? 'text-lg' : 'text-xl'}`}>TB</span>
@@ -192,8 +192,10 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             </button>
           )}
         </div>
+      </div>
 
-        {/* Navigation */}
+      {/* Navigation - área rolável */}
+      <div className="flex-1 overflow-y-auto px-6">
         <nav className={`space-y-1 ${isCollapsed ? 'space-y-3' : 'space-y-2'}`}>
           {navigationItems.map((item) => {
             const isActive = location === item.href || 
@@ -256,10 +258,10 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
         </nav>
       </div>
 
-      {/* Theme Toggle and User section */}
-      <div className={`mt-auto space-y-4 ${collapsed ? 'p-4' : 'p-6'}`}>
+      {/* Theme Toggle and User section - fixo no final */}
+      <div className={`flex-shrink-0 space-y-4 ${isCollapsed ? 'p-4' : 'p-6'} border-t border-border/50`}>
         {/* Theme Toggle */}
-        <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
           <ThemeToggle />
         </div>
         
