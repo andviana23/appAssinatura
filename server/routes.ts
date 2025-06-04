@@ -3513,41 +3513,13 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Barbeiro não encontrado ou inativo' });
       }
 
-      // Buscar serviço padrão
-      const servicoPadrao = await db.select()
-        .from(schema.servicos)
-        .limit(1);
-
-      if (servicoPadrao.length === 0) {
-        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
-      }
-
-      // Buscar ou criar cliente padrão
-      let clientePadrao = await db.select()
-        .from(schema.clientes)
-        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
-        .limit(1);
-
-      if (clientePadrao.length === 0) {
-        const novoCliente = await db.insert(schema.clientes)
-          .values({
-            nome: 'Cliente Lista da Vez',
-            telefone: '(00) 00000-0000',
-            email: 'listadavez@sistema.com'
-          })
-          .returning();
-        clientePadrao = novoCliente;
-      }
-
-      // Criar agendamento finalizado representando "passou a vez" (+1 atendimento)
-      const novoAgendamento = await db.insert(schema.agendamentos)
+      // Registrar "passou a vez" na lista-da-vez (sistema isolado)
+      const novoRegistro = await db.insert(schema.listaVezAtendimentos)
         .values({
-          clienteId: clientePadrao[0].id,
           barbeiroId: parseInt(barbeiroId),
-          servicoId: servicoPadrao[0].id,
-          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
-          status: 'FINALIZADO',
-          observacoes: 'PASSOU A VEZ - Contabilizado como +1 atendimento'
+          data: data,
+          mesAno: mesAno,
+          tipoAcao: 'PASSOU_VEZ'
         })
         .returning();
 
@@ -3557,8 +3529,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
           id: barbeiro[0].id,
           nome: barbeiro[0].nome
         },
-        agendamento: novoAgendamento[0],
-        message: 'Vez passada e contabilizada como +1 atendimento'
+        registro: novoRegistro[0],
+        message: 'Vez passada registrada na lista-da-vez com sucesso'
       });
 
     } catch (error) {
