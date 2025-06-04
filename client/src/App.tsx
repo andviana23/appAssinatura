@@ -37,6 +37,8 @@ import PlanosAssinatura from "@/pages/planos-assinatura";
 import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import { ImportarClientes } from "@/pages/importar-clientes";
+import { GerenciarClientes } from "@/pages/gerenciar-clientes";
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
@@ -89,6 +91,8 @@ function AuthenticatedRoutes() {
         <Route path="/planos-assinatura" component={PlanosAssinatura} />
         <Route path="/test-asaas" component={TestAsaas} />
         <Route path="/configuracoes" component={Configuracoes} />
+        <Route path="/importar-clientes" component={ImportarClientes} />
+        <Route path="/gerenciar-clientes" component={GerenciarClientes} />
         
         {/* Rotas específicas do Barbeiro */}
         <Route path="/barbeiro" component={BarbeiroDashboard} />

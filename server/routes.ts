@@ -3908,6 +3908,17 @@ export async function registerRoutes(app: Express): Promise<Express> {
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
   });
 
+  // Endpoint para buscar todos os clientes
+  app.get('/api/clientes/todos', requireAnyRole, async (req: any, res: Response) => {
+    try {
+      const clientes = await db.select().from(schema.clientes);
+      res.json(clientes);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   // Endpoint para importação de clientes da planilha
   app.post('/api/clientes/importar', requireAdmin, upload.single('planilha'), async (req: any, res: Response) => {
     try {
@@ -4035,15 +4046,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(404).json({ message: 'Cliente não encontrado' });
       }
 
-      // Buscar plano
-      const plano = await db.select()
-        .from(schema.planos)
-        .where(eq(schema.planos.id, parseInt(planoId)))
-        .limit(1);
-
-      if (plano.length === 0) {
-        return res.status(404).json({ message: 'Plano não encontrado' });
-      }
+      // Usar valor fixo do plano já que não temos tabela de planos
+      const planoValor = 30; // Valor padrão para assinatura
 
       // Gerar cobrança no Asaas usando o CPF fornecido
       const asaasApiKey = process.env.ASAAS_API_KEY;
@@ -4054,9 +4058,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const cobrancaData = {
         customer: cpf, // Usar CPF fornecido pelo usuário
         billingType: 'PIX',
-        value: plano[0].preco,
+        value: planoValor,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
-        description: `Assinatura ${plano[0].nome} - ${cliente[0].nome}`,
+        description: `Assinatura - ${cliente[0].nome}`,
         externalReference: `cliente_${clienteId}_plano_${planoId}`
       };
 
@@ -4079,8 +4083,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       await db.update(schema.clientes)
         .set({
           asaasCustomerId: cpf,
-          planoId: plano[0].nome,
-          valorAssinatura: plano[0].preco,
+          valorAssinatura: planoValor,
           cobrancaId: cobrancaResult.id
         })
         .where(eq(schema.clientes.id, clienteId));
