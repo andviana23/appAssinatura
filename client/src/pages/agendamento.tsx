@@ -403,9 +403,9 @@ export default function Agendamento() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="h-full bg-background text-foreground flex overflow-hidden">
       {/* Sidebar do Calendário - Dark Mode Premium */}
-      <div className="w-80 bg-card border-r border-border shadow-2xl">
+      <div className="w-80 bg-card border-r border-border shadow-2xl flex-shrink-0 overflow-y-auto">
         <div className="p-6 border-b border-border">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
@@ -521,10 +521,10 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {/* Área Principal da Agenda - Dark Mode Premium */}
-      <div className="flex-1 bg-background flex flex-col h-full">
+      {/* Área Principal da Agenda - Full Width */}
+      <div className="flex-1 bg-background flex flex-col h-full min-w-0">
         {/* Cabeçalho Premium Dark */}
-        <div className="bg-card border-b border-border p-4 shadow-sm">
+        <div className="bg-card border-b border-border p-4 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -586,8 +586,8 @@ export default function Agendamento() {
           </div>
         </div>
 
-        {/* Grade da Agenda Dark Mode - Inspirada nas imagens de referência */}
-        <div className="bg-card border-t border-border overflow-hidden relative flex-1">
+        {/* Grade da Agenda Dark Mode - Full Height */}
+        <div className="bg-card border-t border-border relative flex-1 overflow-y-auto">
           {/* Timeline Indicator - Current Time Line */}
           {isTodaySelected && timelinePosition !== null && (
             <div
@@ -634,17 +634,17 @@ export default function Agendamento() {
             ))}
           </div>
 
-          {/* Linhas de horário - Dark Mode Premium */}
+          {/* Linhas de horário - Full Width */}
           <div className="h-full overflow-y-auto">
             {timeSlots.map((timeSlot) => (
               <div 
                 key={timeSlot} 
-                className="grid border-b border-border min-h-[50px] hover:bg-muted/30 transition-colors group"
+                className="grid border-b border-border min-h-[70px] hover:bg-muted/30 transition-colors group"
                 style={{ 
                   gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                 }}
               >
-                <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                <div className="p-3 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     {timeSlot}
