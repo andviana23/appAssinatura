@@ -958,13 +958,7 @@ export default function Agendamento() {
           </button>
           <button
             className="w-full px-4 py-2 text-left text-sm hover:bg-muted transition-colors text-destructive"
-            onClick={() => {
-              if (contextMenu.agendamento) {
-                setAgendamentoToCancel(contextMenu.agendamento);
-                setCancelDialogOpen(true);
-              }
-              setContextMenu({ visible: false, x: 0, y: 0, agendamento: null });
-            }}
+            onClick={handleCancelAgendamento}
           >
             Cancelar Agendamento
           </button>

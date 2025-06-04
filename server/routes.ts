@@ -2124,6 +2124,47 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // DELETE Cancelar agendamento (remover completamente)
+  app.delete('/api/agendamentos/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID do agendamento inválido' 
+        });
+      }
+
+      // Verificar se o agendamento existe
+      const agendamentoExistente = await db.select()
+        .from(schema.agendamentos)
+        .where(eq(schema.agendamentos.id, id))
+        .limit(1);
+
+      if (agendamentoExistente.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Agendamento não encontrado' 
+        });
+      }
+
+      // Deletar o agendamento
+      await db.delete(schema.agendamentos).where(eq(schema.agendamentos.id, id));
+      
+      res.json({ 
+        success: true, 
+        message: 'Agendamento cancelado com sucesso' 
+      });
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor' 
+      });
+    }
+  });
+
   // =====================================================
   // AUTENTICAÇÃO BÁSICA
   // =====================================================
