@@ -191,7 +191,8 @@ export default function Planos() {
           value: parseFloat(planoSelecionado.valorMensal || planoSelecionado.valor),
           description: planoSelecionado.descricao || 'Assinatura mensal',
           subscriptionCycle: 'MONTHLY'
-        }
+        },
+        formaPagamento: formData.formaPagamento
       });
       
       const result = await response.json();
@@ -206,14 +207,13 @@ export default function Planos() {
           description: "Agora escolha o método de pagamento externo.",
         });
       } else if (data.success && data.paymentLink?.url) {
-        // Abrir link de assinatura recorrente
-        window.open(data.paymentLink.url, '_blank');
+        // Abrir link de assinatura recorrente em popup
+        window.open(data.paymentLink.url, "_blank", "width=500,height=800");
         toast({
-          title: "Assinatura recorrente criada!",
-          description: "Abrindo página de pagamento com renovação automática.",
+          title: "Checkout Asaas aberto!",
+          description: "Complete o pagamento na janela que foi aberta.",
         });
-        setShowCheckoutModal(false);
-        setLocation('/clientes');
+        // NÃO fechar o modal automaticamente - usuário pode fechar manualmente
       } else if (data.success && data.subscription) {
         // Assinatura criada mas sem link
         toast({

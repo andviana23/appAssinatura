@@ -1,0 +1,77 @@
+⚡ AJUSTE DE LÓGICA PARA ASSINATURA RECORRENTE ASAAS (SEM REMOVER OPÇÃO DE PAGAMENTO EXTERNO) ⚡
+
+**Objetivo:**  
+Ao clicar em "Assinar" no plano, abrir o popup, o usuário escolhe a forma de pagamento (Cartão de Crédito ou Externo), preenche os dados, clica em "Continuar" e:
+
+- Se for **Cartão de Crédito**:  
+    → O backend cria NA HORA um link de pagamento recorrente pelo Asaas (checkout `/i/`), e retorna o link.  
+    → O frontend abre o link do Asaas em popup (checkout), sem fechar o modal até o usuário concluir ou cancelar.
+
+- Se for **Externo** (Pix, Dinheiro, transferência):  
+    → Mantém a lógica já existente. Só registra normalmente, não gera link do Asaas.
+
+**O QUE MEXER:**
+
+---
+
+### BACKEND
+
+1. **Na rota de criação de assinatura (ex: `POST /api/assinaturas/criar`):**
+    - Se o campo `formaPagamento` for `"cartao"` ou `"CARTAO_DE_CREDITO"`:
+        1. Recebe os dados do cliente e do plano (nome, e-mail, telefone, CPF/CNPJ, plano, valor, ciclo, etc).
+        2. Chama a API do Asaas para criar (ou recuperar) o cliente.
+        3. Chama o endpoint `/v3/paymentLinks` do Asaas com:
+            - `billingType: "CREDIT_CARD"`
+            - `chargeType: "RECURRENT"`
+            - demais dados do plano e do cliente
+        4. Se der certo, pega o `shortUrl` (link `/i/…`) do retorno e responde para o frontend:
+            ```json
+            { "linkPagamento": "https://www.asaas.com/i/xyz123" }
+            ```
+        5. Se der erro, retorna status 400 ou 500 com o erro.
+    - Se a forma de pagamento for `"externo"`, apenas segue o fluxo já existente (NÃO faz nada com o Asaas).
+
+---
+
+### FRONTEND
+
+1. **No popup/modal de assinatura:**
+    - Mantenha os campos para o usuário escolher a forma de pagamento:  
+        - Cartão de Crédito (opção padrão)
+        - Pagamento Externo (Pix, Dinheiro, etc)  
+      (Não tire nenhum!)
+    - Valide os campos obrigatórios (nome, e-mail, CPF/CNPJ) normalmente.
+
+2. **No `handleSubmit` do popup:**
+    - Se a forma de pagamento selecionada for `"cartao"`:
+        1. Envia os dados do cliente/plano para o backend como sempre, incluindo `"formaPagamento": "cartao"`.
+        2. Se a resposta vier com `{ linkPagamento }`, use:
+           ```js
+           window.open(linkPagamento, "_blank", "width=500,height=800");
+           ```
+        3. NÃO feche o popup automaticamente – o usuário pode fechar na mão ou continuar na tela.  
+    - Se for `"externo"`:
+        - Mantém o fluxo já usado hoje (exibe instruções, salva no sistema, etc).
+
+3. **Se der erro na requisição**, exibe a mensagem no popup e não fecha.
+
+---
+
+### NÃO ALTERE MAIS NADA!
+
+- Não mexa nas rotas, bancos, telas de listagem, nem apague a lógica de pagamento externo.
+- Não tire a escolha do tipo de pagamento do popup.
+- Só ajuste a criação/abertura do link do Asaas na seleção de cartão.
+
+---
+
+### RESUMO DO FLUXO:
+
+- Usuário clica “Assinar” → popup abre.
+- Usuário escolhe “Cartão de Crédito” → preenche → clica “Continuar” → backend gera link /i/ Asaas → frontend abre link do checkout em popup.
+- Se escolher “Pagamento Externo”, segue fluxo já implementado.
+
+---
+
+**FAÇA APENAS ISSO. Simples, direto, sem gambiarra, sem mexer no resto.**
+

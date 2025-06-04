@@ -2585,7 +2585,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   
   app.post("/api/create-customer-subscription", async (req: Request, res: Response) => {
     try {
-      const { cliente, assinatura } = req.body;
+      const { cliente, assinatura, formaPagamento } = req.body;
       
       if (!cliente || !assinatura) {
         return res.status(400).json({ 
@@ -2598,6 +2598,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ 
           success: false,
           message: 'Nome do cliente e valor da assinatura são obrigatórios' 
+        });
+      }
+
+      // Se for pagamento externo, não gera link do Asaas
+      if (formaPagamento === 'EXTERNAL') {
+        return res.json({
+          success: true,
+          external: true,
+          message: 'Cliente deve escolher método de pagamento externo'
         });
       }
 
