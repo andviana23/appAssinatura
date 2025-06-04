@@ -1,0 +1,46 @@
+⚡ AJUSTES NA PÁGINA DE AGENDAMENTO ⚡
+
+Agora vamos trabalhar APENAS na página de **agendamento**.  
+NÃO altere nenhuma outra parte do sistema, só concentre-se nessa tela e funcionalidades relacionadas.
+
+---
+
+1. **Ajuste do horário da linha do tempo:**
+   - Modifique a linha do tempo da agenda diária para começar às **08:00** e terminar às 20:00.
+   - O horário das 07:00 deve ser removido, o primeiro bloco sempre será 08:00.
+
+2. **Espaçamento visual entre as linhas de tempo:**
+   - Reduza o espaçamento vertical entre as linhas que delimitam os blocos de 30 em 30 minutos.  
+   - Os intervalos devem ser mais compactos visualmente, facilitando enxergar mais horários sem rolar muito a página.
+
+3. **Linha azul do horário atual:**
+   - A linha azul que indica o “horário atual” deve ficar travada/exatamente posicionada no ponto certo da linha do tempo.
+      - Exemplo: se são 13:00, a linha azul tem que estar exatamente alinhada com o bloco de 13:00.
+      - Conforme o tempo passa, ela deve ir avançando junto, em tempo real.
+   - Se for preciso, faça a linha azul atualizar automaticamente conforme os minutos passam.
+
+4. **Card de agendamento não aparece:**
+   - Analise todo o fluxo de adicionar um novo agendamento (cliente, horário, profissional).
+   - Identifique por que, após agendar um cliente, o card de agendamento não está aparecendo na agenda do dia.
+      - Verifique se o agendamento está realmente sendo salvo no backend.
+      - Veja se a busca/listagem dos agendamentos do dia está funcionando corretamente e trazendo todos os registros salvos.
+      - Confirme se o frontend está atualizando/refrescando a lista de agendamentos após salvar.
+      - Confira se há algum erro de filtro/data/horário que está impedindo de exibir os cards agendados.
+      - Analise se há algum problema de renderização, cache ou erro silencioso no console.
+   - Corrija o que for necessário para que, ao agendar, o card apareça imediatamente no horário certo do dia, sem precisar recarregar a página.
+
+5. **Importante:**
+   - NÃO faça nenhum ajuste em outras páginas (clientes, profissionais, dashboard, etc).  
+   - Todo o trabalho agora é SÓ na agenda/agenda do dia.
+
+---
+
+**Checklist de validação:**
+- Linha do tempo começa às 08:00, termina 20:00.
+- Espaçamento entre blocos de 30min está mais curto.
+- Linha azul do horário atual está sempre alinhada corretamente e se move conforme o tempo.
+- Ao criar agendamento, o card aparece imediatamente na agenda, no horário certo.
+
+Quando terminar os ajustes, me avise pra eu testar.  
+Se identificar qualquer problema no fluxo de salvar ou listar agendamentos, detalhe exatamente onde estava o erro.
+

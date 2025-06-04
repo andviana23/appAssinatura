@@ -87,9 +87,9 @@ export default function Agendamento() {
     queryKey: ["/api/servicos"],
   });
 
-  // Generate time slots
+  // Generate time slots - 08:00 to 20:00
   const timeSlots = [];
-  for (let hour = 7; hour <= 19; hour++) {
+  for (let hour = 8; hour <= 20; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       timeSlots.push(timeString);
@@ -110,7 +110,7 @@ export default function Agendamento() {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate timeline position
+  // Calculate timeline position - ajustado para 08:00-20:00
   const isTodaySelected = isToday(selectedDate);
   useEffect(() => {
     if (isTodaySelected) {
@@ -118,8 +118,8 @@ export default function Agendamento() {
       const hours = now.getHours();
       const minutes = now.getMinutes();
       const totalMinutes = hours * 60 + minutes;
-      const dayStart = 7 * 60; // 7:00 AM
-      const dayEnd = 19 * 60 + 30; // 7:30 PM
+      const dayStart = 8 * 60; // 8:00 AM
+      const dayEnd = 20 * 60 + 30; // 8:30 PM
       
       if (totalMinutes >= dayStart && totalMinutes <= dayEnd) {
         const percentage = ((totalMinutes - dayStart) / (dayEnd - dayStart)) * 100;
@@ -404,7 +404,7 @@ export default function Agendamento() {
               {timeSlots.map((timeSlot) => (
                 <div 
                   key={timeSlot} 
-                  className="grid border-b border-border min-h-[35px] hover:bg-muted/30 transition-colors group"
+                  className="grid border-b border-border min-h-[24px] hover:bg-muted/30 transition-colors group"
                   style={{ 
                     gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                   }}
@@ -420,7 +420,7 @@ export default function Agendamento() {
                     const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
-                      <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[35px]">
+                      <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[24px]">
                         {agendamento ? (
                           <div 
                             className={`
