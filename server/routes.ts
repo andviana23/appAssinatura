@@ -3300,5 +3300,312 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // =====================================================
+  // ENDPOINTS DA LISTA DA VEZ
+  // =====================================================
+
+  // GET - Buscar fila mensal de atendimentos por barbeiro
+  app.get('/api/lista-da-vez/fila-mensal', async (req: Request, res: Response) => {
+    try {
+      const { mes } = req.query;
+      
+      if (!mes) {
+        return res.status(400).json({ message: 'Parâmetro mes é obrigatório' });
+      }
+
+      // Buscar todos os barbeiros ativos
+      const barbeiros = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ));
+
+      // Buscar atendimentos do mês para cada barbeiro
+      const resultado = await Promise.all(barbeiros.map(async (barbeiro) => {
+        // Contar atendimentos finalizados do mês
+        const atendimentosFinalizados = await db.select()
+          .from(schema.agendamentos)
+          .where(and(
+            eq(schema.agendamentos.barbeiroId, barbeiro.id),
+            eq(schema.agendamentos.status, 'FINALIZADO'),
+            sql`DATE_TRUNC('month', ${schema.agendamentos.dataHora}) = ${mes + '-01'}`
+          ));
+
+        // Buscar registro de "passou a vez" (se existir na tabela)
+        // Por enquanto, retornamos 0 - implementaremos a lógica depois
+        const diasPassouAVez = 0;
+
+        return {
+          barbeiro: {
+            id: barbeiro.id,
+            nome: barbeiro.nome,
+            email: barbeiro.email,
+            ativo: barbeiro.ativo
+          },
+          totalAtendimentosMes: atendimentosFinalizados.length,
+          diasPassouAVez: diasPassouAVez
+        };
+      }));
+
+      res.json(resultado);
+
+    } catch (error) {
+      console.error('Erro ao buscar fila mensal:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // POST - Adicionar atendimento automático (próximo da fila)
+  app.post('/api/lista-da-vez/adicionar-atendimento', async (req: Request, res: Response) => {
+    try {
+      const { data, mesAno, tipoAtendimento } = req.body;
+
+      if (!data || !mesAno) {
+        return res.status(400).json({ message: 'Data e mesAno são obrigatórios' });
+      }
+
+      // Buscar o barbeiro com menos atendimentos no mês
+      const barbeiros = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ));
+
+      if (barbeiros.length === 0) {
+        return res.status(400).json({ message: 'Nenhum barbeiro ativo encontrado' });
+      }
+
+      // Contar atendimentos de cada barbeiro no mês
+      const barbeirosComContagem = await Promise.all(barbeiros.map(async (barbeiro) => {
+        const atendimentos = await db.select()
+          .from(schema.agendamentos)
+          .where(and(
+            eq(schema.agendamentos.barbeiroId, barbeiro.id),
+            eq(schema.agendamentos.status, 'FINALIZADO'),
+            sql`DATE_TRUNC('month', ${schema.agendamentos.dataHora}) = ${mesAno + '-01'}`
+          ));
+
+        return {
+          ...barbeiro,
+          totalAtendimentos: atendimentos.length
+        };
+      }));
+
+      // Encontrar barbeiro com menos atendimentos
+      const proximoBarbeiro = barbeirosComContagem.reduce((menor, atual) => 
+        atual.totalAtendimentos < menor.totalAtendimentos ? atual : menor
+      );
+
+      // Buscar um serviço padrão para criar o agendamento
+      const servicoPadrao = await db.select()
+        .from(schema.servicos)
+        .limit(1);
+
+      if (servicoPadrao.length === 0) {
+        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
+      }
+
+      // Buscar ou criar cliente padrão para lista da vez
+      let clientePadrao = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
+        .limit(1);
+
+      if (clientePadrao.length === 0) {
+        // Criar cliente padrão
+        const novoCliente = await db.insert(schema.clientes)
+          .values({
+            nome: 'Cliente Lista da Vez',
+            telefone: '(00) 00000-0000',
+            email: 'listadavez@sistema.com'
+          })
+          .returning();
+        clientePadrao = novoCliente;
+      }
+
+      // Criar agendamento automaticamente finalizado
+      const novoAgendamento = await db.insert(schema.agendamentos)
+        .values({
+          clienteId: clientePadrao[0].id,
+          barbeiroId: proximoBarbeiro.id,
+          servicoId: servicoPadrao[0].id,
+          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
+          status: 'FINALIZADO',
+          observacoes: `Atendimento via Lista da Vez - ${tipoAtendimento || 'NORMAL'}`
+        })
+        .returning();
+
+      res.json({
+        success: true,
+        proximoBarbeiro: {
+          id: proximoBarbeiro.id,
+          nome: proximoBarbeiro.nome
+        },
+        agendamento: novoAgendamento[0],
+        message: 'Atendimento adicionado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao adicionar atendimento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // POST - Adicionar atendimento manual para barbeiro específico
+  app.post('/api/lista-da-vez/adicionar-atendimento-manual', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId, data, mesAno, tipoAtendimento } = req.body;
+
+      if (!barbeiroId || !data || !mesAno) {
+        return res.status(400).json({ message: 'BarbeiroId, data e mesAno são obrigatórios' });
+      }
+
+      // Verificar se o barbeiro existe
+      const barbeiro = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.id, parseInt(barbeiroId)),
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ))
+        .limit(1);
+
+      if (barbeiro.length === 0) {
+        return res.status(400).json({ message: 'Barbeiro não encontrado ou inativo' });
+      }
+
+      // Buscar um serviço padrão
+      const servicoPadrao = await db.select()
+        .from(schema.servicos)
+        .limit(1);
+
+      if (servicoPadrao.length === 0) {
+        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
+      }
+
+      // Buscar ou criar cliente padrão
+      let clientePadrao = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
+        .limit(1);
+
+      if (clientePadrao.length === 0) {
+        const novoCliente = await db.insert(schema.clientes)
+          .values({
+            nome: 'Cliente Lista da Vez',
+            telefone: '(00) 00000-0000',
+            email: 'listadavez@sistema.com'
+          })
+          .returning();
+        clientePadrao = novoCliente;
+      }
+
+      // Criar agendamento manual finalizado
+      const novoAgendamento = await db.insert(schema.agendamentos)
+        .values({
+          clienteId: clientePadrao[0].id,
+          barbeiroId: parseInt(barbeiroId),
+          servicoId: servicoPadrao[0].id,
+          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
+          status: 'FINALIZADO',
+          observacoes: `Atendimento Manual via Lista da Vez - ${tipoAtendimento || 'MANUAL'}`
+        })
+        .returning();
+
+      res.json({
+        success: true,
+        barbeiro: {
+          id: barbeiro[0].id,
+          nome: barbeiro[0].nome
+        },
+        agendamento: novoAgendamento[0],
+        message: 'Atendimento manual adicionado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao adicionar atendimento manual:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // POST - Passar a vez (incrementa contador de atendimentos)
+  app.post('/api/lista-da-vez/passar-a-vez', async (req: Request, res: Response) => {
+    try {
+      const { barbeiroId, data, mesAno } = req.body;
+
+      if (!barbeiroId || !data || !mesAno) {
+        return res.status(400).json({ message: 'BarbeiroId, data e mesAno são obrigatórios' });
+      }
+
+      // Verificar se o barbeiro existe
+      const barbeiro = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.id, parseInt(barbeiroId)),
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ))
+        .limit(1);
+
+      if (barbeiro.length === 0) {
+        return res.status(400).json({ message: 'Barbeiro não encontrado ou inativo' });
+      }
+
+      // Buscar serviço padrão
+      const servicoPadrao = await db.select()
+        .from(schema.servicos)
+        .limit(1);
+
+      if (servicoPadrao.length === 0) {
+        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
+      }
+
+      // Buscar ou criar cliente padrão
+      let clientePadrao = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
+        .limit(1);
+
+      if (clientePadrao.length === 0) {
+        const novoCliente = await db.insert(schema.clientes)
+          .values({
+            nome: 'Cliente Lista da Vez',
+            telefone: '(00) 00000-0000',
+            email: 'listadavez@sistema.com'
+          })
+          .returning();
+        clientePadrao = novoCliente;
+      }
+
+      // Criar agendamento finalizado representando "passou a vez" (+1 atendimento)
+      const novoAgendamento = await db.insert(schema.agendamentos)
+        .values({
+          clienteId: clientePadrao[0].id,
+          barbeiroId: parseInt(barbeiroId),
+          servicoId: servicoPadrao[0].id,
+          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
+          status: 'FINALIZADO',
+          observacoes: 'PASSOU A VEZ - Contabilizado como +1 atendimento'
+        })
+        .returning();
+
+      res.json({
+        success: true,
+        barbeiro: {
+          id: barbeiro[0].id,
+          nome: barbeiro[0].nome
+        },
+        agendamento: novoAgendamento[0],
+        message: 'Vez passada e contabilizada como +1 atendimento'
+      });
+
+    } catch (error) {
+      console.error('Erro ao passar a vez:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   return app;
 }

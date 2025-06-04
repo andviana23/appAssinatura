@@ -33,9 +33,23 @@ export default function ListaDaVez() {
     queryKey: ["/api/lista-da-vez/fila-mensal", mesAtual],
     queryFn: async () => {
       const response = await fetch(`/api/lista-da-vez/fila-mensal?mes=${mesAtual}`);
-      if (!response.ok) throw new Error('Erro ao carregar atendimentos');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na resposta do servidor:', errorText);
+        throw new Error('Erro ao carregar atendimentos');
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Resposta não é JSON:', textResponse);
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       return response.json();
-    }
+    },
+    staleTime: 30000, // Cache por 30 segundos para reduzir requisições
+    refetchInterval: false // Não refetch automático
   });
 
   const isLoading = isLoadingProfissionais || isLoadingAtendimentos;
@@ -82,8 +96,15 @@ export default function ListaDaVez() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao adicionar atendimento');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erro ao adicionar atendimento');
+        } else {
+          const errorText = await response.text();
+          console.error('Erro não-JSON na resposta:', errorText);
+          throw new Error('Erro no servidor - resposta inválida');
+        }
       }
       
       return response.json();
@@ -141,6 +162,44 @@ export default function ListaDaVez() {
       toast({
         title: "Atendimento manual adicionado!",
         description: `Barbeiro: ${data.barbeiro.nome}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    }
+  });
+
+  // Passar a vez (incrementa +1 atendimento)
+  const passarAVez = useMutation({
+    mutationFn: async (barbeiroId: number) => {
+      const response = await fetch('/api/lista-da-vez/passar-a-vez', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          barbeiroId: barbeiroId,
+          data: dayjs().format("YYYY-MM-DD"),
+          mesAno: mesAtual
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao passar a vez');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal", mesAtual] });
+
+      toast({
+        title: "Vez passada!",
+        description: `${data.barbeiro.nome} passou a vez (+1 atendimento)`,
       });
     },
     onError: (error: any) => {
@@ -236,23 +295,44 @@ export default function ListaDaVez() {
                     <h3 className="font-semibold text-lg text-foreground">{proximoBarbeiro.nome}</h3>
                     <p className="text-sm text-muted-foreground">{proximoBarbeiro.email}</p>
                   </div>
-                  <Button 
-                    onClick={() => adicionarCliente.mutate()}
-                    disabled={adicionarCliente.isPending}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    {adicionarCliente.isPending ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Adicionando...
-                      </div>
-                    ) : (
-                      <>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Adicionar Cliente
-                      </>
-                    )}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={() => adicionarCliente.mutate()}
+                      disabled={adicionarCliente.isPending}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      {adicionarCliente.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Adicionando...
+                        </div>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar Cliente
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => passarAVez.mutate(proximoBarbeiro.id)}
+                      disabled={passarAVez.isPending}
+                      variant="outline"
+                      className="w-full border-primary text-primary hover:bg-primary/10"
+                    >
+                      {passarAVez.isPending ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          Passando...
+                        </div>
+                      ) : (
+                        <>
+                          <Clock className="mr-2 h-4 w-4" />
+                          Passo a vez
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
