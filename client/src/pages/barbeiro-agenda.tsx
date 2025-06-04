@@ -157,10 +157,7 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Total Agendamentos</span>
               </div>
               <div className="text-2xl font-bold mt-1">
-                {agendaDia?.agendamentos?.filter((a: any) => {
-                  const hora = parseISO(a.dataHora).getHours();
-                  return hora >= 8 && hora < 20;
-                }).length || 0}
+                {agendaDia?.estatisticas?.total || 0}
               </div>
             </CardContent>
           </Card>
@@ -172,10 +169,7 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Finalizados</span>
               </div>
               <div className="text-2xl font-bold mt-1 text-green-600">
-                {agendaDia?.agendamentos?.filter((a: any) => {
-                  const hora = parseISO(a.dataHora).getHours();
-                  return hora >= 8 && hora < 20 && a.status === 'FINALIZADO';
-                }).length || 0}
+                {agendaDia?.estatisticas?.finalizados || 0}
               </div>
             </CardContent>
           </Card>
@@ -187,10 +181,7 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Pendentes</span>
               </div>
               <div className="text-2xl font-bold mt-1 text-orange-600">
-                {agendaDia?.agendamentos?.filter((a: any) => {
-                  const hora = parseISO(a.dataHora).getHours();
-                  return hora >= 8 && hora < 20 && a.status === 'AGENDADO';
-                }).length || 0}
+                {agendaDia?.estatisticas?.pendentes || 0}
               </div>
             </CardContent>
           </Card>
@@ -202,16 +193,9 @@ export default function BarbeiroAgenda() {
             <CardTitle>Agendamentos do Dia</CardTitle>
           </CardHeader>
           <CardContent>
-            {agendaDia?.agendamentos?.filter((agendamento: any) => {
-              const hora = parseISO(agendamento.dataHora).getHours();
-              return hora >= 8 && hora < 20;
-            }).length > 0 ? (
+            {agendaDia?.agendamentos?.length > 0 ? (
               <div className="space-y-4">
                 {agendaDia.agendamentos
-                  .filter((agendamento: any) => {
-                    const hora = parseISO(agendamento.dataHora).getHours();
-                    return hora >= 8 && hora < 20;
-                  })
                   .sort((a: any, b: any) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime())
                   .map((agendamento: any, index: number) => (
                     <div 

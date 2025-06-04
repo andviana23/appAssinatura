@@ -3640,11 +3640,14 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Não autenticado' });
       }
 
+      console.log(`[Barbeiro Agenda] Email do usuário logado: ${req.user.email}`);
+
       // Buscar o profissional correspondente ao usuário logado
       let profissionalId: number;
       
       if (req.user.role === 'admin' && req.query.barbeiroId) {
         profissionalId = parseInt(req.query.barbeiroId as string);
+        console.log(`[Barbeiro Agenda] Admin acessando barbeiro ID: ${profissionalId}`);
       } else {
         // Buscar profissional pelo email do usuário logado
         const profissional = await db.select()
@@ -3655,11 +3658,17 @@ export async function registerRoutes(app: Express): Promise<Express> {
           ))
           .limit(1);
 
+        console.log(`[Barbeiro Agenda] Resultado da busca do profissional:`, profissional);
+
         if (profissional.length === 0) {
-          return res.status(404).json({ message: 'Profissional barbeiro não encontrado' });
+          console.error(`[Barbeiro Agenda] ERRO: Profissional não cadastrado para email: ${req.user.email}`);
+          return res.status(404).json({ 
+            message: 'Profissional não cadastrado. Confira se o email e o tipo "barbeiro" estão corretos.' 
+          });
         }
 
         profissionalId = profissional[0].id;
+        console.log(`[Barbeiro Agenda] Profissional encontrado - ID: ${profissionalId}, Nome: ${profissional[0].nome}`);
       }
 
       const { data } = req.query;
@@ -3667,8 +3676,11 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
 
-      const dataInicio = new Date(data as string + 'T00:00:00');
-      const dataFim = new Date(data as string + 'T23:59:59');
+      // Configurar horários com timezone Brasil (UTC-3)
+      const dataInicio = new Date(data as string + 'T08:00:00-03:00');
+      const dataFim = new Date(data as string + 'T19:59:59-03:00');
+
+      console.log(`[Barbeiro Agenda] Buscando agendamentos entre: ${dataInicio.toISOString()} e ${dataFim.toISOString()}`);
 
       const agendamentos = await db.select({
         id: schema.agendamentos.id,
@@ -3695,7 +3707,22 @@ export async function registerRoutes(app: Express): Promise<Express> {
       ))
       .orderBy(schema.agendamentos.dataHora);
 
-      res.json({ agendamentos });
+      console.log(`[Barbeiro Agenda] Agendamentos encontrados: ${agendamentos.length}`);
+
+      // Calcular estatísticas
+      const total = agendamentos.length;
+      const finalizados = agendamentos.filter(a => a.status === 'FINALIZADO').length;
+      const pendentes = agendamentos.filter(a => a.status === 'AGENDADO').length;
+
+      const estatisticas = {
+        total,
+        finalizados,
+        pendentes
+      };
+
+      console.log(`[Barbeiro Agenda] Estatísticas:`, estatisticas);
+
+      res.json({ agendamentos, estatisticas });
 
     } catch (error) {
       console.error('Erro ao buscar agenda do barbeiro:', error);
