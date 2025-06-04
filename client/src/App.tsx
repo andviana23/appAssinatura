@@ -26,7 +26,6 @@ import Comissao from "@/pages/comissao";
 import DistribuicaoNova from "@/pages/distribuicao-nova";
 import TotalServicos from "@/pages/total-servicos";
 import BarbeiroDashboard from "@/pages/barbeiro-dashboard-reformulado";
-import BarbeiroAgenda from "@/pages/barbeiro-agenda";
 import DashboardRecepcionista from "@/pages/dashboard-recepcionista";
 import Agendamento from "@/pages/agendamento";
 import Configuracoes from "@/pages/configuracoes";
@@ -92,7 +91,6 @@ function AuthenticatedRoutes() {
         
         {/* Rotas específicas do Barbeiro */}
         <Route path="/barbeiro" component={BarbeiroDashboard} />
-        <Route path="/barbeiro-agenda" component={BarbeiroAgenda} />
 
         {/* Fallback para qualquer rota não encontrada */}
         <Route>
@@ -150,7 +148,7 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="trato-barbados-theme">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground">

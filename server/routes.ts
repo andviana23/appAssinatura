@@ -3580,7 +3580,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         .from(schema.agendamentos)
         .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
         .where(and(
-          eq(schema.agendamentos.barbeiroId, profissionalId),
+          eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
           eq(schema.agendamentos.status, 'FINALIZADO'),
           gte(schema.agendamentos.dataHora, inicioMes),
           lte(schema.agendamentos.dataHora, fimMes)
@@ -3640,35 +3640,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Não autenticado' });
       }
 
-      console.log(`[Barbeiro Agenda] Email do usuário logado: ${req.user.email}`);
-
-      // Buscar o profissional correspondente ao usuário logado
-      let profissionalId: number;
-      
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
       if (req.user.role === 'admin' && req.query.barbeiroId) {
-        profissionalId = parseInt(req.query.barbeiroId as string);
-        console.log(`[Barbeiro Agenda] Admin acessando barbeiro ID: ${profissionalId}`);
-      } else {
-        // Buscar profissional pelo email do usuário logado
-        const profissional = await db.select()
-          .from(schema.profissionais)
-          .where(and(
-            eq(schema.profissionais.email, req.user.email),
-            eq(schema.profissionais.tipo, 'barbeiro')
-          ))
-          .limit(1);
-
-        console.log(`[Barbeiro Agenda] Resultado da busca do profissional:`, profissional);
-
-        if (profissional.length === 0) {
-          console.error(`[Barbeiro Agenda] ERRO: Profissional não cadastrado para email: ${req.user.email}`);
-          return res.status(404).json({ 
-            message: 'Profissional não cadastrado. Confira se o email e o tipo "barbeiro" estão corretos.' 
-          });
-        }
-
-        profissionalId = profissional[0].id;
-        console.log(`[Barbeiro Agenda] Profissional encontrado - ID: ${profissionalId}, Nome: ${profissional[0].nome}`);
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const { data } = req.query;
@@ -3676,13 +3651,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
 
-      // Configurar horários sem timezone (assumindo horário local do banco)
-      const dataInicio = new Date(data as string + 'T08:00:00');
-      const dataFim = new Date(data as string + 'T19:59:59');
+      const dataInicio = new Date(data as string + 'T00:00:00');
+      const dataFim = new Date(data as string + 'T23:59:59');
 
-      console.log(`[Barbeiro Agenda] Buscando agendamentos entre: ${dataInicio.toISOString()} e ${dataFim.toISOString()}`);
-
-      const agendamentosRaw = await db.select({
+      const agendamentos = await db.select({
         id: schema.agendamentos.id,
         dataHora: schema.agendamentos.dataHora,
         status: schema.agendamentos.status,
@@ -3701,34 +3673,13 @@ export async function registerRoutes(app: Express): Promise<Express> {
       .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
       .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
       .where(and(
-        eq(schema.agendamentos.barbeiroId, profissionalId),
+        eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
         gte(schema.agendamentos.dataHora, dataInicio),
         lte(schema.agendamentos.dataHora, dataFim)
       ))
       .orderBy(schema.agendamentos.dataHora);
 
-      // Corrigir timezone - interpretar como horário brasileiro (UTC-3)
-      const agendamentos = agendamentosRaw.map(agendamento => ({
-        ...agendamento,
-        dataHora: new Date(agendamento.dataHora.getTime() + (3 * 60 * 60 * 1000)).toISOString()
-      }));
-
-      console.log(`[Barbeiro Agenda] Agendamentos encontrados: ${agendamentos.length}`);
-
-      // Calcular estatísticas
-      const total = agendamentos.length;
-      const finalizados = agendamentos.filter(a => a.status === 'FINALIZADO').length;
-      const pendentes = agendamentos.filter(a => a.status === 'AGENDADO').length;
-
-      const estatisticas = {
-        total,
-        finalizados,
-        pendentes
-      };
-
-      console.log(`[Barbeiro Agenda] Estatísticas:`, estatisticas);
-
-      res.json({ agendamentos, estatisticas });
+      res.json({ agendamentos });
 
     } catch (error) {
       console.error('Erro ao buscar agenda do barbeiro:', error);
@@ -3744,26 +3695,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Não autenticado' });
       }
 
-      // Buscar o profissional correspondente ao usuário logado
-      let profissionalId: number;
-      
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
       if (req.user.role === 'admin' && req.query.barbeiroId) {
-        profissionalId = parseInt(req.query.barbeiroId as string);
-      } else {
-        // Buscar profissional pelo email do usuário logado
-        const profissional = await db.select()
-          .from(schema.profissionais)
-          .where(and(
-            eq(schema.profissionais.email, req.user.email),
-            eq(schema.profissionais.tipo, 'barbeiro')
-          ))
-          .limit(1);
-
-        if (profissional.length === 0) {
-          return res.status(404).json({ message: 'Profissional barbeiro não encontrado' });
-        }
-
-        profissionalId = profissional[0].id;
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const hoje = new Date();
@@ -3773,7 +3708,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const registros = await db.select()
         .from(schema.listaVezAtendimentos)
         .where(and(
-          eq(schema.listaVezAtendimentos.barbeiroId, profissionalId),
+          eq(schema.listaVezAtendimentos.barbeiroId, parseInt(barbeiroId as string)),
           eq(schema.listaVezAtendimentos.mesAno, mesAno)
         ));
 
@@ -3803,26 +3738,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Não autenticado' });
       }
 
-      // Buscar o profissional correspondente ao usuário logado
-      let profissionalId: number;
-      
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
       if (req.user.role === 'admin' && req.query.barbeiroId) {
-        profissionalId = parseInt(req.query.barbeiroId as string);
-      } else {
-        // Buscar profissional pelo email do usuário logado
-        const profissional = await db.select()
-          .from(schema.profissionais)
-          .where(and(
-            eq(schema.profissionais.email, req.user.email),
-            eq(schema.profissionais.tipo, 'barbeiro')
-          ))
-          .limit(1);
-
-        if (profissional.length === 0) {
-          return res.status(404).json({ message: 'Profissional barbeiro não encontrado' });
-        }
-
-        profissionalId = profissional[0].id;
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const hoje = new Date();
@@ -3834,7 +3753,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         .from(schema.agendamentos)
         .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
         .where(and(
-          eq(schema.agendamentos.barbeiroId, profissionalId),
+          eq(schema.agendamentos.barbeiroId, parseInt(barbeiroId as string)),
           eq(schema.agendamentos.status, 'FINALIZADO'),
           gte(schema.agendamentos.dataHora, inicioMes),
           lte(schema.agendamentos.dataHora, fimMes)
