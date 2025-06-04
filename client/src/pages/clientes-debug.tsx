@@ -192,7 +192,7 @@ export default function ClientesDebugPage() {
                   <p className="text-sm text-muted-foreground">
                     {origem.origem === 'LOCAL_EXTERNO' && 'Clientes externos (PIX/Cartão)'}
                     {origem.origem === 'ASAAS_PRINCIPAL' && 'Conta principal Asaas'}
-                    {origem.origem === 'ASAAS_ANDREY' && 'Conta Andrey "Trato de Barbados"'}
+                    {origem.origem === 'ASAAS_AND' && 'Conta Andrey "Trato de Barbados"'}
                   </p>
                 </div>
                 <div className="text-right">
