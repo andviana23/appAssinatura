@@ -92,9 +92,9 @@ export default function Agendamento() {
     }
   }
 
-  // Get active barbeiros only (filter by role)
+  // Get active barbeiros only (filter by tipo)
   const activeBarbeiros = (profissionaisData?.data || []).filter((profissional: any) => 
-    profissional.ativo && profissional.role === 'barbeiro'
+    profissional.ativo && profissional.tipo === 'barbeiro'
   );
 
   // Update current time
@@ -324,123 +324,142 @@ export default function Agendamento() {
 
         {/* Grade da Agenda Dark Mode - Full Height */}
         <div className="bg-card relative flex-1 overflow-y-auto">
-          {/* Timeline Indicator - Current Time Line */}
-          {isTodaySelected && timelinePosition !== null && (
-            <div
-              className="absolute left-0 right-0 z-20 pointer-events-none"
-              style={{
-                top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 35))}px`,
-              }}
-            >
-              <div className="flex items-center">
-                <div className="w-[120px] bg-primary h-1 relative">
-                  <div className="absolute right-0 top-0 w-3 h-3 bg-primary rounded-full transform -translate-y-1"></div>
-                </div>
-                <div className="flex-1 bg-primary h-1 relative">
-                  <div className="absolute left-2 top-0 bg-primary text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
-                    {format(currentTime, "HH:mm")}
-                  </div>
-                </div>
+          {activeBarbeiros.length === 0 ? (
+            /* Mensagem quando não há barbeiros */
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Nenhum barbeiro disponível para agendamento
+                </h3>
+                <p className="text-muted-foreground">
+                  Cadastre profissionais com o tipo "barbeiro" para visualizar a agenda.
+                </p>
               </div>
             </div>
-          )}
-
-          {/* Header com nomes dos barbeiros - Altura reduzida */}
-          <div 
-            className="grid bg-muted border-b border-border relative z-10"
-            style={{ 
-              gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
-            }}
-          >
-            <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
-              <Clock className="h-3 w-3" />
-              <span className="text-xs">Horário</span>
-            </div>
-            {activeBarbeiros.map((barbeiro: Barbeiro) => (
-              <div key={barbeiro.id} className="p-2 border-r border-border text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
-                    <span className="text-primary font-bold text-xs">
-                      {barbeiro.nome.charAt(0).toUpperCase()}
-                    </span>
+          ) : (
+            <>
+              {/* Timeline Indicator - Current Time Line */}
+              {isTodaySelected && timelinePosition !== null && (
+                <div
+                  className="absolute left-0 right-0 z-20 pointer-events-none"
+                  style={{
+                    top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 35))}px`,
+                  }}
+                >
+                  <div className="flex items-center">
+                    <div className="w-[120px] bg-primary h-1 relative">
+                      <div className="absolute right-0 top-0 w-3 h-3 bg-primary rounded-full transform -translate-y-1"></div>
+                    </div>
+                    <div className="flex-1 bg-primary h-1 relative">
+                      <div className="absolute left-2 top-0 bg-primary text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
+                        {format(currentTime, "HH:mm")}
+                      </div>
+                    </div>
                   </div>
-                  <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
 
-          {/* Linhas de horário - Full Width */}
-          <div className="h-full overflow-y-auto">
-            {timeSlots.map((timeSlot) => (
+              {/* Header com nomes dos barbeiros - Altura reduzida */}
               <div 
-                key={timeSlot} 
-                className="grid border-b border-border min-h-[35px] hover:bg-muted/30 transition-colors group"
+                className="grid bg-muted border-b border-border relative z-10"
                 style={{ 
                   gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                 }}
               >
-                <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    {timeSlot}
-                  </div>
+                <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs">Horário</span>
                 </div>
-                
-                {activeBarbeiros.map((barbeiro: Barbeiro) => {
-                  const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
-                  
-                  return (
-                    <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[35px]">
-                      {agendamento ? (
-                        <div 
-                          className={`
-                            ${agendamento.status === "FINALIZADO" ? "bg-green-500/90 hover:bg-green-500" : ""}
-                            ${agendamento.status === "CANCELADO" ? "bg-gray-500/90 hover:bg-gray-600" : ""}
-                            ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
-                            ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
-                            rounded-md p-2 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
-                          `}
-                          onClick={() => abrirComanda(agendamento)}
-                          onContextMenu={(e) => handleContextMenu(e, agendamento)}
-                        >
-                          <div className="font-semibold text-white text-xs truncate mb-1">
-                            {agendamento.cliente?.nome}
-                          </div>
-                          <div className="text-white/90 text-xs truncate">
-                            {agendamento.servico?.nome}
-                          </div>
-                          
-                          {agendamento.status === "FINALIZADO" && (
-                            <div className="text-xs font-bold mt-1">
-                              <Check className="h-3 w-3" />
-                            </div>
-                          )}
-                          
-                          {agendamento.status === "CANCELADO" && (
-                            <div className="text-xs font-bold mt-1">
-                              <X className="h-3 w-3" />
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          className="w-full h-full flex items-center justify-center text-xs text-muted-foreground hover:bg-muted/50 transition-colors rounded-md group-hover:opacity-100 opacity-0"
-                          onClick={() => {
-                            setSelectedHour(timeSlot);
-                            setSelectedBarbeiro(barbeiro.id.toString());
-                            setIsModalOpen(true);
-                          }}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      )}
+                {activeBarbeiros.map((barbeiro: Barbeiro) => (
+                  <div key={barbeiro.id} className="p-2 border-r border-border text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
+                        <span className="text-primary font-bold text-xs">
+                          {barbeiro.nome.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+
+          {/* Linhas de horário - Full Width */}
+          {activeBarbeiros.length > 0 && (
+            <div className="h-full overflow-y-auto">
+              {timeSlots.map((timeSlot) => (
+                <div 
+                  key={timeSlot} 
+                  className="grid border-b border-border min-h-[35px] hover:bg-muted/30 transition-colors group"
+                  style={{ 
+                    gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
+                  }}
+                >
+                  <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      {timeSlot}
+                    </div>
+                  </div>
+                  
+                  {activeBarbeiros.map((barbeiro: Barbeiro) => {
+                    const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
+                    
+                    return (
+                      <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[35px]">
+                        {agendamento ? (
+                          <div 
+                            className={`
+                              ${agendamento.status === "FINALIZADO" ? "bg-green-500/90 hover:bg-green-500" : ""}
+                              ${agendamento.status === "CANCELADO" ? "bg-gray-500/90 hover:bg-gray-600" : ""}
+                              ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
+                              ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
+                              rounded-md p-2 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
+                            `}
+                            onClick={() => abrirComanda(agendamento)}
+                            onContextMenu={(e) => handleContextMenu(e, agendamento)}
+                          >
+                            <div className="font-semibold text-white text-xs truncate mb-1">
+                              {agendamento.cliente?.nome}
+                            </div>
+                            <div className="text-white/90 text-xs truncate">
+                              {agendamento.servico?.nome}
+                            </div>
+                            
+                            {agendamento.status === "FINALIZADO" && (
+                              <div className="text-xs font-bold mt-1">
+                                <Check className="h-3 w-3" />
+                              </div>
+                            )}
+                            
+                            {agendamento.status === "CANCELADO" && (
+                              <div className="text-xs font-bold mt-1">
+                                <X className="h-3 w-3" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            className="w-full h-full flex items-center justify-center text-xs text-muted-foreground hover:bg-muted/50 transition-colors rounded-md group-hover:opacity-100 opacity-0"
+                            onClick={() => {
+                              setSelectedHour(timeSlot);
+                              setSelectedBarbeiro(barbeiro.id.toString());
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
