@@ -73,33 +73,34 @@ export function Layout({ children }: LayoutProps) {
     );
   }
 
-  // Layout desktop/tablet - Estrutura fixa conforme vídeo
+  // Layout desktop/tablet - Estrutura sem sobreposições
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground">
-      {/* Header fixo no topo */}
-      <div className="fixed top-0 left-0 right-0 z-40 bg-card border-b border-border/50 shadow-sm">
-        <Header 
-          showMenuButton={false}
-          onMenuToggle={() => {}}
-        />
+    <div className="h-screen flex bg-background text-foreground overflow-hidden">
+      {/* Sidebar fixo na lateral esquerda */}
+      <div className="w-72 flex-shrink-0 bg-card border-r border-border/50 shadow-lg overflow-y-auto">
+        <Sidebar collapsed={false} />
       </div>
       
-      <div className="flex flex-1 pt-16"> {/* pt-16 para compensar header fixo */}
-        {/* Sidebar fixo na lateral com rolagem própria */}
-        <div className="fixed left-0 top-16 bottom-0 w-72 z-30 bg-card border-r border-border/50 shadow-lg overflow-y-auto">
-          <Sidebar collapsed={false} />
+      {/* Área principal com header e conteúdo */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header fixo no topo da área principal */}
+        <div className="flex-shrink-0 bg-card border-b border-border/50 shadow-sm">
+          <Header 
+            showMenuButton={false}
+            onMenuToggle={() => {}}
+          />
         </div>
         
         {/* Área de conteúdo central com rolagem independente */}
-        <div className="flex-1 ml-72"> {/* ml-72 para compensar sidebar */}
-          <main className="h-[calc(100vh-4rem)] overflow-y-auto bg-background">
-            <div className="container-responsive py-6 px-6">
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="h-full">
+            <div className="container-responsive py-6 px-6 min-h-full">
               <div className="max-w-7xl mx-auto">
                 {children}
               </div>
             </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
