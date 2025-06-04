@@ -2601,96 +2601,33 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      const asaasApiKey = process.env.ASAAS_AND;
+      const asaasApiKey = process.env.ASAAS_TRATO;
       if (!asaasApiKey) {
         return res.status(500).json({ 
           success: false,
-          message: 'Chave API ASAAS não configurada' 
+          message: 'Chave API ASAAS_TRATO não configurada' 
         });
       }
 
-      const baseUrl = 'https://www.asaas.com/api/v3';
-
-      // 1. Criar cliente no ASAAS
-      const customerData = {
-        name: cliente.name,
-        email: cliente.email || undefined,
-        phone: cliente.phone || undefined,
-        cpfCnpj: cliente.cpfCnpj || undefined
-      };
-
-      console.log('🔄 Criando cliente no ASAAS:', customerData);
-
-      const customerResponse = await fetch(`${baseUrl}/customers`, {
-        method: 'POST',
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(customerData)
-      });
-
-      const customerResult = await customerResponse.json();
-
-      if (!customerResponse.ok) {
-        console.error('❌ Erro ao criar cliente:', customerResult);
-        return res.status(400).json({
-          success: false,
-          message: 'Erro ao criar cliente no ASAAS',
-          error: customerResult
-        });
-      }
-
-      console.log('✅ Cliente criado:', customerResult.id);
-
-      // 2. Criar assinatura recorrente
-      const subscriptionData = {
-        customer: customerResult.id,
-        billingType: 'CREDIT_CARD', // Para checkout com cartão
-        nextDueDate: new Date().toISOString().split('T')[0],
-        value: parseFloat(assinatura.value),
-        cycle: assinatura.subscriptionCycle || 'MONTHLY',
-        description: assinatura.description || assinatura.name || 'Assinatura Mensal'
-      };
-
-      console.log('🔄 Criando assinatura recorrente:', subscriptionData);
-
-      const subscriptionResponse = await fetch(`${baseUrl}/subscriptions`, {
-        method: 'POST',
-        headers: {
-          'access_token': asaasApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(subscriptionData)
-      });
-
-      const subscriptionResult = await subscriptionResponse.json();
-
-      if (!subscriptionResponse.ok) {
-        console.error('❌ Erro ao criar assinatura:', subscriptionResult);
-        return res.status(400).json({
-          success: false,
-          message: 'Erro ao criar assinatura no ASAAS',
-          error: subscriptionResult
-        });
-      }
-
-      console.log('✅ Assinatura criada:', subscriptionResult.id);
-
-      // 3. Criar paymentLink para o primeiro pagamento
+      // Criar APENAS paymentLink recorrente - tudo em um só passo
       const paymentLinkData = {
-        name: `${assinatura.name} - Primeiro Pagamento`,
-        value: parseFloat(assinatura.value),
         billingType: 'CREDIT_CARD',
-        chargeType: 'DETACHED',
-        dueDateLimitDays: 7,
-        subscriptionId: subscriptionResult.id,
-        description: `Primeiro pagamento da assinatura: ${assinatura.description || assinatura.name}`
+        chargeType: 'RECURRENT',
+        name: assinatura.name || 'Assinatura Trato de Barbados',
+        description: assinatura.description || 'Plano Mensal Barbearia',
+        value: parseFloat(assinatura.value),
+        subscriptionCycle: 'MONTHLY',
+        customer: {
+          name: cliente.name,
+          email: cliente.email || undefined,
+          cpfCnpj: cliente.cpfCnpj || undefined,
+          mobilePhone: cliente.phone || undefined
+        }
       };
 
-      console.log('🔄 Criando paymentLink:', paymentLinkData);
+      console.log('🔄 Criando paymentLink recorrente ASAAS_TRATO:', paymentLinkData);
 
-      const paymentLinkResponse = await fetch(`${baseUrl}/paymentLinks`, {
+      const paymentLinkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
@@ -2702,30 +2639,28 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const paymentLinkResult = await paymentLinkResponse.json();
 
       if (!paymentLinkResponse.ok) {
-        console.error('❌ Erro ao criar paymentLink:', paymentLinkResult);
+        console.error('❌ Erro ao criar paymentLink recorrente:', paymentLinkResult);
         return res.status(400).json({
           success: false,
-          message: 'Erro ao criar link de pagamento',
+          message: 'Erro ao criar link de pagamento recorrente',
           error: paymentLinkResult
         });
       }
 
-      console.log('✅ PaymentLink criado:', paymentLinkResult.url);
+      console.log('✅ PaymentLink recorrente criado:', paymentLinkResult.url);
 
       // Resposta de sucesso no formato esperado pelo frontend
       res.json({
         success: true,
-        customer: customerResult,
-        subscription: subscriptionResult,
         paymentLink: {
           id: paymentLinkResult.id,
           url: paymentLinkResult.url
         },
-        message: 'Cliente e assinatura criados com sucesso'
+        message: 'Link de assinatura recorrente criado com sucesso'
       });
 
     } catch (error) {
-      console.error('💥 Erro ao criar cliente + assinatura:', error);
+      console.error('💥 Erro ao criar paymentLink recorrente:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor',
