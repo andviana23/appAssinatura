@@ -1,0 +1,139 @@
+Você vai implementar a criação de planos de assinatura no nosso sistema usando a API do Asaas. O objetivo é que, assim que um novo plano de assinatura for cadastrado, seja gerado automaticamente um link de pagamento recorrente no formato /i/, contendo o cliente vinculado (link individualizado). Para isso, siga este passo a passo:
+
+1. **Receber dados do cliente no nosso sistema**
+   - Quando o usuário (cliente) preencher o cadastro de assinatura no nosso sistema, receba as seguintes informações obrigatórias:
+     - nome completo (ex.: "João Silva")
+     - e-mail (ex.: "joao.silva@email.com")
+     - telefone (ex.: "(31) 98888-7777")
+     - CPF ou CNPJ (ex.: "123.456.789-09")
+   - Verifique que todos os campos estão no formato correto. Se faltar algum, retorne erro explicando qual campo está inválido.
+
+2. **Criar (ou recuperar) o cliente no Asaas**
+   - Endpoint: `POST https://www.asaas.com/api/v3/customers`
+   - Headers obrigatórios:
+     - `Content-Type: application/json`
+     - `access_token: {SEU_TOKEN_DE_API}`  (foi fornecido pelo Asaas)
+   - Corpo da requisição (JSON):
+     ```json
+     {
+       "name": "{{nome_do_cliente}}",
+       "email": "{{email_do_cliente}}",
+       "phone": "{{telefone_do_cliente}}",
+       "cpfCnpj": "{{cpfCnpj_do_cliente}}"
+     }
+     ```
+   - Se o cliente já existir (mesmo CPF/CNPJ), busque o `id` dele antes de criar. Caso contrário, crie um novo. O retorno bem-sucedido será um JSON com o campo `"id"` (por exemplo `"cus_1234567890abcdef"`). Capture esse `customerId`.
+
+3. **Criar o plano de assinatura no Asaas (opcional)**
+   - Se você quiser manter planos fixos no Asaas (para reutilizar), pode criar primeiro um plano de assinatura usando:
+     - Endpoint: `POST https://www.asaas.com/api/v3/subscriptions/plans`
+     - Corpo (exemplo):
+       ```json
+       {
+         "name": "{{nome_do_plano}}",                // ex.: "Clube Premium Mês"
+         "billingType": "CREDIT_CARD",                // ou "BOLETO" se usar boleto
+         "chargeType": "RECURRENT",
+         "cycle": "MONTHLY",                          // ou "WEEKLY", "YEARLY" etc.
+         "value": {{valor_do_plano}}                  // ex.: 249.90
+       }
+       ```
+     - Guarde o `planId` retornado. Se você não pretende criar um plano global e prefere gerar link direto com valores e ciclo no próprio link, pode pular esse passo e incluir os campos de valor e ciclo direto na criação do link (veja etapa 4 abaixo).
+
+4. **Gerar um link de pagamento recorrente individualizado (/i/)**
+   - Endpoint: `POST https://www.asaas.com/api/v3/paymentLinks`
+   - Headers obrigatórios:
+     - `Content-Type: application/json`
+     - `access_token: {SEU_TOKEN_DE_API}`
+   - Corpo da requisição (JSON). Existem duas opções:
+
+     **Opção A: Com plano já criado (passo 3)**
+     ```json
+     {
+       "billingType": "CREDIT_CARD",              // ou "BOLETO"
+       "chargeType": "RECURRENT",
+       "subscriptionPlanId": "{{planId}}",        // ID do plano criado em 3
+       "customer": "{{customerId}}",              // ID do cliente criado em 2
+       "name": "{{nome_do_cliente}}",             // pode repetir o nome para reforçar
+       "returnUrl": "{{url_de_retorno}}",          // opcional: URL para onde o usuário volta após pagar
+       "description": "{{descrição_exibida}}",    // ex.: "Assinatura mensal PREMIUM"
+       "notificationDisabled": false              // opcional, true desativa notificações do Asaas
+     }
+     ```
+     - O Asaas vai retornar um JSON com algo como:
+       ```json
+       {
+         "object": "paymentLinks",
+         "subscription": "sub_abcdef123456",       // ID da assinatura no Asaas
+         "id": "plink_abcdef123456",               // ID do link
+         "customer": "cus_1234567890abcdef",
+         "status": "ACTIVE",
+         "firstDueDate": "2025-06-10",
+         "value": 249.90,
+         "shortUrl": "https://asaas.com/i/AbCdEfGh",  // este é o link /i/
+         ...
+       }
+       ```
+     - O campo `shortUrl` sempre virá no formato `/i/`. Ex.: `https://asaas.com/i/AbCdEfGh`. Este é o link exclusivo para o cliente, já amarrado ao ID dele, e que exibirá o nome do cliente no checkout.
+
+     **Opção B: Sem plano prévio, definindo ciclo e valor direto no link**
+     ```json
+     {
+       "billingType": "CREDIT_CARD",              // ou "BOLETO"
+       "chargeType": "RECURRENT",
+       "name": "{{nome_do_cliente}}",             // ex.: "Assinatura Premium – João Silva"
+       "description": "{{descrição_exibida}}",    // ex.: "Plano mensal de cortes"
+       "value": {{valor_do_plano}},               // ex.: 249.90
+       "subscriptionCycle": "MONTHLY",            // ciclo direto sem precisar de planId
+       "customer": "{{customerId}}",              // ID do cliente criado em 2
+       "returnUrl": "{{url_de_retorno}}",          // opcional
+       "notificationDisabled": false              // opcional
+     }
+     ```
+     - A resposta também trará o campo `shortUrl` com `/i/`.
+
+5. **Salvar o link de pagamento no nosso banco de dados**
+   - Após receber a resposta do Asaas, extraia:
+     - `shortUrl` (link no formato `/i/`)
+     - `subscription` (o ID da assinatura, ex.: `sub_abcdef123456`)
+     - `id` do paymentLink (ex.: `plink_abcdef123456`)
+   - Armazene no nosso banco local, vinculando ao usuário interno, para futuras consultas e automatizações (ex.: notificações de cobrança, relatórios, etc.).
+
+6. **Fluxo final na aplicação web (visão do usuário)**
+   - Assim que o backend criar o link (passo 4) e salvar no banco (passo 5), retorne para o frontend:
+     - `shortUrl` gerado (ex.: `"https://asaas.com/i/AbCdEfGh"`)
+   - No frontend, redirecione o cliente para esse link ou exiba-o em botão “Pagar assinatura”.
+   - Quando o cliente clicar, abrirá o checkout com os dados dele já preenchidos (nome, talvez e-mail/CPF se ele estiver logado).
+
+7. **Verificar erros comuns e tratar exceções**
+   - Se der erro 400 (Bad Request), verifique:
+     - Formato de `cpfCnpj` válido (somente números ou formatado corretamente).
+     - `billingType` e `chargeType` compatíveis (para recorrente, sempre `RECURRENT`).
+   - Se der 401 (Unauthorized), confira o `access_token`.
+   - Se der 404 (Plan não encontrado) ou 422 (Regra de negócio), reveja o `planId` ou campos obrigatórios.
+   - Em caso de erro de rede ou timeout, tente novamente ou informe qual etapa falhou.
+
+8. **Testes recomendados**
+   - Crie um cliente de teste (CPF/CNPJ de teste, e-mail de teste).
+   - Gere um link de pagamento recorrente e valide que o retorno possui `shortUrl` começando com `https://asaas.com/i/`.
+   - Teste o fluxo de pagamento no Sandbox (ambiente de testes do Asaas, se disponível).
+   - Confirme no painel do Asaas que a assinatura foi criada e está ativa.
+
+---
+
+**Resumo da lógica central:**
+1. Receber dados do cliente.
+2. Criar ou recuperar cliente no Asaas (`POST /v3/customers`).
+3. (Opcional) Criar plano fixo no Asaas (`POST /v3/subscriptions/plans`).
+4. Gerar link de pagamento recorrente individualizado (`POST /v3/paymentLinks`) incluindo o campo `"customer": "{customerId}"`. O Asaas então retorna o `shortUrl` no formato `/i/`.
+5. Salvar o link (`shortUrl`) e IDs no banco.
+6. Devolver esse link ao frontend para o cliente pagar.
+
+---
+
+**Observações finais:**
+- Sempre use o header `access_token` correto.
+- O campo `"customer"` amarra o link ao ID do cliente, fazendo nascer o `/i/`.
+- Se quiser incluir o nome do cliente no nome do link, basta usar `"name": "Assinatura – {{nome_do_cliente}}"`.
+- Para boleto, troque `"billingType": "CREDIT_CARD"` por `"billingType": "BOLETO"`.
+
+Com esse prompt, o Replit terá todas as diretrizes para implementar a criação de links recursivos individualizados no Asaas.

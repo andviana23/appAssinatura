@@ -2700,5 +2700,139 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // =====================================================
+  // CRIAR PLANO DE ASSINATURA COM LINK /i/ INDIVIDUALIZADO
+  // =====================================================
+  
+  app.post("/api/planos/criar-assinatura", async (req: Request, res: Response) => {
+    try {
+      const { nome, email, telefone, cpfCnpj, plano } = req.body;
+      
+      // 1. Validar dados obrigatórios
+      if (!nome || !email || !telefone || !cpfCnpj) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Campos obrigatórios: nome, email, telefone, cpfCnpj' 
+        });
+      }
+
+      if (!plano || !plano.nome || !plano.valor) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Dados do plano obrigatórios: nome, valor' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_TRATO;
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          success: false,
+          message: 'Chave API ASAAS não configurada' 
+        });
+      }
+
+      // 2. Criar cliente no Asaas
+      const customerData = {
+        name: nome,
+        email: email,
+        phone: telefone,
+        cpfCnpj: cpfCnpj
+      };
+
+      console.log('🔄 Criando cliente no Asaas:', customerData);
+
+      const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      const customerResult = await customerResponse.json();
+
+      if (!customerResponse.ok) {
+        console.error('❌ Erro ao criar cliente:', customerResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar cliente no Asaas',
+          error: customerResult
+        });
+      }
+
+      const customerId = customerResult.id;
+      console.log('✅ Cliente criado com ID:', customerId);
+
+      // 4. Gerar link de pagamento recorrente individualizado (/i/)
+      const paymentLinkData = {
+        billingType: 'CREDIT_CARD',
+        chargeType: 'RECURRENT',
+        name: `${plano.nome} – ${nome}`,
+        description: plano.descricao || `Assinatura mensal ${plano.nome}`,
+        value: parseFloat(plano.valor),
+        subscriptionCycle: 'MONTHLY',
+        customer: customerId,
+        notificationDisabled: false
+      };
+
+      console.log('🔄 Criando paymentLink individualizado:', paymentLinkData);
+
+      const paymentLinkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentLinkData)
+      });
+
+      const paymentLinkResult = await paymentLinkResponse.json();
+
+      if (!paymentLinkResponse.ok) {
+        console.error('❌ Erro ao criar paymentLink:', paymentLinkResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar link de pagamento',
+          error: paymentLinkResult
+        });
+      }
+
+      console.log('✅ PaymentLink criado - Resposta completa:', JSON.stringify(paymentLinkResult, null, 2));
+
+      // Extrair o link correto da resposta
+      const linkUrl = paymentLinkResult.url || paymentLinkResult.shortUrl || paymentLinkResult.invoiceUrl;
+      
+      console.log('🔗 Link extraído:', linkUrl);
+
+      // 5. Salvar no banco de dados local (opcional - você pode implementar depois)
+      // TODO: Salvar customerResult.id, paymentLinkResult.id, linkUrl no banco
+
+      // 6. Retornar link para o frontend
+      res.json({
+        success: true,
+        cliente: {
+          id: customerId,
+          nome: customerResult.name
+        },
+        assinatura: {
+          id: paymentLinkResult.subscription || paymentLinkResult.id,
+          linkId: paymentLinkResult.id
+        },
+        linkUrl: linkUrl, // Link do Asaas
+        paymentLinkResponse: paymentLinkResult, // Resposta completa para debug
+        message: 'Plano de assinatura criado com link individualizado'
+      });
+
+    } catch (error) {
+      console.error('💥 Erro ao criar plano de assinatura:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   return app;
 }
