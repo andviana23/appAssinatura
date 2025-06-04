@@ -1382,21 +1382,17 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.get('/api/agendamentos', async (req: Request, res: Response) => {
     try {
       const { date, data } = req.query;
-      console.log('Query params recebidos:', { date, data, all: req.query });
       const dataFiltro = date || data; // Aceita tanto 'date' quanto 'data'
       
       if (!dataFiltro) {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
-      console.log('Filtro aplicado:', dataFiltro);
-      
       // Usar cast para string para compatibilidade com PostgreSQL
       const agendamentos = await db.select().from(schema.agendamentos)
         .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${dataFiltro}%`}`)
         .orderBy(schema.agendamentos.dataHora);
       
-      console.log('Agendamentos encontrados:', agendamentos.length);
       res.json(agendamentos);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
