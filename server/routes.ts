@@ -2676,14 +2676,18 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       console.log('✅ PaymentLink personalizado criado:', paymentLinkResult.url);
 
-      // Resposta de sucesso no formato esperado pelo frontend
+      // Resposta de sucesso com informações completas
       res.json({
         success: true,
+        customer: {
+          id: customerResult.id,
+          name: customerResult.name
+        },
         paymentLink: {
           id: paymentLinkResult.id,
           url: paymentLinkResult.url
         },
-        message: 'Link de assinatura recorrente criado com sucesso'
+        message: 'Cliente criado e link personalizado gerado com sucesso'
       });
 
     } catch (error) {
