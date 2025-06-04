@@ -302,14 +302,14 @@ export default function Planos() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-xl px-4 py-2 hover:bg-primary/20"
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 dark:bg-primary/20 rounded-xl px-4 py-2 hover:bg-primary/20 dark:hover:bg-primary/30"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-semibold">Voltar</span>
@@ -317,7 +317,7 @@ export default function Planos() {
           </div>
           
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-info bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Clube do Trato de Barbados
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -349,10 +349,10 @@ export default function Planos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {getFilteredPlanos().map((plano, index) => (
-              <Card key={`${plano.id || plano.nome}-${index}`} className="relative hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
+              <Card key={`${plano.id || plano.nome}-${index}`} className="relative hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 border-2 hover:border-primary/20 bg-card dark:bg-card">
                 {plano.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1">
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 shadow-md">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Popular
                     </Badge>
@@ -363,7 +363,7 @@ export default function Planos() {
                   <CardTitle className="text-2xl font-bold text-primary">
                     {plano.nome}
                   </CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm text-muted-foreground">
                     {plano.categoria}
                   </CardDescription>
                 </CardHeader>
@@ -378,7 +378,7 @@ export default function Planos() {
                   
                   <div className="space-y-2 text-left">
                     {plano.detalhes?.map((detalhe, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
+                      <div key={index} className="flex items-center gap-2 text-sm text-foreground">
                         <div className="w-2 h-2 rounded-full bg-primary"></div>
                         {detalhe}
                       </div>
@@ -386,7 +386,7 @@ export default function Planos() {
                   </div>
                   
                   <Button 
-                    className="w-full mt-6" 
+                    className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground" 
                     onClick={() => handleAssinar(plano)}
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
@@ -400,10 +400,10 @@ export default function Planos() {
 
         {/* Modal de Checkout */}
         <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-card dark:bg-card text-foreground border border-border">
             <DialogHeader>
-              <DialogTitle>Finalizar Assinatura</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-foreground">Finalizar Assinatura</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Plano: {checkoutData.planoSelecionado?.nome}
                 <br />
                 Valor: {formatCurrency(checkoutData.planoSelecionado?.valor || parseFloat(checkoutData.planoSelecionado?.valorMensal || '0'))} / mês
@@ -412,62 +412,66 @@ export default function Planos() {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome completo *</Label>
+                <Label htmlFor="nome" className="text-foreground">Nome completo *</Label>
                 <Input
                   id="nome"
                   value={checkoutData.nome}
                   onChange={(e) => setCheckoutData({...checkoutData, nome: e.target.value})}
                   placeholder="Seu nome completo"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" className="text-foreground">Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={checkoutData.email}
                   onChange={(e) => setCheckoutData({...checkoutData, email: e.target.value})}
                   placeholder="seu@email.com"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone *</Label>
+                <Label htmlFor="telefone" className="text-foreground">Telefone *</Label>
                 <Input
                   id="telefone"
                   value={checkoutData.telefone}
                   onChange={(e) => setCheckoutData({...checkoutData, telefone: formatPhone(e.target.value)})}
                   placeholder="(11) 99999-9999"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF *</Label>
+                <Label htmlFor="cpf" className="text-foreground">CPF *</Label>
                 <Input
                   id="cpf"
                   value={checkoutData.cpf}
                   onChange={(e) => setCheckoutData({...checkoutData, cpf: formatCPF(e.target.value)})}
                   placeholder="000.000.000-00"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Forma de pagamento</Label>
+                <Label className="text-foreground">Forma de pagamento</Label>
                 <RadioGroup
                   value={checkoutData.formaPagamento}
                   onValueChange={(value) => setCheckoutData({...checkoutData, formaPagamento: value})}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="CREDIT_CARD" id="credit" />
-                    <Label htmlFor="credit" className="flex items-center gap-2">
+                    <Label htmlFor="credit" className="flex items-center gap-2 text-foreground">
                       <CreditCard className="w-4 h-4" />
                       Cartão de Crédito (Checkout Asaas)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="EXTERNAL" id="external" />
-                    <Label htmlFor="external" className="flex items-center gap-2">
+                    <Label htmlFor="external" className="flex items-center gap-2 text-foreground">
                       <Banknote className="w-4 h-4" />
                       Pagamento Externo
                     </Label>
@@ -478,13 +482,13 @@ export default function Planos() {
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 border-border text-foreground hover:bg-muted"
                   onClick={() => setShowCheckoutModal(false)}
                 >
                   Cancelar
                 </Button>
                 <Button 
-                  className="flex-1"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={handleSubmitCheckout}
                   disabled={createCheckoutMutation.isPending}
                 >
@@ -497,10 +501,10 @@ export default function Planos() {
 
         {/* Modal de Pagamento Externo */}
         <Dialog open={showExternalPaymentModal} onOpenChange={setShowExternalPaymentModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-card dark:bg-card text-foreground border border-border">
             <DialogHeader>
-              <DialogTitle>Método de Pagamento</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-foreground">Método de Pagamento</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
                 Como o pagamento foi realizado?
               </DialogDescription>
             </DialogHeader>
@@ -512,21 +516,21 @@ export default function Planos() {
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="DEBIT" id="debit" />
-                  <Label htmlFor="debit" className="flex items-center gap-2">
+                  <Label htmlFor="debit" className="flex items-center gap-2 text-foreground">
                     <CreditCard className="w-4 h-4" />
                     Cartão de Débito
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="PIX" id="pix" />
-                  <Label htmlFor="pix" className="flex items-center gap-2">
+                  <Label htmlFor="pix" className="flex items-center gap-2 text-foreground">
                     <QrCode className="w-4 h-4" />
                     PIX
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="CASH" id="cash" />
-                  <Label htmlFor="cash" className="flex items-center gap-2">
+                  <Label htmlFor="cash" className="flex items-center gap-2 text-foreground">
                     <Banknote className="w-4 h-4" />
                     Dinheiro
                   </Label>
@@ -536,13 +540,13 @@ export default function Planos() {
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 border-border text-foreground hover:bg-muted"
                   onClick={() => setShowExternalPaymentModal(false)}
                 >
                   Voltar
                 </Button>
                 <Button 
-                  className="flex-1"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={handleExternalPayment}
                   disabled={externalPaymentMutation.isPending}
                 >
