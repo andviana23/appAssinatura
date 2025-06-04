@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 
 // Middleware de autorização baseado exclusivamente no campo role
 function requireRole(allowedRoles: string[]) {
-  return (req: any, res: Response, next: NextFunction) => {
+  return (req: Request & { user?: any }, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Usuário não autenticado' });
     }
@@ -32,6 +32,10 @@ const requireRecepcionista = requireRole(['admin', 'recepcionista']);
 const requireAnyRole = requireRole(['admin', 'barbeiro', 'recepcionista']);
 
 export async function registerRoutes(app: Express): Promise<Express> {
+  // Middleware para adicionar tipagem ao Request
+  app.use((req: any, res: any, next: any) => {
+    next();
+  });
   
   // Middleware de autenticação para anexar usuário à requisição
   app.use(async (req: any, res: Response, next: NextFunction) => {
@@ -3542,7 +3546,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // Endpoints para o painel reformulado do barbeiro
 
   // GET - Estatísticas do mês para o barbeiro
-  app.get('/api/barbeiro/estatisticas-mes', async (req: Request, res: Response) => {
+  app.get('/api/barbeiro/estatisticas-mes', async (req: any, res: Response) => {
     try {
       // Verificar autenticação
       if (!req.user) {
@@ -3633,7 +3637,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // GET - Agenda do barbeiro para um dia específico
-  app.get('/api/barbeiro/agenda', async (req: Request, res: Response) => {
+  app.get('/api/barbeiro/agenda', async (req: any, res: Response) => {
     try {
       // Verificar autenticação
       if (!req.user) {
@@ -3704,7 +3708,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // GET - Dados da lista da vez do barbeiro
-  app.get('/api/barbeiro/lista-da-vez', async (req: Request, res: Response) => {
+  app.get('/api/barbeiro/lista-da-vez', async (req: any, res: Response) => {
     try {
       // Verificar autenticação
       if (!req.user) {
@@ -3763,7 +3767,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
   // GET - Comissão do mês do barbeiro
-  app.get('/api/barbeiro/comissao-mes', async (req: Request, res: Response) => {
+  app.get('/api/barbeiro/comissao-mes', async (req: any, res: Response) => {
     try {
       // Verificar autenticação
       if (!req.user) {
