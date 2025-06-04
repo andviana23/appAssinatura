@@ -232,16 +232,16 @@ export default function BarbeiroAgenda() {
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">
-                              {agendamento.clienteNome || 'Cliente não informado'}
+                              {agendamento.cliente?.nome || 'Cliente não informado'}
                             </span>
                           </div>
                           
-                          {agendamento.servicoNome && (
+                          {agendamento.servico?.nome && (
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm text-muted-foreground">
-                                <span className="font-medium">{agendamento.servicoNome}</span>
-                                {agendamento.tempoMinutos && ` • ${agendamento.tempoMinutos}min`}
+                                <span className="font-medium">{agendamento.servico.nome}</span>
+                                {agendamento.servico?.tempoMinutos && ` • ${agendamento.servico.tempoMinutos}min`}
                               </span>
                             </div>
                           )}
