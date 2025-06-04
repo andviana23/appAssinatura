@@ -162,20 +162,15 @@ export default function Agendamento() {
   // Organize agendamentos by barbeiro and time - corrigido para formato ISO
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
-    // Corrigir parse de horário para formato ISO
-    const timeSlot = new Date(agendamento.dataHora).toLocaleTimeString("pt-BR", { 
+    // Corrigir parse de horário para formato ISO - ajustar fuso horário
+    const dataHora = new Date(agendamento.dataHora);
+    const timeSlot = dataHora.toLocaleTimeString("pt-BR", { 
       hour: "2-digit", 
-      minute: "2-digit" 
+      minute: "2-digit",
+      timeZone: "America/Sao_Paulo"
     });
     
-    console.log("Processando agendamento:", {
-      id: agendamento.id,
-      barbeiroId,
-      timeSlot,
-      dataHora: agendamento.dataHora,
-      cliente: agendamento.cliente?.nome,
-      servico: agendamento.servico?.nome
-    });
+
     
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
@@ -188,8 +183,7 @@ export default function Agendamento() {
     return acc;
   }, {}) : {};
   
-  console.log("Agendamentos organizados por barbeiro:", agendamentosByBarbeiro);
-  console.log("Total de agendamentos recebidos:", agendamentos?.length || 0);
+
 
   // Check if date has agendamentos
   const hasAgendamentos = (date: Date) => {
@@ -448,37 +442,38 @@ export default function Agendamento() {
                     const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
-                      <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[24px]">
+                      <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5">
                         {agendamento ? (
                           <div 
                             className={`
-                              ${agendamento.status === "FINALIZADO" ? "bg-green-500/90 hover:bg-green-500" : ""}
-                              ${agendamento.status === "CANCELADO" ? "bg-gray-500/90 hover:bg-gray-600" : ""}
-                              ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
-                              ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
-                              rounded-md p-2 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
+                              ${agendamento.status === "FINALIZADO" ? "bg-green-500 hover:bg-green-600" : ""}
+                              ${agendamento.status === "CANCELADO" ? "bg-gray-500 hover:bg-gray-600" : ""}
+                              ${agendamento.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
+                              ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
+                              rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
+                              w-full h-full min-h-[22px] flex flex-col justify-center px-1.5 py-1
                             `}
                             onClick={() => abrirComanda(agendamento)}
                             onContextMenu={(e) => handleContextMenu(e, agendamento)}
                           >
-                            <div className="font-semibold text-white text-xs truncate mb-1">
-                              {agendamento.cliente?.nome}
-                            </div>
-                            <div className="text-white/90 text-xs truncate">
-                              {agendamento.servico?.nome}
-                            </div>
-                            
-                            {agendamento.status === "FINALIZADO" && (
-                              <div className="text-xs font-bold mt-1">
-                                <Check className="h-3 w-3" />
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-white text-[10px] leading-tight truncate">
+                                  {agendamento.cliente?.nome}
+                                </div>
+                                <div className="text-white/90 text-[9px] leading-tight truncate mt-0.5">
+                                  {agendamento.servico?.nome}
+                                </div>
                               </div>
-                            )}
-                            
-                            {agendamento.status === "CANCELADO" && (
-                              <div className="text-xs font-bold mt-1">
-                                <X className="h-3 w-3" />
-                              </div>
-                            )}
+                              
+                              {agendamento.status === "FINALIZADO" && (
+                                <Check className="h-2.5 w-2.5 text-white/90 flex-shrink-0 ml-1" />
+                              )}
+                              
+                              {agendamento.status === "CANCELADO" && (
+                                <X className="h-2.5 w-2.5 text-white/90 flex-shrink-0 ml-1" />
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <button
