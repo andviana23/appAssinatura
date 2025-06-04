@@ -28,8 +28,8 @@ export default function Login() {
 
     try {
       await login({ email, password });
-      // Redirecionamento será feito automaticamente pelo sistema de autenticação
-      setLocation("/");
+      // Redirecionar para o dashboard após login bem-sucedido
+      setLocation("/dashboard");
     } catch (err) {
       setError("Email ou senha incorretos");
     }
