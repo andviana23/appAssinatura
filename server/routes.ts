@@ -1503,18 +1503,38 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
       
-      // Verificar duplicação de nome (case-insensitive)
+      // Verificar duplicação de nome com lógica inteligente para ativos/inativos
       const nomeFormatado = nome.trim().toLowerCase();
       const servicoExistente = await db.select().from(schema.servicos)
         .where(sql`LOWER(TRIM(${schema.servicos.nome})) = ${nomeFormatado}`)
         .limit(1);
       
       if (servicoExistente.length > 0) {
-        return res.status(400).json({
+        const servico = servicoExistente[0];
+        
+        // Se o serviço está ATIVO, não permitir duplicação
+        if (servico.isAssinatura) {
+          return res.status(400).json({
+            success: false,
+            message: `Já existe um serviço ativo com o nome "${servico.nome}"`,
+            errors: ['Nome duplicado'],
+            servicoStatus: 'ativo',
+            servicoExistente: servico
+          });
+        }
+        
+        // Se o serviço está INATIVO, oferecer opção de reativação
+        return res.status(409).json({
           success: false,
-          message: `Já existe um serviço com o nome "${servicoExistente[0].nome}"`,
-          errors: ['Nome duplicado'],
-          servicoExistente: servicoExistente[0].nome
+          message: `Existe um serviço inativo com o nome "${servico.nome}"`,
+          errors: ['Serviço inativo encontrado'],
+          servicoStatus: 'inativo',
+          servicoExistente: servico,
+          opcoes: {
+            reativar: true,
+            criarNovo: false
+          },
+          sugestao: 'Deseja reativar o serviço existente ou escolher outro nome?'
         });
       }
       
@@ -1638,6 +1658,61 @@ export async function registerRoutes(app: Express): Promise<Express> {
       res.status(500).json({ 
         success: false,
         message: 'Erro interno do servidor ao atualizar serviço' 
+      });
+    }
+  });
+
+  /**
+   * PATCH /api/servicos/:id/reativar
+   * Reativa serviço inativo
+   */
+  app.patch('/api/servicos/:id/reativar', async (req: Request, res: Response) => {
+    try {
+      const servicoId = parseInt(req.params.id);
+      
+      if (isNaN(servicoId) || servicoId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do serviço inválido'
+        });
+      }
+      
+      // Verificar se serviço existe e está inativo
+      const [servicoExistente] = await db.select().from(schema.servicos)
+        .where(eq(schema.servicos.id, servicoId))
+        .limit(1);
+      
+      if (!servicoExistente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Serviço não encontrado'
+        });
+      }
+      
+      if (servicoExistente.isAssinatura) {
+        return res.status(400).json({
+          success: false,
+          message: 'Serviço já está ativo'
+        });
+      }
+      
+      // Reativar serviço
+      const [servicoReativado] = await db.update(schema.servicos)
+        .set({ isAssinatura: true })
+        .where(eq(schema.servicos.id, servicoId))
+        .returning();
+      
+      res.json({
+        success: true,
+        message: 'Serviço reativado com sucesso',
+        data: servicoReativado
+      });
+      
+    } catch (error) {
+      console.error('Erro ao reativar serviço:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor ao reativar serviço' 
       });
     }
   });

@@ -40,12 +40,24 @@ export default function Servicos() {
   });
 
   const [nomeError, setNomeError] = useState<string | null>(null);
+  const [filtroStatus, setFiltroStatus] = useState<'ativo' | 'inativo' | 'todos'>('ativo');
+  const [servicoParaReativar, setServicoParaReativar] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: servicos, isLoading } = useQuery<Servico[]>({
-    queryKey: ["/api/servicos"],
+  const { data: servicosData, isLoading } = useQuery<any>({
+    queryKey: ["/api/servicos", { status: filtroStatus === 'todos' ? undefined : filtroStatus }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filtroStatus !== 'todos') {
+        params.append('status', filtroStatus);
+      }
+      const response = await fetch(`/api/servicos?${params}`);
+      return response.json();
+    }
   });
+
+  const servicos = servicosData?.data || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: ServicoFormData) => {
@@ -79,11 +91,77 @@ export default function Servicos() {
         description: "O novo serviço foi adicionado à lista.",
       });
     },
-    onError: (error: Error) => {
-      console.error("Erro ao cadastrar serviço:", error);
+    onError: async (error: Error, variables, context) => {
+      try {
+        const errorResponse = await fetch("/api/servicos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nome: variables.nome,
+            tempoMinutos: variables.tempoMinutos,
+            percentualComissao: 40,
+          }),
+        });
+        
+        if (!errorResponse.ok) {
+          const errorData = await errorResponse.json();
+          
+          // Verificar se é um serviço inativo que pode ser reativado
+          if (errorResponse.status === 409 && errorData.servicoStatus === 'inativo') {
+            setServicoParaReativar(errorData.servicoExistente);
+            toast({
+              title: "Serviço inativo encontrado",
+              description: errorData.message,
+              variant: "default",
+            });
+            return;
+          }
+          
+          toast({
+            title: "Erro ao cadastrar serviço",
+            description: errorData.message || "Tente novamente em alguns instantes.",
+            variant: "destructive",
+          });
+        }
+      } catch (err) {
+        toast({
+          title: "Erro ao cadastrar serviço",
+          description: "Tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Mutation para reativar serviços inativos
+  const reativarMutation = useMutation({
+    mutationFn: async (servicoId: number) => {
+      const response = await fetch(`/api/servicos/${servicoId}/reativar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao reativar serviço");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
+      setServicoParaReativar(null);
+      setIsDialogOpen(false);
+      resetForm();
       toast({
-        title: "Erro ao cadastrar serviço",
-        description: error.message || "Tente novamente em alguns instantes.",
+        title: "Serviço reativado com sucesso!",
+        description: "O serviço foi reativado e está disponível novamente.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao reativar serviço",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -188,6 +266,31 @@ export default function Servicos() {
               <p className="text-lg text-muted-foreground">
                 Gerencie os serviços oferecidos pela barbearia
               </p>
+            </div>
+            
+            {/* Filtros de Status */}
+            <div className="flex gap-2">
+              <Button
+                variant={filtroStatus === 'ativo' ? 'default' : 'outline'}
+                onClick={() => setFiltroStatus('ativo')}
+                className="rounded-lg"
+              >
+                Ativos ({servicos?.filter((s: any) => s.isAssinatura).length || 0})
+              </Button>
+              <Button
+                variant={filtroStatus === 'inativo' ? 'default' : 'outline'}
+                onClick={() => setFiltroStatus('inativo')}
+                className="rounded-lg"
+              >
+                Inativos ({servicos?.filter((s: any) => !s.isAssinatura).length || 0})
+              </Button>
+              <Button
+                variant={filtroStatus === 'todos' ? 'default' : 'outline'}
+                onClick={() => setFiltroStatus('todos')}
+                className="rounded-lg"
+              >
+                Todos ({servicos?.length || 0})
+              </Button>
             </div>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
