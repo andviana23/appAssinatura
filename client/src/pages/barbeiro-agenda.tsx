@@ -157,7 +157,10 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Total Agendamentos</span>
               </div>
               <div className="text-2xl font-bold mt-1">
-                {agendaDia?.agendamentos?.length || 0}
+                {agendaDia?.agendamentos?.filter((a: any) => {
+                  const hora = parseISO(a.dataHora).getHours();
+                  return hora >= 8 && hora < 20;
+                }).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -169,7 +172,10 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Finalizados</span>
               </div>
               <div className="text-2xl font-bold mt-1 text-green-600">
-                {agendaDia?.agendamentos?.filter((a: any) => a.status === 'FINALIZADO').length || 0}
+                {agendaDia?.agendamentos?.filter((a: any) => {
+                  const hora = parseISO(a.dataHora).getHours();
+                  return hora >= 8 && hora < 20 && a.status === 'FINALIZADO';
+                }).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -181,7 +187,10 @@ export default function BarbeiroAgenda() {
                 <span className="text-sm text-muted-foreground">Pendentes</span>
               </div>
               <div className="text-2xl font-bold mt-1 text-orange-600">
-                {agendaDia?.agendamentos?.filter((a: any) => a.status === 'AGENDADO').length || 0}
+                {agendaDia?.agendamentos?.filter((a: any) => {
+                  const hora = parseISO(a.dataHora).getHours();
+                  return hora >= 8 && hora < 20 && a.status === 'AGENDADO';
+                }).length || 0}
               </div>
             </CardContent>
           </Card>
@@ -193,9 +202,16 @@ export default function BarbeiroAgenda() {
             <CardTitle>Agendamentos do Dia</CardTitle>
           </CardHeader>
           <CardContent>
-            {agendaDia?.agendamentos?.length > 0 ? (
+            {agendaDia?.agendamentos?.filter((agendamento: any) => {
+              const hora = parseISO(agendamento.dataHora).getHours();
+              return hora >= 8 && hora < 20;
+            }).length > 0 ? (
               <div className="space-y-4">
                 {agendaDia.agendamentos
+                  .filter((agendamento: any) => {
+                    const hora = parseISO(agendamento.dataHora).getHours();
+                    return hora >= 8 && hora < 20;
+                  })
                   .sort((a: any, b: any) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime())
                   .map((agendamento: any, index: number) => (
                     <div 
@@ -212,7 +228,7 @@ export default function BarbeiroAgenda() {
                           </Badge>
                         </div>
                         
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">
@@ -224,25 +240,12 @@ export default function BarbeiroAgenda() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm text-muted-foreground">
-                                {agendamento.servicoNome}
-                                {agendamento.tempoMinutos && ` (${agendamento.tempoMinutos}min)`}
+                                <span className="font-medium">{agendamento.servicoNome}</span>
+                                {agendamento.tempoMinutos && ` • ${agendamento.tempoMinutos}min`}
                               </span>
                             </div>
                           )}
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        {agendamento.status === 'AGENDADO' && (
-                          <>
-                            <Button size="sm" variant="default" className="flex-1 sm:flex-none">
-                              Finalizar
-                            </Button>
-                            <Button size="sm" variant="outline" className="flex-1 sm:flex-none">
-                              Cancelar
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -252,7 +255,7 @@ export default function BarbeiroAgenda() {
                 <Calendar className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">Nenhum agendamento</h3>
                 <p className="text-muted-foreground">
-                  Não há agendamentos para {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                  Não há agendamentos no horário de funcionamento (08:00-20:00) para {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
               </div>
             )}
