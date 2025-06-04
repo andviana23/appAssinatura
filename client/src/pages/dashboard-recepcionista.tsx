@@ -23,7 +23,12 @@ export default function DashboardRecepcionista() {
     queryFn: async () => {
       const response = await fetch(`/api/agendamentos?data=${hoje}`);
       if (!response.ok) throw new Error('Erro ao carregar agendamentos');
-      return response.json();
+      const data = await response.json();
+      // Filtrar apenas agendamentos no horário válido (08:00-20:00)
+      return Array.isArray(data) ? data.filter((ag: any) => {
+        const hour = new Date(ag.dataHora).getHours();
+        return hour >= 8 && hour <= 20;
+      }) : [];
     }
   });
 
@@ -35,7 +40,12 @@ export default function DashboardRecepcionista() {
       if (!response.ok) throw new Error('Erro ao carregar agendamentos futuros');
       const data = await response.json();
       const agora = new Date();
-      return Array.isArray(data) ? data.filter((ag: any) => new Date(ag.dataHora) > agora) : [];
+      // Filtrar apenas agendamentos futuros no horário válido (08:00-20:00)
+      return Array.isArray(data) ? data.filter((ag: any) => {
+        const agendamentoDate = new Date(ag.dataHora);
+        const hour = agendamentoDate.getHours();
+        return agendamentoDate > agora && hour >= 8 && hour <= 20;
+      }) : [];
     }
   });
 

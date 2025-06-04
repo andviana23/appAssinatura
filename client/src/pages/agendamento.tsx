@@ -388,6 +388,19 @@ export default function Agendamento() {
       return;
     }
 
+    // Validar horário permitido (08:00 às 20:00)
+    const [hour] = selectedHour.split(':');
+    const hourNumber = parseInt(hour);
+    
+    if (hourNumber < 8 || hourNumber > 20) {
+      toast({
+        title: "Horário não permitido",
+        description: "Agendamentos só são permitidos entre 08:00 e 20:00",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const dataHora = `${format(selectedDate, "yyyy-MM-dd")} ${selectedHour}:00`;
     
     createMutation.mutate({

@@ -1574,6 +1574,16 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
+      // Validar horário permitido (08:00 às 20:00)
+      const dataHoraValidacao = new Date(dataHora);
+      const hour = dataHoraValidacao.getHours();
+      
+      if (hour < 8 || hour > 20) {
+        return res.status(400).json({
+          message: 'Agendamentos só são permitidos entre 08:00 e 20:00'
+        });
+      }
+
       // Validar se cliente existe e está ativo
       const cliente = await db.select()
         .from(schema.clientes)
@@ -1641,8 +1651,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Converter string para Date object
-      const dataHoraDate = new Date(dataHora);
+      // Converter string para Date object (renomeando para evitar conflito)
+      const dataHoraFinal = new Date(dataHora);
       
       // Criar o agendamento usando Drizzle ORM
       const [novoAgendamento] = await db.insert(schema.agendamentos)
