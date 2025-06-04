@@ -443,7 +443,7 @@ export default function Agendamento() {
               <div 
                 className="grid bg-muted border-b border-border relative z-10"
                 style={{ 
-                  gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                  gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
                 }}
               >
                 <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
@@ -474,7 +474,7 @@ export default function Agendamento() {
                   key={timeSlot} 
                   className="grid border-b border-border min-h-[24px] hover:bg-muted/30 transition-colors group"
                   style={{ 
-                    gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                    gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
                   }}
                 >
                   <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
