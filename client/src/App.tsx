@@ -45,15 +45,22 @@ function AuthenticatedRoutes() {
 
   // Componente para renderizar dashboard baseado no role
   const renderDashboard = () => {
+    console.log("🔍 DEBUG - User objeto completo:", user);
+    console.log("🔍 DEBUG - userRole:", userRole);
+    console.log("🔍 DEBUG - user?.role:", user?.role);
+    
     switch (userRole) {
       case "admin":
+        console.log("✅ Renderizando AdminDashboard para role:", userRole);
         return <AdminDashboard />;
       case "barbeiro":
+        console.log("✅ Renderizando BarbeiroDashboard para role:", userRole);
         return <BarbeiroDashboard />;
       case "recepcionista":
+        console.log("✅ Renderizando RecepcionistaDashboard para role:", userRole);
         return <RecepcionistaDashboard />;
       default:
-        // Fallback para admin em caso de role indefinido
+        console.log("⚠️ Role indefinido, usando fallback AdminDashboard. Role:", userRole);
         return <AdminDashboard />;
     }
   };
