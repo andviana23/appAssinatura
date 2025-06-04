@@ -1430,7 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // Agendamentos com filtros otimizados
+  // Agendamentos com filtros otimizados e JOINs completos
   app.get('/api/agendamentos', async (req: Request, res: Response) => {
     try {
       const { date, data } = req.query;
@@ -1440,8 +1440,31 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
-      // Usar cast para string para compatibilidade com PostgreSQL
-      const agendamentos = await db.select().from(schema.agendamentos)
+      // Query com JOINs para retornar dados completos
+      const agendamentos = await db
+        .select({
+          id: schema.agendamentos.id,
+          clienteId: schema.agendamentos.clienteId,
+          barbeiroId: schema.agendamentos.barbeiroId,
+          servicoId: schema.agendamentos.servicoId,
+          dataHora: schema.agendamentos.dataHora,
+          status: schema.agendamentos.status,
+          observacoes: schema.agendamentos.observacoes,
+          cliente: {
+            nome: schema.clientes.nome
+          },
+          barbeiro: {
+            nome: schema.profissionais.nome
+          },
+          servico: {
+            nome: schema.servicos.nome,
+            tempoMinutos: schema.servicos.tempoMinutos
+          }
+        })
+        .from(schema.agendamentos)
+        .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
+        .leftJoin(schema.profissionais, eq(schema.agendamentos.barbeiroId, schema.profissionais.id))
+        .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
         .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${dataFiltro}%`}`)
         .orderBy(schema.agendamentos.dataHora);
       

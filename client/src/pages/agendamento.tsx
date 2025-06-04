@@ -159,10 +159,14 @@ export default function Agendamento() {
   const monthEnd = endOfMonth(currentCalendarDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Organize agendamentos by barbeiro and time
+  // Organize agendamentos by barbeiro and time - corrigido para formato ISO
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
-    const timeSlot = agendamento.dataHora.split(' ')[1]?.substring(0, 5);
+    // Corrigir parse de horário para formato ISO
+    const timeSlot = new Date(agendamento.dataHora).toLocaleTimeString("pt-BR", { 
+      hour: "2-digit", 
+      minute: "2-digit" 
+    });
     
     console.log("Processando agendamento:", {
       id: agendamento.id,

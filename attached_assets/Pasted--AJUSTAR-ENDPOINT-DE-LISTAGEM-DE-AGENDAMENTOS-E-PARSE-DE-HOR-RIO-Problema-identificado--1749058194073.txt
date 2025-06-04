@@ -1,0 +1,53 @@
+⚠️ AJUSTAR ENDPOINT DE LISTAGEM DE AGENDAMENTOS E PARSE DE HORÁRIO ⚠️
+
+**Problema identificado:**
+- O endpoint GET `/api/agendamentos` retorna apenas os IDs de cliente, barbeiro e serviço, mas NÃO faz JOIN com as tabelas relacionadas.
+- O frontend espera receber os dados completos do agendamento, incluindo nomes de cliente, barbeiro e serviço.
+- O campo `dataHora` está em formato ISO (`2025-06-04T08:00:00.000Z`), mas o frontend espera hora/minuto em formato `"HH:MM"` — o parse está quebrando, então os agendamentos não aparecem na timeline.
+
+**O que deve ser feito:**
+
+1. **No backend, ajuste o endpoint de listagem `/api/agendamentos` para retornar os dados COMPLETOS dos agendamentos:**
+   - Faça JOIN (ou include/populate, dependendo do ORM/Query Builder) com as tabelas de clientes, barbeiros e serviços.
+   - Para cada agendamento, retorne um objeto já com:
+     - Nome do cliente
+     - Nome do barbeiro
+     - Nome do serviço
+     - E todos os campos relevantes (exemplo abaixo).
+   - Exemplo de resposta esperada:
+     ```json
+     {
+       "id": 40,
+       "clienteId": 49,
+       "clienteNome": "João da Silva",
+       "barbeiroId": 1,
+       "barbeiroNome": "Vinicius",
+       "servicoId": 23,
+       "servicoNome": "Corte Degradê",
+       "dataHora": "2025-06-04T11:00:00.000Z",
+       "status": "AGENDADO"
+     }
+     ```
+   - Se possível, mantenha o formato ISO de dataHora, mas documente isso para o frontend.
+
+2. **No frontend, ajuste o parse do campo `dataHora` para extrair corretamente o horário, mesmo vindo em formato ISO:**
+   - Use:
+     ```js
+     const hora = new Date(agendamento.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+     ```
+   - Isso garante que o horário seja sempre extraído corretamente, independente do formato salvo.
+
+3. **Garanta que ao buscar a lista de agendamentos, o frontend sempre tenha disponível:**
+   - Nome do cliente (exibido no card do agendamento)
+   - Nome do barbeiro
+   - Nome do serviço
+   - Horário correto para montar o card na timeline
+
+4. **Não altere nada nas rotas de criação de agendamento — só ajuste a rota/listagem e o parse de horário do frontend.**
+
+5. **Teste:**
+   - Crie um novo agendamento normalmente.
+   - O card deve aparecer na agenda do dia, no horário e barbeiro corretos, já com todos os nomes e infos.
+
+Quando corrigir, me avise para testar e validar.
+
