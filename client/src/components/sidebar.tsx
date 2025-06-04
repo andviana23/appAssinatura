@@ -157,6 +157,11 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   return (
     <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300 relative`}>
       
+      {/* TESTE: Indicador Visual - REMOVER DEPOIS */}
+      <div className="bg-red-500 text-white p-2 text-center font-bold">
+        AJUSTE APLICADO - SIDEBAR ATIVA
+      </div>
+
       {/* Toggle Button - Premium Style */}
       {!mobile && (
         <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-4 border-b border-border/50`}>
