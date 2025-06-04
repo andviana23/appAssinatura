@@ -161,18 +161,21 @@ export default function Agendamento() {
   const monthEnd = endOfMonth(currentCalendarDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Organize agendamentos by barbeiro and time - corrigido para formato ISO
+  // Organize agendamentos by barbeiro and time - corrigido para fuso horário
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
-    // Corrigir parse de horário para formato ISO - ajustar fuso horário
-    const dataHora = new Date(agendamento.dataHora);
-    const timeSlot = dataHora.toLocaleTimeString("pt-BR", { 
+    
+    // Criar data corrigindo o fuso horário (UTC +3 horas para Brazil)
+    const dataHoraUTC = new Date(agendamento.dataHora);
+    const dataHoraLocal = new Date(dataHoraUTC.getTime() + (3 * 60 * 60 * 1000)); // Adicionar 3 horas
+    
+    const timeSlot = dataHoraLocal.toLocaleTimeString("pt-BR", { 
       hour: "2-digit", 
       minute: "2-digit",
-      timeZone: "America/Sao_Paulo"
+      hour12: false
     });
     
-    console.log(`Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora: ${agendamento.dataHora}`);
+    console.log(`Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora original: ${agendamento.dataHora}, DataHora corrigida: ${dataHoraLocal}`);
     
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
