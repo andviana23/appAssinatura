@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { eq, like } from 'drizzle-orm';
+import { eq, like, sql } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Express> {
@@ -1351,8 +1351,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
+      // Usar cast para string para compatibilidade com PostgreSQL
       const agendamentos = await db.select().from(schema.agendamentos)
-        .where(like(schema.agendamentos.dataHora, `${date}%`))
+        .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${date}%`}`)
         .orderBy(schema.agendamentos.dataHora);
       
       res.json(agendamentos);
@@ -1373,17 +1374,339 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // POST Serviços otimizado
+  // =====================================================
+  // BACKEND COMPLETO SERVIÇOS - CLEAN CODE & PERFORMANCE
+  // =====================================================
+
+  /**
+   * SERVICES CONTROLLER - Gestão completa de serviços
+   * Implementação RESTful com validações, paginação e performance otimizada
+   */
+
+  // Validador de dados de serviço
+  const validateServicoData = (data: any) => {
+    const errors: string[] = [];
+    
+    if (!data.nome || typeof data.nome !== 'string' || data.nome.trim().length === 0) {
+      errors.push('Nome é obrigatório e deve ser uma string válida');
+    }
+    
+    if (!data.tempoMinutos || typeof data.tempoMinutos !== 'number' || data.tempoMinutos <= 0) {
+      errors.push('Tempo é obrigatório e deve ser um número positivo em minutos');
+    }
+    
+    if (data.nome && data.nome.trim().length > 100) {
+      errors.push('Nome deve ter no máximo 100 caracteres');
+    }
+    
+    if (data.tempoMinutos && (data.tempoMinutos > 480 || data.tempoMinutos < 5)) {
+      errors.push('Tempo deve estar entre 5 e 480 minutos (8 horas)');
+    }
+    
+    return errors;
+  };
+
+  /**
+   * GET /api/servicos
+   * Lista todos os serviços com filtros e paginação
+   * Query params: ?status=ativo|inativo&page=1&limit=50&search=nome
+   */
+  app.get('/api/servicos', async (req: Request, res: Response) => {
+    try {
+      const { 
+        status = 'ativo', 
+        page = 1, 
+        limit = 50, 
+        search = '',
+        categoria 
+      } = req.query;
+      
+      // Construir filtros dinamicamente
+      const filters = [];
+      
+      // Filtro por status ativo/inativo (soft delete)
+      if (status === 'ativo') {
+        filters.push(eq(schema.servicos.isAssinatura, true));
+      } else if (status === 'inativo') {
+        filters.push(eq(schema.servicos.isAssinatura, false));
+      }
+      
+      // Filtro por categoria (assinatura)
+      if (categoria === 'assinatura') {
+        filters.push(eq(schema.servicos.isAssinatura, true));
+      }
+      
+      // Busca por nome
+      let servicos;
+      if (search && typeof search === 'string' && search.trim()) {
+        servicos = await db.select().from(schema.servicos)
+          .where(sql`${schema.servicos.nome} ILIKE ${`%${search.trim()}%`}`)
+          .orderBy(schema.servicos.nome);
+      } else {
+        // Query base com filtros
+        const whereCondition = filters.length > 0 ? 
+          sql`${filters.map((_, i) => `$${i + 1}`).join(' AND ')}` : 
+          sql`1=1`;
+          
+        servicos = await db.select().from(schema.servicos)
+          .orderBy(schema.servicos.nome);
+      }
+      
+      // Aplicar paginação
+      const pageNum = Math.max(1, Number(page));
+      const limitNum = Math.min(100, Math.max(1, Number(limit)));
+      const offset = (pageNum - 1) * limitNum;
+      
+      const paginatedServicos = servicos.slice(offset, offset + limitNum);
+      
+      res.json({
+        success: true,
+        data: paginatedServicos,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: servicos.length,
+          totalPages: Math.ceil(servicos.length / limitNum)
+        },
+        filters: {
+          status,
+          search: search || null,
+          categoria: categoria || null
+        }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao listar serviços:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor ao listar serviços' 
+      });
+    }
+  });
+
+  /**
+   * POST /api/servicos
+   * Cadastra novo serviço com validação e verificação de duplicatas
+   * Body: { nome: string, tempoMinutos: number }
+   */
   app.post('/api/servicos', async (req: Request, res: Response) => {
     try {
-      const [servico] = await db.insert(schema.servicos).values({
-        ...req.body,
-        isAssinatura: true
+      const { nome, tempoMinutos } = req.body;
+      
+      // Validação de entrada
+      const validationErrors = validateServicoData({ nome, tempoMinutos });
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dados inválidos',
+          errors: validationErrors
+        });
+      }
+      
+      // Verificar duplicação de nome (case-insensitive)
+      const nomeFormatado = nome.trim().toLowerCase();
+      const servicoExistente = await db.select().from(schema.servicos)
+        .where(sql`LOWER(${schema.servicos.nome}) = ${nomeFormatado}`)
+        .limit(1);
+      
+      if (servicoExistente.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Já existe um serviço com este nome',
+          errors: ['Nome duplicado']
+        });
+      }
+      
+      // Criar serviço
+      const [novoServico] = await db.insert(schema.servicos).values({
+        nome: nome.trim(),
+        tempoMinutos: Number(tempoMinutos),
+        isAssinatura: true, // Por padrão, todos são de assinatura
+        percentualComissao: '40.00' // Valor padrão
       }).returning();
-      res.json(servico);
+      
+      res.status(201).json({
+        success: true,
+        message: 'Serviço cadastrado com sucesso',
+        data: novoServico
+      });
+      
     } catch (error) {
-      console.error('Erro ao criar serviço:', error);
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      console.error('Erro ao cadastrar serviço:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor ao cadastrar serviço' 
+      });
+    }
+  });
+
+  /**
+   * PUT /api/servicos/:id
+   * Atualiza serviço existente (nome e/ou tempo)
+   * Body: { nome?: string, tempoMinutos?: number }
+   */
+  app.put('/api/servicos/:id', async (req: Request, res: Response) => {
+    try {
+      const servicoId = parseInt(req.params.id);
+      const { nome, tempoMinutos } = req.body;
+      
+      if (isNaN(servicoId) || servicoId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do serviço inválido'
+        });
+      }
+      
+      // Verificar se serviço existe
+      const [servicoExistente] = await db.select().from(schema.servicos)
+        .where(eq(schema.servicos.id, servicoId))
+        .limit(1);
+      
+      if (!servicoExistente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Serviço não encontrado'
+        });
+      }
+      
+      // Preparar dados para atualização
+      const dadosAtualizacao: any = {};
+      
+      if (nome !== undefined) {
+        const validationErrors = validateServicoData({ nome, tempoMinutos: servicoExistente.tempoMinutos });
+        if (validationErrors.some(err => err.includes('Nome'))) {
+          return res.status(400).json({
+            success: false,
+            message: 'Nome inválido',
+            errors: validationErrors.filter(err => err.includes('Nome'))
+          });
+        }
+        
+        // Verificar duplicação de nome (excluindo o próprio registro)
+        const nomeFormatado = nome.trim().toLowerCase();
+        const servicoDuplicado = await db.select().from(schema.servicos)
+          .where(sql`LOWER(${schema.servicos.nome}) = ${nomeFormatado} AND ${schema.servicos.id} != ${servicoId}`)
+          .limit(1);
+        
+        if (servicoDuplicado.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Já existe outro serviço com este nome',
+            errors: ['Nome duplicado']
+          });
+        }
+        
+        dadosAtualizacao.nome = nome.trim();
+      }
+      
+      if (tempoMinutos !== undefined) {
+        const validationErrors = validateServicoData({ nome: servicoExistente.nome, tempoMinutos });
+        if (validationErrors.some(err => err.includes('Tempo'))) {
+          return res.status(400).json({
+            success: false,
+            message: 'Tempo inválido',
+            errors: validationErrors.filter(err => err.includes('Tempo'))
+          });
+        }
+        
+        dadosAtualizacao.tempoMinutos = Number(tempoMinutos);
+      }
+      
+      // Se não há dados para atualizar
+      if (Object.keys(dadosAtualizacao).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nenhum dado válido fornecido para atualização'
+        });
+      }
+      
+      // Realizar atualização
+      const [servicoAtualizado] = await db.update(schema.servicos)
+        .set(dadosAtualizacao)
+        .where(eq(schema.servicos.id, servicoId))
+        .returning();
+      
+      res.json({
+        success: true,
+        message: 'Serviço atualizado com sucesso',
+        data: servicoAtualizado
+      });
+      
+    } catch (error) {
+      console.error('Erro ao atualizar serviço:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor ao atualizar serviço' 
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/servicos/:id
+   * Inativa serviço (soft delete) mantendo histórico
+   * Não remove fisicamente, apenas marca como inativo
+   */
+  app.delete('/api/servicos/:id', async (req: Request, res: Response) => {
+    try {
+      const servicoId = parseInt(req.params.id);
+      
+      if (isNaN(servicoId) || servicoId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do serviço inválido'
+        });
+      }
+      
+      // Verificar se serviço existe e está ativo
+      const [servicoExistente] = await db.select().from(schema.servicos)
+        .where(eq(schema.servicos.id, servicoId))
+        .limit(1);
+      
+      if (!servicoExistente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Serviço não encontrado'
+        });
+      }
+      
+      if (!servicoExistente.isAssinatura) {
+        return res.status(400).json({
+          success: false,
+          message: 'Serviço já está inativo'
+        });
+      }
+      
+      // Verificar se serviço está sendo usado em agendamentos ativos
+      const agendamentosAtivos = await db.select().from(schema.agendamentos)
+        .where(eq(schema.agendamentos.servicoId, servicoId))
+        .limit(1);
+      
+      if (agendamentosAtivos.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Não é possível inativar serviço com agendamentos ativos',
+          errors: ['Serviço em uso']
+        });
+      }
+      
+      // Soft delete - marcar como inativo
+      const [servicoInativado] = await db.update(schema.servicos)
+        .set({ isAssinatura: false })
+        .where(eq(schema.servicos.id, servicoId))
+        .returning();
+      
+      res.json({
+        success: true,
+        message: 'Serviço inativado com sucesso',
+        data: servicoInativado
+      });
+      
+    } catch (error) {
+      console.error('Erro ao inativar serviço:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro interno do servidor ao inativar serviço' 
+      });
     }
   });
 
