@@ -299,7 +299,7 @@ export class AsaasIntegrationService {
   private async sincronizarClienteAsaas(
     customer: AsaasCustomer, 
     subscription: AsaasSubscription, 
-    origem: 'ASAAS_PRINCIPAL' | 'ASAAS_ANDREY'
+    origem: 'ASAAS_PRINCIPAL' | 'ASAAS_AND'
   ) {
     // Buscar IDs das referências
     const [origemData] = await db.select().from(origensDados).where(eq(origensDados.codigo, origem));
@@ -375,7 +375,7 @@ export class AsaasIntegrationService {
       // Estatísticas das APIs Asaas - usando cobranças confirmadas
       const [principalStats, andreyStats] = await Promise.all([
         this.getStatsCobrancasConfirmadas(process.env.ASAAS_TRATO, 'ASAAS_TRATO'),
-        this.getStatsCobrancasConfirmadas(process.env.ASAAS_ANDREY, 'ASAAS_ANDREY')
+        this.getStatsCobrancasConfirmadas(process.env.ASAAS_AND, 'ASAAS_AND')
       ]);
 
       return {

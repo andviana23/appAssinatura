@@ -61,7 +61,7 @@ export const clientes = pgTable("clientes", {
   cpf: text("cpf"),
   
   // Campo para identificar origem do cliente
-  origem: text("origem").notNull(), // 'ASAAS_PRINCIPAL', 'ASAAS_ANDREY', 'EXTERNO'
+  origem: text("origem").notNull(), // 'ASAAS_TRATO', 'ASAAS_AND', 'EXTERNO'
   asaasCustomerId: text("asaas_customer_id"), // Opcional - apenas para clientes Asaas
   
   // Campos para controle de assinaturas (obrigatórios para todos)

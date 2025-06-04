@@ -4,21 +4,21 @@ config();
 
 console.log('=== TESTE DE VARIÁVEIS DE AMBIENTE PADRONIZADAS ===');
 console.log('ASAAS_TRATO exists:', !!process.env.ASAAS_TRATO);
-console.log('ASAAS_ANDREY exists:', !!process.env.ASAAS_ANDREY);
+console.log('ASAAS_AND exists:', !!process.env.ASAAS_AND);
 
 if (process.env.ASAAS_TRATO) {
   console.log('ASAAS_TRATO starts with:', process.env.ASAAS_TRATO.substring(0, 10) + '...');
 }
 
-if (process.env.ASAAS_ANDREY) {
-  console.log('ASAAS_ANDREY starts with:', process.env.ASAAS_ANDREY.substring(0, 10) + '...');
+if (process.env.ASAAS_AND) {
+  console.log('ASAAS_AND starts with:', process.env.ASAAS_AND.substring(0, 10) + '...');
 }
 
 // Test API connectivity
 async function testAsaasConnection() {
   const accounts = [
     { name: 'ASAAS_TRATO', key: process.env.ASAAS_TRATO },
-    { name: 'ASAAS_ANDREY', key: process.env.ASAAS_ANDREY }
+    { name: 'ASAAS_AND', key: process.env.ASAAS_AND }
   ];
 
   for (const account of accounts) {
