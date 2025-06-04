@@ -63,7 +63,12 @@ export default function Agendamento() {
 
   // Fetch data
   const { data: agendamentos = [] } = useQuery({
-    queryKey: ["/api/agendamentos"],
+    queryKey: ["/api/agendamentos", format(selectedDate, "yyyy-MM-dd")],
+    queryFn: async () => {
+      const response = await fetch(`/api/agendamentos?data=${format(selectedDate, "yyyy-MM-dd")}`);
+      if (!response.ok) throw new Error("Erro ao buscar agendamentos");
+      return response.json();
+    },
   });
 
   const { data: profissionaisData } = useQuery({
@@ -264,38 +269,41 @@ export default function Agendamento() {
     <div className="h-full bg-background text-foreground flex overflow-hidden">
       {/* Área Principal da Agenda - Lado Esquerdo */}
       <div className="flex-1 bg-background flex flex-col h-full min-w-0">
-        {/* Cabeçalho da Agenda */}
-        <div className="bg-card border-b border-border p-4 shadow-sm flex-shrink-0">
+        {/* Cabeçalho da Agenda - Compacto */}
+        <div className="bg-card border-b border-border px-3 py-1.5 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => setLocation("/recepcionista-dashboard")}
-              className="flex items-center gap-2 hover:bg-muted"
+              className="flex items-center gap-1 hover:bg-muted h-7 px-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium">Voltar</span>
+              <ArrowLeft className="h-3 w-3" />
+              <span className="text-xs font-medium">Voltar</span>
             </Button>
 
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-foreground mb-1">Agenda do Dia</h1>
-              <div className="text-lg font-medium text-muted-foreground capitalize">
+              <h1 className="text-sm font-semibold text-foreground">Agenda do Dia</h1>
+              <div className="text-xs text-muted-foreground capitalize">
                 {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                className="h-7 px-2"
               >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="ml-1">Anterior</span>
+                <ChevronLeft className="h-3 w-3" />
+                <span className="ml-1 text-xs">Anterior</span>
               </Button>
               <Button
                 variant={isToday(selectedDate) ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedDate(new Date())}
+                className="h-7 px-2 text-xs"
               >
                 Hoje
               </Button>
@@ -303,26 +311,11 @@ export default function Agendamento() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                className="h-7 px-2"
               >
-                <span className="mr-1">Próximo</span>
-                <ChevronRight className="h-4 w-4" />
+                <span className="mr-1 text-xs">Próximo</span>
+                <ChevronRight className="h-3 w-3" />
               </Button>
-            </div>
-          </div>
-
-          {/* Indicadores de Status */}
-          <div className="mt-4 flex items-center justify-center gap-6">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="w-3 h-3 rounded-full bg-primary"></div>
-              <span className="text-sm font-medium">Agendado</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-              <span className="text-sm font-medium">Em Atendimento</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-sm font-medium">Finalizado</span>
             </div>
           </div>
         </div>
