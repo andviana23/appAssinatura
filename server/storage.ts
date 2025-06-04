@@ -383,13 +383,28 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Funções adicionais necessárias
+  // MÉTODOS CONSOLIDADOS - OTIMIZAÇÃO DE PERFORMANCE
   async getAgendamentosByDate(data: string): Promise<Agendamento[]> {
     return await db.select().from(agendamentos).where(like(agendamentos.dataHora, `${data}%`)).orderBy(agendamentos.dataHora);
   }
 
+  async finalizarAgendamento(id: number): Promise<Agendamento | undefined> {
+    const [updated] = await db.update(agendamentos).set({ status: 'FINALIZADO' }).where(eq(agendamentos.id, id)).returning();
+    return updated;
+  }
+
+  async cancelarAgendamento(id: number): Promise<boolean> {
+    const result = await db.delete(agendamentos).where(eq(agendamentos.id, id));
+    return result.length > 0;
+  }
+
+  async getAllServicos(): Promise<Servico[]> {
+    return await db.select().from(servicos).orderBy(servicos.nome);
+  }
+
   async getServicosAssinatura(): Promise<Servico[]> {
-    return await db.select().from(servicos).where(eq(servicos.categoria, 'assinatura'));
+    return await db.select().from(servicos).where(eq(servicos.isAssinatura, true)).orderBy(servicos.nome);
+  }ssinatura'));
   }
 
   async getAllClientesExternos(): Promise<Cliente[]> {

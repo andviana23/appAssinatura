@@ -4,6 +4,7 @@ import { db } from './db';
 import * as schema from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
+import { Storage } from './storage';
 
 export async function registerRoutes(app: Express): Promise<Express> {
   
@@ -1273,6 +1274,124 @@ export async function registerRoutes(app: Express): Promise<Express> {
   });
 
 
+
+  // =====================================================
+  // ROTAS CONSOLIDADAS - OTIMIZAÇÃO DE PERFORMANCE
+  // =====================================================
+
+  // Clientes unificados com filtros
+  app.get('/api/clientes', async (req: Request, res: Response) => {
+    try {
+      const { status, forAgendamento, page = 1, limit = 100 } = req.query;
+      
+      let clientes = await storage.getAllClientes();
+      
+      // Filtros aplicados
+      if (status === 'ativo') {
+        clientes = clientes.filter(c => c.statusAssinatura === 'ATIVO');
+      }
+      
+      if (forAgendamento === 'true') {
+        clientes = clientes.filter(c => c.statusAssinatura === 'ATIVO');
+      }
+      
+      // Paginação
+      const startIndex = (Number(page) - 1) * Number(limit);
+      const endIndex = startIndex + Number(limit);
+      const paginatedClientes = clientes.slice(startIndex, endIndex);
+      
+      res.json({
+        data: paginatedClientes,
+        total: clientes.length,
+        page: Number(page),
+        limit: Number(limit)
+      });
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Serviços consolidados com filtros
+  app.get('/api/servicos', async (req: Request, res: Response) => {
+    try {
+      const { categoria, page = 1, limit = 50 } = req.query;
+      
+      let servicos = await storage.getAllServicos();
+      
+      // Filtros aplicados
+      if (categoria === 'assinatura') {
+        servicos = servicos.filter(s => s.isAssinatura === true);
+      }
+      
+      // Paginação
+      const startIndex = (Number(page) - 1) * Number(limit);
+      const endIndex = startIndex + Number(limit);
+      const paginatedServicos = servicos.slice(startIndex, endIndex);
+      
+      res.json({
+        data: paginatedServicos,
+        total: servicos.length,
+        page: Number(page),
+        limit: Number(limit)
+      });
+    } catch (error) {
+      console.error('Erro ao buscar serviços:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // Agendamentos com filtros otimizados
+  app.get('/api/agendamentos', async (req: Request, res: Response) => {
+    try {
+      const { date } = req.query;
+      
+      if (!date) {
+        return res.status(400).json({ message: 'Data é obrigatória' });
+      }
+      
+      const agendamentos = await storage.getAgendamentosByDate(String(date));
+      res.json(agendamentos);
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // POST Agendamentos
+  app.post('/api/agendamentos', async (req: Request, res: Response) => {
+    try {
+      const agendamento = await storage.createAgendamento(req.body);
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // PATCH Finalizar agendamento
+  app.patch('/api/agendamentos/:id/finalizar', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const agendamento = await storage.finalizarAgendamento(id);
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao finalizar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // PATCH Cancelar agendamento
+  app.patch('/api/agendamentos/:id/cancelar', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const agendamento = await storage.cancelarAgendamento(id);
+      res.json(agendamento);
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
 
   // =====================================================
   // AUTENTICAÇÃO BÁSICA

@@ -105,7 +105,8 @@ export default function Agendamento() {
   const timelinePosition = getCurrentTimePosition();
   const isTodaySelected = isSameDay(selectedDate, currentTime);
 
-  // Queries
+  // CONSULTAS CONSOLIDADAS - OTIMIZAÇÃO DE PERFORMANCE
+  // 1. Agendamentos do dia selecionado
   const { data: agendamentos = [] } = useQuery({
     queryKey: ["/api/agendamentos", dateString],
     queryFn: async () => {
@@ -115,28 +116,28 @@ export default function Agendamento() {
     }
   });
 
+  // 2. Profissionais (barbeiros) - fonte única
   const { data: barbeirosResponse } = useQuery({
     queryKey: ["/api/profissionais"],
   });
-  
-  // Extract barbeiros from the API response
   const barbeiros = barbeirosResponse?.data || [];
 
-  // Buscar apenas clientes com assinaturas ativas para agendamento
+  // 3. Clientes ativos - consulta unificada
   const { data: clientes = [] } = useQuery({
-    queryKey: ["/api/clientes-ativos-agendamento"],
+    queryKey: ["/api/clientes", "ativos"],
     queryFn: async () => {
-      const response = await apiRequest("/api/clientes-ativos-agendamento");
+      const response = await apiRequest("/api/clientes?status=ativo&forAgendamento=true");
       return await response.json();
     }
   });
 
+  // 4. Serviços de assinatura - consulta única consolidada
   const { data: servicos = [] } = useQuery({
-    queryKey: ["/api/servicos/assinatura"],
-  });
-
-  const { data: todosServicos = [] } = useQuery({
-    queryKey: ["/api/servicos"],
+    queryKey: ["/api/servicos", "assinatura"],
+    queryFn: async () => {
+      const response = await apiRequest("/api/servicos?categoria=assinatura");
+      return await response.json();
+    }
   });
 
   // Filtrar clientes com base no termo de busca

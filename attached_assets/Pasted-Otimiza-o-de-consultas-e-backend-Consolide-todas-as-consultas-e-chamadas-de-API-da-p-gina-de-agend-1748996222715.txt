@@ -1,0 +1,47 @@
+Otimização de consultas e backend
+
+Consolide todas as consultas e chamadas de API da página de agendamento, reduzindo de 10 queries para no máximo 3 ou 4 (serviços, barbeiros/profissionais, clientes ativos e agendamentos do dia).
+
+Elimine consultas duplicadas (/api/servicos/assinatura e /api/servicos, etc).
+
+Faça o mesmo nas demais páginas críticas (lista-da-vez, profissionais), eliminando chamadas repetidas/desnecessárias.
+
+Unifique sistema de barbeiros/profissionais:
+
+Padronize para usar apenas o sistema de users com role (barbeiro/recepcionista) como fonte única.
+
+Ajuste o frontend/backend para buscar apenas dessa fonte, removendo dependência da tabela barbeiros antiga (mas não apague a tabela ainda).
+
+Consolide rotas de clientes:
+
+Crie uma única API de clientes, com filtros por status (ativo, inativo, inadimplente, etc) e por mês, para ser usada em todas as telas.
+
+Elimine rotas antigas e redundantes do frontend/backend (mas apenas comente ou desative por ora, sem apagar nada ainda).
+
+Adicione paginação e filtros nas consultas:
+
+Implemente paginação em getAllClientes e getAllProfissionais.
+
+Garanta que consultas de agendamento/trabalho do mês tragam só os dados realmente necessários.
+
+Sincronização Asaas e cálculo de comissões:
+
+Implemente controle de frequência na sincronização automática Asaas (não pode rodar a cada requisição, só a cada X minutos ou via botão manual).
+
+Implemente cache/memoização para os cálculos de comissão e estatísticas, evitando recalcular tudo a cada acesso.
+
+Não apague nem exclua tabelas ou rotas antigas ainda!
+
+Apenas desative, comente ou remova do fluxo, mantendo backup para garantir transição segura.
+
+Após aplicar as otimizações, traga um relatório detalhado:
+
+Quantidade de queries antes/depois nas principais páginas.
+
+Tempo de carregamento antes/depois.
+
+Quais rotas/tabelas foram desativadas.
+
+Se aparecer bug, traga logs e prints para revisão.
+
+Não faça nenhuma limpeza definitiva sem meu OK final. Só otimize e desative fluxos antigos, priorizando performance e estabilidade do sistema.
