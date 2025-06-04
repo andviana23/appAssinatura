@@ -3116,13 +3116,13 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Estatísticas de comissão baseadas em assinaturas pagas
   app.get('/api/comissao/stats', async (req: Request, res: Response) => {
     try {
-      // Buscar todas as assinaturas com status CONFIRMED (pagas)
+      // Buscar todas as assinaturas com status ATIVO (pagas)
       const assinaturasPagas = await db.select({
-        valor: schema.clientes.valorMensal,
+        valor: schema.clientes.planoValor,
         status: schema.clientes.statusAssinatura
       })
       .from(schema.clientes)
-      .where(eq(schema.clientes.statusAssinatura, 'CONFIRMED'));
+      .where(eq(schema.clientes.statusAssinatura, 'ATIVO'));
 
       // Calcular receita total de assinaturas pagas
       const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
@@ -3157,10 +3157,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       // Buscar receita total de assinaturas pagas
       const assinaturasPagas = await db.select({
-        valor: schema.clientes.valorMensal
+        valor: schema.clientes.planoValor
       })
       .from(schema.clientes)
-      .where(eq(schema.clientes.statusAssinatura, 'CONFIRMED'));
+      .where(eq(schema.clientes.statusAssinatura, 'ATIVO'));
 
       const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
         return total + (parseFloat(assinatura.valor || '0'));
