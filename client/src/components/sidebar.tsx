@@ -148,7 +148,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   
   const navigationItems = getNavigationItems();
 
-  const sidebarWidth = isCollapsed ? "w-20" : mobile ? "w-80" : "w-72";
+  const sidebarWidth = isCollapsed ? "w-24" : mobile ? "w-80" : "w-72";
   
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -162,13 +162,13 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
         <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-4 border-b border-border/50`}>
           <button
             onClick={toggleCollapse}
-            className="bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             title={isCollapsed ? "Expandir menu" : "Recolher menu"}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-6 w-6" />
             ) : (
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             )}
           </button>
         </div>
@@ -210,7 +210,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 className={cn(
                   "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
                   isCollapsed 
-                    ? "justify-center p-5 mx-2" 
+                    ? "justify-center p-6 mx-1" 
                     : "space-x-4 px-5 py-4",
                   isActive
                     ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
@@ -219,7 +219,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                 title={isCollapsed ? item.name : undefined}
               >
                 <item.icon className={cn(
-                  isCollapsed ? "h-5 w-5" : "h-6 w-6",
+                  isCollapsed ? "h-8 w-8" : "h-6 w-6",
                   "transition-all duration-300",
                   isActive 
                     ? "text-white" 
@@ -238,7 +238,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             className={cn(
               "flex items-center rounded-2xl font-semibold transition-all duration-200 group",
               isCollapsed 
-                ? "justify-center p-5 mx-2" 
+                ? "justify-center p-6 mx-1" 
                 : "space-x-4 px-5 py-4",
               location === "/configuracoes"
                 ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/25"
@@ -247,7 +247,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
             title={isCollapsed ? "Configurações" : undefined}
           >
             <Settings className={cn(
-              isCollapsed ? "h-5 w-5" : "h-6 w-6",
+              isCollapsed ? "h-8 w-8" : "h-6 w-6",
               "transition-all duration-300",
               location === "/configuracoes" 
                 ? "text-white" 
