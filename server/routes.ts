@@ -2329,15 +2329,28 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const senhaAprovada = '12345678';
 
       // Verificar se email já existe na tabela profissionais
-      const emailExistente = await db.select()
+      const emailExistenteProfissionais = await db.select()
         .from(schema.profissionais)
         .where(eq(schema.profissionais.email, email))
         .limit(1);
 
-      if (emailExistente.length > 0) {
+      if (emailExistenteProfissionais.length > 0) {
         return res.status(409).json({
           success: false,
           message: 'Email já está em uso por outro profissional'
+        });
+      }
+
+      // Verificar se email já existe na tabela users
+      const emailExistenteUsers = await db.select()
+        .from(schema.users)
+        .where(eq(schema.users.email, email))
+        .limit(1);
+
+      if (emailExistenteUsers.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email já está em uso no sistema'
         });
       }
 
