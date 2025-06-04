@@ -144,8 +144,10 @@ export const agendamentos = pgTable("agendamentos", {
   barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull(),
   servicoId: integer("servico_id").references(() => servicos.id).notNull(),
   dataHora: timestamp("data_hora").notNull(),
+  observacoes: text("observacoes"),
   status: text("status", { enum: ["AGENDADO", "FINALIZADO"] }).notNull().default("AGENDADO"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Lista da Vez - Atendimentos Diários
@@ -232,6 +234,7 @@ export const insertPlanoPersonalizadoSchema = createInsertSchema(planosPersonali
 export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
   status: true,
 }).extend({
   clienteId: z.union([z.string(), z.number()]).transform(val => 

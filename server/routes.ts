@@ -1363,14 +1363,133 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // POST Agendamentos
+  // POST Agendamentos - Implementação completa com validações
   app.post('/api/agendamentos', async (req: Request, res: Response) => {
     try {
-      const [agendamento] = await db.insert(schema.agendamentos).values(req.body).returning();
-      res.json(agendamento);
+      // Validação do payload usando o schema
+      const validationResult = schema.insertAgendamentoSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: 'Dados inválidos fornecidos',
+          errors: validationResult.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+
+      const dadosValidados = validationResult.data;
+
+      // Validar se cliente existe e está ativo
+      const cliente = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.id, dadosValidados.clienteId))
+        .limit(1);
+
+      if (cliente.length === 0) {
+        return res.status(400).json({
+          message: 'Cliente não encontrado'
+        });
+      }
+
+      if (cliente[0].statusAssinatura !== 'ATIVO') {
+        return res.status(400).json({
+          message: 'Cliente não possui assinatura ativa'
+        });
+      }
+
+      // Validar se barbeiro existe e está ativo
+      const barbeiro = await db.select()
+        .from(schema.barbeiros)
+        .where(eq(schema.barbeiros.id, dadosValidados.barbeiroId))
+        .limit(1);
+
+      if (barbeiro.length === 0) {
+        return res.status(400).json({
+          message: 'Barbeiro não encontrado'
+        });
+      }
+
+      if (!barbeiro[0].ativo) {
+        return res.status(400).json({
+          message: 'Barbeiro não está ativo no sistema'
+        });
+      }
+
+      // Validar se serviço existe
+      const servico = await db.select()
+        .from(schema.servicos)
+        .where(eq(schema.servicos.id, dadosValidados.servicoId))
+        .limit(1);
+
+      if (servico.length === 0) {
+        return res.status(400).json({
+          message: 'Serviço não encontrado'
+        });
+      }
+
+      // Verificar conflito de horário - não permitir agendamentos duplicados no mesmo horário para o barbeiro
+      const agendamentoExistente = await db.select()
+        .from(schema.agendamentos)
+        .where(
+          sql`${schema.agendamentos.barbeiroId} = ${dadosValidados.barbeiroId} 
+              AND ${schema.agendamentos.dataHora} = ${dadosValidados.dataHora}
+              AND ${schema.agendamentos.status} = 'AGENDADO'`
+        )
+        .limit(1);
+
+      if (agendamentoExistente.length > 0) {
+        return res.status(409).json({
+          message: 'Já existe um agendamento para este barbeiro no horário selecionado'
+        });
+      }
+
+      // Criar o agendamento
+      const [novoAgendamento] = await db.insert(schema.agendamentos)
+        .values({
+          clienteId: dadosValidados.clienteId,
+          barbeiroId: dadosValidados.barbeiroId,
+          servicoId: dadosValidados.servicoId,
+          dataHora: dadosValidados.dataHora,
+          observacoes: dadosValidados.observacoes || null,
+          status: 'AGENDADO'
+        })
+        .returning();
+
+      // Buscar dados completos para retorno
+      const agendamentoCompleto = await db.select({
+        id: schema.agendamentos.id,
+        clienteId: schema.agendamentos.clienteId,
+        barbeiroId: schema.agendamentos.barbeiroId,
+        servicoId: schema.agendamentos.servicoId,
+        dataHora: schema.agendamentos.dataHora,
+        observacoes: schema.agendamentos.observacoes,
+        status: schema.agendamentos.status,
+        createdAt: schema.agendamentos.createdAt,
+        updatedAt: schema.agendamentos.updatedAt,
+        clienteNome: schema.clientes.nome,
+        barbeiroNome: schema.barbeiros.nome,
+        servicoNome: schema.servicos.nome,
+        servicoTempo: schema.servicos.tempoMinutos
+      })
+      .from(schema.agendamentos)
+      .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
+      .leftJoin(schema.barbeiros, eq(schema.agendamentos.barbeiroId, schema.barbeiros.id))
+      .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
+      .where(eq(schema.agendamentos.id, novoAgendamento.id))
+      .limit(1);
+
+      res.status(201).json({
+        message: 'Agendamento criado com sucesso',
+        agendamento: agendamentoCompleto[0]
+      });
+
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
-      res.status(500).json({ message: 'Erro interno do servidor' });
+      res.status(500).json({ 
+        message: 'Erro interno do servidor ao criar agendamento' 
+      });
     }
   });
 
