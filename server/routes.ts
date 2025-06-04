@@ -2173,6 +2173,77 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // SISTEMA DE PROFISSIONAIS (BARBEIROS E RECEPCIONISTAS)
   // =====================================================
 
+  // Redefinir senha de profissional (ADMIN)
+  app.patch('/api/profissionais/:id/redefinir-senha', requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { novaSenha, usarSenhaPadrao } = req.body;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID do profissional inválido'
+        });
+      }
+
+      // Buscar profissional por ID na tabela users
+      const profissional = await db.select()
+        .from(schema.users)
+        .where(and(
+          eq(schema.users.id, parseInt(id)),
+          sql`${schema.users.role} IN ('barbeiro', 'recepcionista')`
+        ))
+        .limit(1);
+
+      if (profissional.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profissional não encontrado'
+        });
+      }
+
+      let senhaParaUsar = novaSenha;
+      
+      // Se marcou para usar senha padrão ou não informou nova senha
+      if (usarSenhaPadrao || !novaSenha) {
+        senhaParaUsar = '12345678';
+      }
+
+      // Validar senha (mínimo 8 caracteres)
+      if (senhaParaUsar.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'Senha deve ter pelo menos 8 caracteres'
+        });
+      }
+
+      // Hash da nova senha
+      const saltRounds = 10;
+      const novaSenhaHash = await bcrypt.hash(senhaParaUsar, saltRounds);
+
+      // Atualizar senha
+      await db.update(schema.users)
+        .set({
+          password: novaSenhaHash
+        })
+        .where(eq(schema.users.id, parseInt(id)));
+
+      res.json({
+        success: true,
+        message: `Senha ${usarSenhaPadrao ? 'redefinida para padrão' : 'alterada'} com sucesso`,
+        senhaUsada: usarSenhaPadrao ? 'Senha padrão: 12345678' : 'Nova senha definida'
+      });
+
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   // Cadastrar novo profissional
   app.post('/api/profissionais', async (req: Request, res: Response) => {
     try {
@@ -2189,12 +2260,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      const { nome, telefone, email, senha, tipo, ativo } = validation.data;
+      const { nome, telefone, email, tipo, ativo } = validation.data;
 
-      // Verificar se email já existe
+      // SEMPRE usar senha padrão para novos barbeiros e recepcionistas
+      const senhaAprovada = '12345678';
+
+      // Verificar se email já existe na tabela users
       const emailExistente = await db.select()
-        .from(schema.profissionais)
-        .where(eq(schema.profissionais.email, email))
+        .from(schema.users)
+        .where(eq(schema.users.email, email))
         .limit(1);
 
       if (emailExistente.length > 0) {
