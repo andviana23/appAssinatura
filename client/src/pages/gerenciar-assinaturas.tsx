@@ -187,36 +187,36 @@ export default function GerenciarAssinaturas() {
 
   const getBadgeColor = (categoria: string) => {
     const colors = {
-      "⭐One": "bg-blue-100 text-blue-800",
-      "👑Gold": "bg-yellow-100 text-yellow-800", 
-      "🚀Multi": "bg-purple-100 text-purple-800",
-      "Exclusivo": "bg-green-100 text-green-800"
+      "⭐One": "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200",
+      "👑Gold": "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200", 
+      "🚀Multi": "bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200",
+      "Exclusivo": "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200"
     };
-    return colors[categoria] || "bg-gray-100 text-gray-800";
+    return colors[categoria] || "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-8">
           <div className="flex items-start lg:items-center gap-4">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg hover:shadow-xl"
+              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-all duration-200 hover:scale-105 bg-card dark:bg-card rounded-xl px-4 py-2 shadow-lg hover:shadow-xl border border-border"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-semibold">Voltar</span>
             </button>
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-2xl flex items-center justify-center shadow-lg">
-                <Settings className="h-6 w-6 text-white" />
+              <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg">
+                <Settings className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
+                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Gerenciar Assinaturas
                 </h1>
-                <p className="text-gray-600 mt-1">Configure planos e categorias</p>
+                <p className="text-muted-foreground mt-1">Configure planos e categorias</p>
               </div>
             </div>
           </div>
@@ -225,49 +225,50 @@ export default function GerenciarAssinaturas() {
             <DialogTrigger asChild>
               <Button
                 onClick={resetForm}
-                className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] hover:from-[#2a4a5e] hover:to-[#1f3746] text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Assinatura
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-card dark:bg-card text-foreground border border-border">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="text-foreground">
                   {editingPlano ? "Editar Assinatura" : "Nova Assinatura"}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-muted-foreground">
                   Configure os detalhes da assinatura e ela será criada no sistema
                 </DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nome">Nome da Assinatura *</Label>
+                  <Label htmlFor="nome" className="text-foreground">Nome da Assinatura *</Label>
                   <Input
                     id="nome"
                     value={formData.nome}
                     onChange={(e) => setFormData({...formData, nome: e.target.value})}
                     placeholder="Ex: Clube do Trato Premium"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoria *</Label>
+                  <Label htmlFor="categoria" className="text-foreground">Categoria *</Label>
                   <Select value={formData.categoria} onValueChange={(value) => setFormData({...formData, categoria: value})}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border-border">
                       {categorias.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat} value={cat} className="text-foreground hover:bg-muted">{cat}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valor">Valor Mensal (R$) *</Label>
+                  <Label htmlFor="valor" className="text-foreground">Valor Mensal (R$) *</Label>
                   <Input
                     id="valor"
                     type="number"
@@ -275,6 +276,7 @@ export default function GerenciarAssinaturas() {
                     value={formData.valor}
                     onChange={(e) => setFormData({...formData, valor: e.target.value})}
                     placeholder="0.00"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
 
@@ -282,12 +284,13 @@ export default function GerenciarAssinaturas() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-border text-foreground hover:bg-muted">
                   Cancelar
                 </Button>
                 <Button 
                   onClick={handleSubmit}
                   disabled={criarAssinatura.isPending || atualizarAssinatura.isPending}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {criarAssinatura.isPending || atualizarAssinatura.isPending ? "Salvando..." : "Salvar"}
                 </Button>
@@ -300,22 +303,22 @@ export default function GerenciarAssinaturas() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#365e78] mx-auto"></div>
-              <p className="mt-4 text-gray-600">Carregando assinaturas...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Carregando assinaturas...</p>
             </div>
           ) : planos?.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <DollarSign className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Nenhuma assinatura criada</h3>
-              <p className="text-gray-600 mb-6">Comece criando sua primeira assinatura</p>
+              <DollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">Nenhuma assinatura criada</h3>
+              <p className="text-muted-foreground mb-6">Comece criando sua primeira assinatura</p>
             </div>
           ) : (
             planos?.map((plano) => (
-              <Card key={plano.id} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Card key={plano.id} className="bg-card dark:bg-card border border-border shadow-lg hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-bold text-gray-900 mb-2">
+                      <CardTitle className="text-lg font-bold text-foreground mb-2">
                         {plano.nome}
                       </CardTitle>
                       <Badge className={`${getBadgeColor(plano.categoria)} border-0`}>
@@ -323,32 +326,32 @@ export default function GerenciarAssinaturas() {
                       </Badge>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-[#365e78]">
+                      <div className="text-2xl font-bold text-primary">
                         R$ {typeof plano.valorMensal === 'number' ? plano.valorMensal.toFixed(2) : parseFloat(plano.valorMensal || '0').toFixed(2)}
                       </div>
-                      <div className="text-sm text-gray-500">por mês</div>
+                      <div className="text-sm text-muted-foreground">por mês</div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {plano.descricao && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
                       {plano.descricao}
                     </p>
                   )}
                   
                   {plano.beneficios && plano.beneficios.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="font-semibold text-sm text-gray-900 mb-2">Benefícios:</h4>
+                      <h4 className="font-semibold text-sm text-foreground mb-2">Benefícios:</h4>
                       <ul className="space-y-1">
                         {plano.beneficios.slice(0, 3).map((beneficio, index) => (
-                          <li key={index} className="text-sm text-gray-600 flex items-center">
-                            <div className="w-1.5 h-1.5 bg-[#365e78] rounded-full mr-2"></div>
+                          <li key={index} className="text-sm text-muted-foreground flex items-center">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2"></div>
                             {beneficio}
                           </li>
                         ))}
                         {plano.beneficios.length > 3 && (
-                          <li className="text-sm text-gray-500">
+                          <li className="text-sm text-muted-foreground/70">
                             +{plano.beneficios.length - 3} mais benefícios
                           </li>
                         )}
@@ -356,12 +359,12 @@ export default function GerenciarAssinaturas() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-4 border-t border-gray-100">
+                  <div className="flex gap-2 pt-4 border-t border-border">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(plano)}
-                      className="flex-1"
+                      className="flex-1 border-border text-foreground hover:bg-muted"
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
@@ -371,7 +374,7 @@ export default function GerenciarAssinaturas() {
                         size="sm"
                         variant="secondary"
                         onClick={() => handleGerarLinkExclusivo(plano)}
-                        className="flex-1"
+                        className="flex-1 bg-secondary dark:bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                       >
                         <DollarSign className="h-3 w-3 mr-1" />
                         Gerar Link
@@ -382,6 +385,7 @@ export default function GerenciarAssinaturas() {
                       variant="destructive"
                       onClick={() => handleDelete(plano.id)}
                       disabled={excluirAssinatura.isPending}
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Excluir
