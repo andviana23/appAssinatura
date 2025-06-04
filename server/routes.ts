@@ -2227,13 +2227,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Buscar profissional por ID na tabela users
+      // Buscar profissional por ID na tabela profissionais
       const profissional = await db.select()
-        .from(schema.users)
-        .where(and(
-          eq(schema.users.id, parseInt(id)),
-          sql`${schema.users.role} IN ('barbeiro', 'recepcionista')`
-        ))
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.id, parseInt(id)))
         .limit(1);
 
       if (profissional.length === 0) {
@@ -2262,12 +2259,13 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const saltRounds = 10;
       const novaSenhaHash = await bcrypt.hash(senhaParaUsar, saltRounds);
 
-      // Atualizar senha
-      await db.update(schema.users)
+      // Atualizar senha na tabela profissionais
+      await db.update(schema.profissionais)
         .set({
-          password: novaSenhaHash
+          senha: novaSenhaHash,
+          updatedAt: new Date()
         })
-        .where(eq(schema.users.id, parseInt(id)));
+        .where(eq(schema.profissionais.id, parseInt(id)));
 
       res.json({
         success: true,
