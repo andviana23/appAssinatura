@@ -3109,5 +3109,92 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // =====================================================
+  // ENDPOINTS DE COMISSÃO
+  // =====================================================
+
+  // GET - Estatísticas de comissão baseadas em assinaturas pagas
+  app.get('/api/comissao/stats', async (req: Request, res: Response) => {
+    try {
+      // Buscar todas as assinaturas com status CONFIRMED (pagas)
+      const assinaturasPagas = await db.select({
+        valor: schema.clientes.valorMensal,
+        status: schema.clientes.statusAssinatura
+      })
+      .from(schema.clientes)
+      .where(eq(schema.clientes.statusAssinatura, 'CONFIRMED'));
+
+      // Calcular receita total de assinaturas pagas
+      const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
+        return total + (parseFloat(assinatura.valor || '0'));
+      }, 0);
+
+      // Calcular comissão total (40% da receita)
+      const totalComissao = receitaTotalAssinatura * 0.4;
+
+      res.json({
+        faturamentoTotalAssinatura: receitaTotalAssinatura,
+        totalComissao: totalComissao,
+        totalMinutosGerais: 0 // Manter compatibilidade
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas de comissão:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // GET - Dados de comissão por barbeiro
+  app.get('/api/comissao/barbeiros', async (req: Request, res: Response) => {
+    try {
+      // Buscar barbeiros ativos
+      const barbeiros = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true)
+        ));
+
+      // Buscar receita total de assinaturas pagas
+      const assinaturasPagas = await db.select({
+        valor: schema.clientes.valorMensal
+      })
+      .from(schema.clientes)
+      .where(eq(schema.clientes.statusAssinatura, 'CONFIRMED'));
+
+      const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
+        return total + (parseFloat(assinatura.valor || '0'));
+      }, 0);
+
+      // Calcular comissão total
+      const comissaoTotal = receitaTotalAssinatura * 0.4;
+
+      // Distribuir comissão proporcionalmente entre barbeiros ativos
+      const numeroBarbeiros = barbeiros.length;
+      const comissaoPorBarbeiro = numeroBarbeiros > 0 ? comissaoTotal / numeroBarbeiros : 0;
+      const faturamentoPorBarbeiro = numeroBarbeiros > 0 ? receitaTotalAssinatura / numeroBarbeiros : 0;
+
+      const resultado = barbeiros.map(barbeiro => ({
+        barbeiro: {
+          id: barbeiro.id,
+          nome: barbeiro.nome,
+          ativo: barbeiro.ativo
+        },
+        faturamentoAssinatura: faturamentoPorBarbeiro,
+        comissaoAssinatura: comissaoPorBarbeiro,
+        minutosTrabalhadosMes: 0,
+        horasTrabalhadasMes: "0h 0min",
+        numeroServicos: 0,
+        percentualTempo: numeroBarbeiros > 0 ? (100 / numeroBarbeiros) : 0
+      }));
+
+      res.json(resultado);
+
+    } catch (error) {
+      console.error('Erro ao buscar dados de comissão por barbeiro:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
   return app;
 }

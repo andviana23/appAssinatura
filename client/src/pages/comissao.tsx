@@ -195,41 +195,39 @@ export default function Comissao() {
         </div>
       </div>
 
-      {/* Cards de estatísticas gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="bg-card border-border">
+      {/* Cards de estatísticas gerais - Focado em Assinaturas Pagas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 dark:from-green-900/20 dark:to-green-800/20 dark:border-green-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Receita Total de Assinatura</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">
+              Receita Total de Assinaturas
+            </CardTitle>
+            <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-3xl font-bold text-green-700 dark:text-green-300">
               {formatCurrency(stats.faturamentoTotalAssinatura)}
             </div>
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+              Somente assinaturas confirmadas/pagas
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border">
+        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20 dark:border-blue-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Total de Horas Trabalhadas</CardTitle>
-            <Clock className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              Total de Comissão (40%)
+            </CardTitle>
+            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {formatMinutesToHours(stats.totalMinutosGerais)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Total de Comissão</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
               {formatCurrency(stats.totalComissao)}
             </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              40% da receita de assinaturas
+            </p>
           </CardContent>
         </Card>
       </div>
