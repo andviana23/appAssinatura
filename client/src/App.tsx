@@ -148,7 +148,7 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="system" storageKey="trato-barbados-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="trato-barbados-theme">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground">

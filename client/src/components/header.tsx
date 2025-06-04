@@ -90,6 +90,8 @@ export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {
               </Button>
             )}
 
+            <ThemeToggle />
+
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden md:block text-right">
                 <p className="font-semibold text-foreground text-sm">
