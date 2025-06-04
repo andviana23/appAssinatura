@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import logoSlogan from "@assets/Logotipo Slogan.jpg";
+import logoSlogan from "@assets/Logotipo Branco Barbearia (3).png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
