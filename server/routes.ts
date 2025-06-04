@@ -2609,7 +2609,39 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Criar APENAS paymentLink recorrente - tudo em um só passo
+      // 1. Criar cliente no ASAAS primeiro
+      const customerData = {
+        name: cliente.name,
+        email: cliente.email || undefined,
+        phone: cliente.phone || undefined,
+        cpfCnpj: cliente.cpfCnpj || undefined
+      };
+
+      console.log('🔄 Criando cliente no ASAAS_TRATO:', customerData);
+
+      const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      const customerResult = await customerResponse.json();
+
+      if (!customerResponse.ok) {
+        console.error('❌ Erro ao criar cliente:', customerResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar cliente no ASAAS',
+          error: customerResult
+        });
+      }
+
+      console.log('✅ Cliente criado com ID:', customerResult.id);
+
+      // 2. Gerar link personalizado para esse cliente específico
       const paymentLinkData = {
         billingType: 'CREDIT_CARD',
         chargeType: 'RECURRENT',
@@ -2617,15 +2649,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         description: assinatura.description || 'Plano Mensal Barbearia',
         value: parseFloat(assinatura.value),
         subscriptionCycle: 'MONTHLY',
-        customer: {
-          name: cliente.name,
-          email: cliente.email || undefined,
-          cpfCnpj: cliente.cpfCnpj || undefined,
-          mobilePhone: cliente.phone || undefined
-        }
+        customer: customerResult.id // ID do cliente criado
       };
 
-      console.log('🔄 Criando paymentLink recorrente ASAAS_TRATO:', paymentLinkData);
+      console.log('🔄 Criando paymentLink personalizado para cliente:', customerResult.id);
 
       const paymentLinkResponse = await fetch('https://www.asaas.com/api/v3/paymentLinks', {
         method: 'POST',
@@ -2639,15 +2666,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const paymentLinkResult = await paymentLinkResponse.json();
 
       if (!paymentLinkResponse.ok) {
-        console.error('❌ Erro ao criar paymentLink recorrente:', paymentLinkResult);
+        console.error('❌ Erro ao criar paymentLink:', paymentLinkResult);
         return res.status(400).json({
           success: false,
-          message: 'Erro ao criar link de pagamento recorrente',
+          message: 'Erro ao criar link de pagamento',
           error: paymentLinkResult
         });
       }
 
-      console.log('✅ PaymentLink recorrente criado:', paymentLinkResult.url);
+      console.log('✅ PaymentLink personalizado criado:', paymentLinkResult.url);
 
       // Resposta de sucesso no formato esperado pelo frontend
       res.json({
