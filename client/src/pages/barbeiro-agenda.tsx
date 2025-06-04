@@ -5,7 +5,9 @@ import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight, Clock, User, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar, ChevronLeft, ChevronRight, Clock, User, ArrowLeft, CalendarDays } from "lucide-react";
 
 export default function BarbeiroAgenda() {
   // Obter data da URL ou usar hoje
@@ -84,7 +86,7 @@ export default function BarbeiroAgenda() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 max-w-4xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
@@ -101,26 +103,49 @@ export default function BarbeiroAgenda() {
             </h1>
           </div>
           
-          {/* Navegação de Data */}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navegarData('anterior')}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-lg font-medium min-w-[140px] text-center px-3 py-1 bg-muted rounded">
-              {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-            </span>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navegarData('proximo')}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Filtro de Data */}
+          <Card className="p-4">
+            <div className="flex flex-col lg:flex-row items-center gap-4">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                <Label className="font-medium">Selecionar Data:</Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="date"
+                  value={format(selectedDate, "yyyy-MM-dd")}
+                  onChange={(e) => setSelectedDate(parseISO(e.target.value))}
+                  className="w-auto"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navegarData('anterior')}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-lg font-medium min-w-[140px] text-center px-3 py-1 bg-muted rounded">
+                  {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navegarData('proximo')}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <Button 
+                variant="outline"
+                onClick={() => setSelectedDate(new Date())}
+                className="flex items-center gap-2"
+              >
+                Hoje
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* Resumo do Dia */}

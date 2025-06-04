@@ -41,15 +41,7 @@ export default function BarbeiroDashboardReformulado() {
     },
   });
 
-  // Buscar dados da agenda do dia selecionado
-  const { data: agendaDia } = useQuery({
-    queryKey: ["/api/barbeiro/agenda", user?.id, dataFormatada],
-    queryFn: async () => {
-      const response = await fetch(`/api/barbeiro/agenda?data=${dataFormatada}`);
-      if (!response.ok) throw new Error('Erro ao carregar agenda');
-      return response.json();
-    },
-  });
+  // Removido: query da agenda (movida para página específica)
 
   // Buscar dados da lista da vez
   const { data: listaDaVez } = useQuery({
@@ -71,14 +63,7 @@ export default function BarbeiroDashboardReformulado() {
     },
   });
 
-  // Navegação de datas
-  const navegarData = (direcao: 'anterior' | 'proximo') => {
-    if (direcao === 'anterior') {
-      setSelectedDate(subDays(selectedDate, 1));
-    } else {
-      setSelectedDate(addDays(selectedDate, 1));
-    }
-  };
+  // Removido: função de navegação de datas (movida para página específica)
 
   // Modal de detalhes dos serviços
   const ModalDetalhesServicos = () => (
@@ -247,78 +232,16 @@ export default function BarbeiroDashboardReformulado() {
           </Card>
         </div>
 
-        {/* Agenda Pessoal */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Agenda Pessoal
-              </CardTitle>
-              <div className="flex flex-col sm:flex-row items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navegarData('anterior')}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm font-medium min-w-[120px] text-center">
-                    {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navegarData('proximo')}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button 
-                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
-                  size="sm"
-                  onClick={() => window.location.href = `/barbeiro-agenda?data=${format(selectedDate, "yyyy-MM-dd")}`}
-                >
-                  Ver agenda
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {agendaDia?.agendamentos?.length > 0 ? (
-                agendaDia.agendamentos.map((agendamento: any, index: number) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium">
-                        {format(parseISO(agendamento.dataHora), "HH:mm", { locale: ptBR })}
-                      </div>
-                      <div>
-                        <p className="font-medium">{agendamento.cliente?.nome}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{agendamento.servico?.nome}</p>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={agendamento.status === 'FINALIZADO' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {agendamento.status}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Nenhum agendamento para este dia</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Botão Ver Agenda */}
+        <div className="flex justify-center">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-medium"
+            onClick={() => window.location.href = `/barbeiro-agenda`}
+          >
+            <Calendar className="h-5 w-5 mr-2" />
+            Ver Agenda
+          </Button>
+        </div>
 
         {/* Botão para Relatório Detalhado */}
         <div className="flex justify-center">
