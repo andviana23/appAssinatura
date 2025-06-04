@@ -94,11 +94,7 @@ export function Layout({ children }: LayoutProps) {
         {/* Área de conteúdo central com rolagem independente */}
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="h-full">
-            <div className="container-responsive py-6 px-6 min-h-full">
-              <div className="max-w-7xl mx-auto">
-                {children}
-              </div>
-            </div>
+            {children}
           </div>
         </main>
       </div>
