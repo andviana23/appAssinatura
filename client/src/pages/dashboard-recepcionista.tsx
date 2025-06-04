@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Users, Clock, Calendar, User } from "lucide-react";
+import { Users, Calendar, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -32,30 +32,26 @@ export default function DashboardRecepcionista() {
     }
   });
 
-  // Buscar agendamentos futuros
-  const { data: agendamentosFuturos } = useQuery({
-    queryKey: ["/api/agendamentos/futuros"],
+  // Buscar todos os agendamentos para calcular finalizados hoje
+  const { data: todosAgendamentos } = useQuery({
+    queryKey: ["/api/agendamentos", "todos"],
     queryFn: async () => {
-      const response = await fetch('/api/agendamentos');
-      if (!response.ok) throw new Error('Erro ao carregar agendamentos futuros');
-      const data = await response.json();
-      const agora = new Date();
-      // Filtrar apenas agendamentos futuros no horário válido (08:00-20:00)
-      return Array.isArray(data) ? data.filter((ag: any) => {
-        const agendamentoDate = new Date(ag.dataHora);
-        const hour = agendamentoDate.getHours();
-        return agendamentoDate > agora && hour >= 8 && hour <= 20;
-      }) : [];
+      const response = await fetch(`/api/agendamentos?data=${hoje}`);
+      if (!response.ok) throw new Error('Erro ao carregar todos os agendamentos');
+      return response.json();
     }
   });
 
   // Calcular métricas
   const clientes = clientesData?.data || [];
-  const clientesAtivos = clientes.filter((c: any) => c.statusAssinatura === 'ATIVO').length;
-  const totalClientes = clientes.length;
-  const agendamentosHojeCount = Array.isArray(agendamentosHoje) ? agendamentosHoje.length : 0;
-  const proximosAgendamentosCount = Array.isArray(agendamentosFuturos) ? agendamentosFuturos.length : 0;
-  const proximosAtendimentos = Array.isArray(agendamentosHoje) ? agendamentosHoje.slice(0, 5) : [];
+  const clientesAssinaturaAtivos = clientes.filter((c: any) => c.statusAssinatura === 'ATIVO').length;
+  
+  // Total de agendamentos feitos hoje (criados hoje, independente do status)
+  const todosAgendamentosArray = Array.isArray(todosAgendamentos) ? todosAgendamentos : [];
+  const agendamentosFeitosHoje = todosAgendamentosArray.length;
+  
+  // Total de agendamentos finalizados hoje
+  const agendamentosFinalizadosHoje = todosAgendamentosArray.filter((ag: any) => ag.status === 'FINALIZADO').length;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -69,11 +65,11 @@ export default function DashboardRecepcionista() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
+            <CardTitle className="text-sm font-medium">Clientes Assinatura Ativos</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{clientesAtivos}</div>
+            <div className="text-2xl font-bold">{clientesAssinaturaAtivos}</div>
             <p className="text-xs text-muted-foreground">
               Com assinatura ativa
             </p>
@@ -82,39 +78,26 @@ export default function DashboardRecepcionista() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalClientes}</div>
-            <p className="text-xs text-muted-foreground">
-              Clientes cadastrados no sistema
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Agendamentos Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Agendamentos Feitos Hoje</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agendamentosHojeCount}</div>
+            <div className="text-2xl font-bold">{agendamentosFeitosHoje}</div>
             <p className="text-xs text-muted-foreground">
-              Atendimentos programados para hoje
+              Agendamentos criados hoje
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximos Atendimentos</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total de Agendamentos Finalizados Hoje</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{proximosAgendamentosCount}</div>
+            <div className="text-2xl font-bold">{agendamentosFinalizadosHoje}</div>
             <p className="text-xs text-muted-foreground">
-              Agendamentos futuros confirmados
+              Finalizados hoje
             </p>
           </CardContent>
         </Card>
