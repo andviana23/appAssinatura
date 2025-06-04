@@ -2328,10 +2328,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // SEMPRE usar senha padrão para novos barbeiros e recepcionistas
       const senhaAprovada = '12345678';
 
-      // Verificar se email já existe na tabela users
+      // Verificar se email já existe na tabela profissionais
       const emailExistente = await db.select()
-        .from(schema.users)
-        .where(eq(schema.users.email, email))
+        .from(schema.profissionais)
+        .where(eq(schema.profissionais.email, email))
         .limit(1);
 
       if (emailExistente.length > 0) {
@@ -2345,17 +2345,31 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const saltRounds = 10;
       const senhaHash = await bcrypt.hash(senhaAprovada, saltRounds);
 
-      // Inserir profissional na tabela users
-      const novoProfissional = await db.insert(schema.users).values({
+      // Inserir profissional na tabela profissionais
+      const novoProfissional = await db.insert(schema.profissionais).values({
+        nome,
+        telefone: telefone || null,
+        email,
+        senha: senhaHash,
+        tipo,
+        ativo: ativo !== undefined ? ativo : true,
+        dataCadastro: new Date(),
+        updatedAt: new Date()
+      }).returning({
+        id: schema.profissionais.id,
+        nome: schema.profissionais.nome,
+        telefone: schema.profissionais.telefone,
+        email: schema.profissionais.email,
+        tipo: schema.profissionais.tipo,
+        ativo: schema.profissionais.ativo
+      });
+
+      // Também inserir na tabela users para permitir login
+      await db.insert(schema.users).values({
         nome,
         email,
         password: senhaHash,
-        role: tipo // barbeiro ou recepcionista
-      }).returning({
-        id: schema.users.id,
-        nome: schema.users.nome,
-        email: schema.users.email,
-        role: schema.users.role
+        role: tipo
       });
 
       res.status(201).json({
