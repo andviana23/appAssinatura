@@ -255,23 +255,32 @@ export default function BarbeiroDashboardReformulado() {
                 <Calendar className="h-5 w-5" />
                 Agenda Pessoal
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navegarData('anterior')}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium min-w-[120px] text-center">
+                    {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navegarData('proximo')}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
                 <Button 
-                  variant="outline" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                   size="sm"
-                  onClick={() => navegarData('anterior')}
+                  onClick={() => window.location.href = `/barbeiro-agenda?data=${format(selectedDate, "yyyy-MM-dd")}`}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium min-w-[120px] text-center">
-                  {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navegarData('proximo')}
-                >
-                  <ChevronRight className="h-4 w-4" />
+                  Ver agenda
                 </Button>
               </div>
             </div>
@@ -286,7 +295,7 @@ export default function BarbeiroDashboardReformulado() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-sm font-medium">
-                        {format(new Date(agendamento.dataHora), "HH:mm")}
+                        {format(parseISO(agendamento.dataHora), "HH:mm", { locale: ptBR })}
                       </div>
                       <div>
                         <p className="font-medium">{agendamento.cliente?.nome}</p>
