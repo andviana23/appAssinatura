@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isRecepcionista } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const screenSize = useScreenSize();
 
@@ -20,8 +20,8 @@ export function Layout({ children }: LayoutProps) {
   const isMobile = screenSize === 'mobile';
   const isTablet = screenSize === 'tablet';
 
-  // Layout diferente para barbeiro
-  if (!isAdmin) {
+  // Layout simples apenas para barbeiro (sem recepcionista)
+  if (!isAdmin && !isRecepcionista) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Header 
@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
     );
   }
 
-  // Layout responsivo para admin
+  // Layout responsivo para admin e recepcionista
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background text-foreground">

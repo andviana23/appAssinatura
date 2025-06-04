@@ -8,10 +8,12 @@ import { Scissors, User, Trophy, Clock, Plus, Calendar, Check } from "lucide-rea
 import dayjs from "dayjs";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ListaDaVez() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [, setLocation] = useLocation();
   const [mesAtual] = useState(dayjs().format("YYYY-MM"));
   const [barbeiroSelecionado, setBarbeiroSelecionado] = useState<string>("");

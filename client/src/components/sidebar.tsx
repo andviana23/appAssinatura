@@ -111,14 +111,14 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
           icon: BarChart3,
         },
         {
-          name: "Agendamento",
+          name: "Agendamentos",
           href: "/agendamento",
           icon: Calendar,
         },
         {
-          name: "Clientes",
-          href: "/clientes",
-          icon: UserCheck,
+          name: "Lista da Vez",
+          href: "/lista-da-vez",
+          icon: ClipboardList,
         },
         {
           name: "Planos",
@@ -126,8 +126,13 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
           icon: CreditCard,
         },
         {
-          name: "Lista da Vez",
-          href: "/lista-da-vez",
+          name: "Clientes",
+          href: "/clientes",
+          icon: UserCheck,
+        },
+        {
+          name: "Clientes Status",
+          href: "/clientes-status",
           icon: ListOrdered,
         },
       ];
@@ -299,7 +304,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                   {user?.email}
                 </p>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  {user?.role === "admin" ? "Administrador" : "Barbeiro"}
+                  {user?.role === "admin" ? "Administrador" : user?.role === "recepcionista" ? "Recepcionista" : "Barbeiro"}
                 </p>
               </div>
               <button
