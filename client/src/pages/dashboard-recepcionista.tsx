@@ -121,41 +121,7 @@ export default function DashboardRecepcionista() {
 
       </div>
 
-      {/* Lista de Próximos Atendimentos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Próximos Atendimentos de Hoje</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {proximosAtendimentos.length > 0 ? (
-            <div className="space-y-3">
-              {proximosAtendimentos.map((agendamento: any) => (
-                <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium">{agendamento.nomeCliente || 'Cliente'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {agendamento.servicoNome || 'Serviço'} • {agendamento.barbeiroNome || 'Profissional'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {agendamento.dataHora ? format(new Date(agendamento.dataHora), 'dd/MM/yyyy', { locale: ptBR }) : 'Data'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {agendamento.dataHora ? format(new Date(agendamento.dataHora), 'HH:mm') : 'Horário'}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>Nenhum agendamento encontrado para hoje</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
     </div>
   );
 }

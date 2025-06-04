@@ -112,36 +112,7 @@ export default function Agendamento() {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate timeline position - alinhamento preciso com timeline 08:00-20:00
-  const isTodaySelected = isToday(selectedDate);
-  useEffect(() => {
-    if (isTodaySelected) {
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const totalMinutes = hours * 60 + minutes;
-      const dayStart = 8 * 60; // 8:00 AM
-      const dayEnd = 20 * 60 + 30; // 8:30 PM
-      
-      if (totalMinutes >= dayStart && totalMinutes <= dayEnd) {
-        // Calcular posição exata baseada nos slots de tempo disponíveis
-        const minutesFromStart = totalMinutes - dayStart;
-        const totalDayMinutes = dayEnd - dayStart;
-        
-        // Cada slot tem 30 minutos, então calculamos o slot atual
-        const slotIndex = Math.floor(minutesFromStart / 30);
-        const minutesIntoSlot = minutesFromStart % 30;
-        
-        // Posição precisa: slot + progresso dentro do slot
-        const exactPosition = slotIndex + (minutesIntoSlot / 30);
-        setTimelinePosition(exactPosition);
-      } else {
-        setTimelinePosition(null);
-      }
-    } else {
-      setTimelinePosition(null);
-    }
-  }, [currentTime, isTodaySelected]);
+  // Timeline position removida conforme solicitado
 
   // Calendar navigation
   const previousMonth = () => {
@@ -521,26 +492,7 @@ export default function Agendamento() {
             </div>
           ) : (
             <>
-              {/* Timeline Indicator - Current Time Line */}
-              {isTodaySelected && timelinePosition !== null && (
-                <div
-                  className="absolute left-0 right-0 z-20 pointer-events-none"
-                  style={{
-                    top: `${64 + (timelinePosition * 24)}px`,
-                  }}
-                >
-                  <div className="flex items-center">
-                    <div className="w-[120px] bg-blue-500 h-0.5 relative">
-                      <div className="absolute right-0 top-0 w-2 h-2 bg-blue-500 rounded-full transform -translate-y-0.5"></div>
-                    </div>
-                    <div className="flex-1 bg-blue-500 h-0.5 relative">
-                      <div className="absolute left-2 top-0 bg-blue-500 text-white text-xs px-2 py-1 rounded transform -translate-y-5 font-medium shadow-lg">
-                        {format(currentTime, "HH:mm")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {/* Header com nomes dos barbeiros - Altura reduzida */}
               <div 
