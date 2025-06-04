@@ -1491,12 +1491,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Verificar conflito de horário
+      // Verificar conflito de horário usando SQL direto
       const agendamentoExistente = await db.select()
         .from(schema.agendamentos)
         .where(
           sql`${schema.agendamentos.barbeiroId} = ${barbeiroId} 
-              AND ${schema.agendamentos.dataHora} = ${dataHora}
+              AND ${schema.agendamentos.dataHora} = ${dataHora}::timestamp
               AND ${schema.agendamentos.status} = 'AGENDADO'`
         )
         .limit(1);
@@ -1507,17 +1507,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Criar o agendamento
-      const [novoAgendamento] = await db.insert(schema.agendamentos)
-        .values({
-          clienteId: clienteIdFinal,
-          barbeiroId: barbeiroId,
-          servicoId: servicoId,
-          dataHora: dataHora,
-          observacoes: observacoes || null,
-          status: 'AGENDADO'
-        })
-        .returning();
+      // Criar o agendamento usando SQL direto para evitar problemas de conversão
+      const resultadoAgendamento = await db.execute(
+        sql`INSERT INTO agendamentos (cliente_id, barbeiro_id, servico_id, data_hora, observacoes, status, created_at, updated_at)
+            VALUES (${clienteIdFinal}, ${barbeiroId}, ${servicoId}, ${dataHora}::timestamp, ${observacoes || null}, 'AGENDADO', NOW(), NOW())
+            RETURNING id`
+      );
+
+      const agendamentoId = resultadoAgendamento[0].id;
+      console.log(`Agendamento criado com ID: ${agendamentoId}`);
 
       // Resposta conforme especificado
       if (tipoOperacaoCliente === 'criado') {
@@ -1525,14 +1523,14 @@ export async function registerRoutes(app: Express): Promise<Express> {
           success: true,
           cliente: 'criado',
           clienteId: clienteIdFinal,
-          agendamentoId: novoAgendamento.id
+          agendamentoId: agendamentoId
         });
       } else {
         res.status(201).json({
           success: true,
           cliente: 'existente',
           clienteId: clienteIdFinal,
-          agendamentoId: novoAgendamento.id
+          agendamentoId: agendamentoId
         });
       }
 
