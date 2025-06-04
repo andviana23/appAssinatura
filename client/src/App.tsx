@@ -38,7 +38,6 @@ import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
-
 function AuthenticatedRoutes() {
   const { user } = useAuth();
 
@@ -151,7 +150,7 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" storageKey="trato-barbados-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="trato-barbados-theme">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground">
