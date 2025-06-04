@@ -3676,9 +3676,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
 
-      // Configurar horários com timezone Brasil (UTC-3)
-      const dataInicio = new Date(data as string + 'T08:00:00-03:00');
-      const dataFim = new Date(data as string + 'T19:59:59-03:00');
+      // Configurar horários sem timezone (assumindo horário local do banco)
+      const dataInicio = new Date(data as string + 'T08:00:00');
+      const dataFim = new Date(data as string + 'T19:59:59');
 
       console.log(`[Barbeiro Agenda] Buscando agendamentos entre: ${dataInicio.toISOString()} e ${dataFim.toISOString()}`);
 
