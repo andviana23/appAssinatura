@@ -404,7 +404,6 @@ export class DatabaseStorage implements IStorage {
 
   async getServicosAssinatura(): Promise<Servico[]> {
     return await db.select().from(servicos).where(eq(servicos.isAssinatura, true)).orderBy(servicos.nome);
-  }ssinatura'));
   }
 
   async getAllClientesExternos(): Promise<Cliente[]> {
@@ -489,7 +488,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFilaMensal(): Promise<any[]> {
-    return await db.select().from(ordemFila).orderBy(ordemFila.posicao);
+    return await db.select().from(ordemFila).orderBy(ordemFila.ordemCustomizada);
   }
 
   async reordenarFila(novaOrdem: any[]): Promise<void> {
@@ -508,7 +507,7 @@ export class DatabaseStorage implements IStorage {
     const barbeirosAtivos = await db.select().from(barbeiros);
     const ordemInicial = barbeirosAtivos.map((barbeiro, index) => ({
       barbeiroId: barbeiro.id,
-      posicao: index + 1,
+      ordemCustomizada: index + 1,
       ativo: true
     }));
     
@@ -518,5 +517,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
 }
+
+// Exportar a classe Storage
+export { Storage };
 
 export const storage = new DatabaseStorage();

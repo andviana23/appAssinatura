@@ -2,9 +2,8 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
-import { Storage } from './storage';
 
 export async function registerRoutes(app: Express): Promise<Express> {
   
@@ -1279,21 +1278,21 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // ROTAS CONSOLIDADAS - OTIMIZAÇÃO DE PERFORMANCE
   // =====================================================
 
+  // ROTAS CONSOLIDADAS - OTIMIZAÇÃO DE PERFORMANCE
+  
   // Clientes unificados com filtros
   app.get('/api/clientes', async (req: Request, res: Response) => {
     try {
       const { status, forAgendamento, page = 1, limit = 100 } = req.query;
       
-      let clientes = await storage.getAllClientes();
+      let whereClause = eq(schema.clientes.id, schema.clientes.id); // Always true base condition
       
       // Filtros aplicados
-      if (status === 'ativo') {
-        clientes = clientes.filter(c => c.statusAssinatura === 'ATIVO');
+      if (status === 'ativo' || forAgendamento === 'true') {
+        whereClause = eq(schema.clientes.statusAssinatura, 'ATIVO');
       }
       
-      if (forAgendamento === 'true') {
-        clientes = clientes.filter(c => c.statusAssinatura === 'ATIVO');
-      }
+      const clientes = await db.select().from(schema.clientes).where(whereClause).orderBy(schema.clientes.nome);
       
       // Paginação
       const startIndex = (Number(page) - 1) * Number(limit);
@@ -1317,12 +1316,14 @@ export async function registerRoutes(app: Express): Promise<Express> {
     try {
       const { categoria, page = 1, limit = 50 } = req.query;
       
-      let servicos = await storage.getAllServicos();
+      let whereClause = eq(schema.servicos.id, schema.servicos.id); // Always true base condition
       
       // Filtros aplicados
       if (categoria === 'assinatura') {
-        servicos = servicos.filter(s => s.isAssinatura === true);
+        whereClause = eq(schema.servicos.isAssinatura, true);
       }
+      
+      const servicos = await db.select().from(schema.servicos).where(whereClause).orderBy(schema.servicos.nome);
       
       // Paginação
       const startIndex = (Number(page) - 1) * Number(limit);
@@ -1350,7 +1351,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
-      const agendamentos = await storage.getAgendamentosByDate(String(date));
+      const agendamentos = await db.select().from(schema.agendamentos)
+        .where(like(schema.agendamentos.dataHora, `${date}%`))
+        .orderBy(schema.agendamentos.dataHora);
+      
       res.json(agendamentos);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
@@ -1361,10 +1365,24 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // POST Agendamentos
   app.post('/api/agendamentos', async (req: Request, res: Response) => {
     try {
-      const agendamento = await storage.createAgendamento(req.body);
+      const [agendamento] = await db.insert(schema.agendamentos).values(req.body).returning();
       res.json(agendamento);
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
+  });
+
+  // POST Serviços otimizado
+  app.post('/api/servicos', async (req: Request, res: Response) => {
+    try {
+      const [servico] = await db.insert(schema.servicos).values({
+        ...req.body,
+        isAssinatura: true
+      }).returning();
+      res.json(servico);
+    } catch (error) {
+      console.error('Erro ao criar serviço:', error);
       res.status(500).json({ message: 'Erro interno do servidor' });
     }
   });
@@ -1373,7 +1391,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.patch('/api/agendamentos/:id/finalizar', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const agendamento = await storage.finalizarAgendamento(id);
+      const [agendamento] = await db.update(schema.agendamentos)
+        .set({ status: 'FINALIZADO' })
+        .where(eq(schema.agendamentos.id, id))
+        .returning();
       res.json(agendamento);
     } catch (error) {
       console.error('Erro ao finalizar agendamento:', error);
@@ -1385,8 +1406,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.patch('/api/agendamentos/:id/cancelar', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const agendamento = await storage.cancelarAgendamento(id);
-      res.json(agendamento);
+      const result = await db.delete(schema.agendamentos).where(eq(schema.agendamentos.id, id));
+      res.json({ success: true });
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
       res.status(500).json({ message: 'Erro interno do servidor' });

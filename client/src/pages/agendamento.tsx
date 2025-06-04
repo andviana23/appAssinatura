@@ -123,22 +123,26 @@ export default function Agendamento() {
   const barbeiros = barbeirosResponse?.data || [];
 
   // 3. Clientes ativos - consulta unificada
-  const { data: clientes = [] } = useQuery({
+  const { data: clientesResponse } = useQuery({
     queryKey: ["/api/clientes", "ativos"],
     queryFn: async () => {
-      const response = await apiRequest("/api/clientes?status=ativo&forAgendamento=true");
-      return await response.json();
+      const response = await fetch("/api/clientes?status=ativo&forAgendamento=true");
+      if (!response.ok) throw new Error('Erro ao carregar clientes');
+      return response.json();
     }
   });
+  const clientes = clientesResponse?.data || [];
 
   // 4. Serviços de assinatura - consulta única consolidada
-  const { data: servicos = [] } = useQuery({
+  const { data: servicosResponse } = useQuery({
     queryKey: ["/api/servicos", "assinatura"],
     queryFn: async () => {
-      const response = await apiRequest("/api/servicos?categoria=assinatura");
-      return await response.json();
+      const response = await fetch("/api/servicos?categoria=assinatura");
+      if (!response.ok) throw new Error('Erro ao carregar serviços');
+      return response.json();
     }
   });
+  const servicos = servicosResponse?.data || [];
 
   // Filtrar clientes com base no termo de busca
   const clientesFiltrados = useMemo(() => {
