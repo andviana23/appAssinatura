@@ -2174,8 +2174,23 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // =====================================================
 
   // Redefinir senha de profissional (ADMIN)
-  app.patch('/api/profissionais/:id/redefinir-senha', requireAdmin, async (req: Request, res: Response) => {
+  app.patch('/api/profissionais/:id/redefinir-senha', async (req: Request, res: Response) => {
     try {
+      // Verificação manual de autenticação e autorização
+      if (!req.user) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'Usuário não autenticado' 
+        });
+      }
+
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ 
+          success: false,
+          message: 'Apenas administradores podem redefinir senhas' 
+        });
+      }
+
       const { id } = req.params;
       const { novaSenha, usarSenhaPadrao } = req.body;
       
