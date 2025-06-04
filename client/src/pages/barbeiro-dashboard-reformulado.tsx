@@ -35,7 +35,7 @@ export default function BarbeiroDashboardReformulado() {
   const { data: estatisticasMes } = useQuery({
     queryKey: ["/api/barbeiro/estatisticas-mes", user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/barbeiro/estatisticas-mes?barbeiroId=${user?.id}`);
+      const response = await fetch(`/api/barbeiro/estatisticas-mes`);
       if (!response.ok) throw new Error('Erro ao carregar estatísticas');
       return response.json();
     },
@@ -45,7 +45,7 @@ export default function BarbeiroDashboardReformulado() {
   const { data: agendaDia } = useQuery({
     queryKey: ["/api/barbeiro/agenda", user?.id, dataFormatada],
     queryFn: async () => {
-      const response = await fetch(`/api/barbeiro/agenda?barbeiroId=${user?.id}&data=${dataFormatada}`);
+      const response = await fetch(`/api/barbeiro/agenda?data=${dataFormatada}`);
       if (!response.ok) throw new Error('Erro ao carregar agenda');
       return response.json();
     },
@@ -55,7 +55,7 @@ export default function BarbeiroDashboardReformulado() {
   const { data: listaDaVez } = useQuery({
     queryKey: ["/api/barbeiro/lista-da-vez", user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/barbeiro/lista-da-vez?barbeiroId=${user?.id}`);
+      const response = await fetch(`/api/barbeiro/lista-da-vez`);
       if (!response.ok) throw new Error('Erro ao carregar lista da vez');
       return response.json();
     },
@@ -65,7 +65,7 @@ export default function BarbeiroDashboardReformulado() {
   const { data: comissaoMes } = useQuery({
     queryKey: ["/api/barbeiro/comissao-mes", user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/barbeiro/comissao-mes?barbeiroId=${user?.id}`);
+      const response = await fetch(`/api/barbeiro/comissao-mes`);
       if (!response.ok) throw new Error('Erro ao carregar comissão');
       return response.json();
     },

@@ -3717,10 +3717,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Comissão do mês do barbeiro
   app.get('/api/barbeiro/comissao-mes', async (req: Request, res: Response) => {
     try {
-      const { barbeiroId } = req.query;
-      
-      if (!barbeiroId) {
-        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      // Verificar autenticação
+      if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
+      if (req.user.role === 'admin' && req.query.barbeiroId) {
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const hoje = new Date();
