@@ -639,12 +639,12 @@ export default function Agendamento() {
             {timeSlots.map((timeSlot) => (
               <div 
                 key={timeSlot} 
-                className="grid border-b border-border min-h-[70px] hover:bg-muted/30 transition-colors group"
+                className="grid border-b border-border min-h-[35px] hover:bg-muted/30 transition-colors group"
                 style={{ 
                   gridTemplateColumns: `120px repeat(${activeBarbeiros.length}, 1fr)` 
                 }}
               >
-                <div className="p-3 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     {timeSlot}
@@ -655,7 +655,7 @@ export default function Agendamento() {
                   const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                   
                   return (
-                    <div key={barbeiro.id} className="border-r border-border p-1 relative">
+                    <div key={barbeiro.id} className="border-r border-border p-1 relative min-h-[35px]">
                       {agendamento ? (
                         <div 
                           className={`
@@ -663,7 +663,7 @@ export default function Agendamento() {
                             ${agendamento.status === "CANCELADO" ? "bg-gray-500/90 hover:bg-gray-600" : ""}
                             ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
                             ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
-                            rounded-md p-3 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
+                            rounded-md p-2 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
                           `}
                           onClick={() => abrirComanda(agendamento)}
                           onContextMenu={(e) => handleContextMenu(e, agendamento)}
