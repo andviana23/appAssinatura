@@ -1,0 +1,32 @@
+⚠️ CORRIGIR FLUXO DE PERMISSÕES E REDIRECIONAMENTO POR PERFIL ⚠️
+
+**Problema:**  
+Ao logar com a conta `andrey@tratodebarbados.com.br`, estou sendo direcionado para as telas/permissões de recepcionista.  
+**Isso está errado:** essa conta precisa acessar todas as telas e recursos de ADMINISTRADOR, não de recepcionista.
+
+**O que precisa ser feito:**
+
+1. **Regra principal:**
+   - Usuários cadastrados como **ADMINISTRADOR** (especialmente o e-mail `andrey@tratodebarbados.com.br`) devem acessar todas as páginas e recursos de administrador, incluindo dashboard executivo, relatórios, gerenciar profissionais, clientes, planos, assinaturas e todas as funções de gestão.
+   - **NUNCA** redirecionar ou limitar o acesso desse usuário para telas/regras de recepcionista, barbeiro ou qualquer outro perfil.
+
+2. **Recepcionista:**
+   - Apenas usuários cadastrados explicitamente como **RECEPCIONISTA** devem acessar as páginas e recursos específicos desse perfil.
+   - Um recepcionista nunca deve ter acesso a funções administrativas ou telas restritas do admin.
+
+3. **Redirecionamento e controle de acesso:**
+   - Ao fazer login, verifique o perfil do usuário (admin, recepcionista, barbeiro, etc).
+   - Redirecione automaticamente para o painel/telas correspondentes ao perfil correto:
+     - **ADMINISTRADOR:** sempre dashboard/admin.
+     - **RECEPCIONISTA:** apenas telas e recursos liberados para recepcionista.
+   - Não misture fluxos ou permissões.  
+   - Garanta que a conta `andrey@tratodebarbados.com.br` tenha sempre perfil e acesso de administrador MASTER.
+
+4. **Não mexa no fluxo que já está funcionando para o cliente final ou outros perfis. Só corrija o que envolve perfil e redirecionamento/admin.**
+
+5. **Testes finais:**
+   - Logue com a conta do admin (`andrey@tratodebarbados.com.br`): deve abrir a tela completa de administrador.
+   - Logue com conta de recepcionista: só abre o painel de recepcionista.
+   - Cada perfil só acessa o que tem permissão — nunca o contrário.
+
+Quando ajustar, me avise pra eu testar de novo.

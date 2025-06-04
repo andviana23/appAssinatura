@@ -38,18 +38,29 @@ import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
-  const { user, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
+  const { user } = useAuth();
+
+  // Função para garantir que admin sempre tem acesso total
+  const isAdminUser = user?.role === "admin" || user?.email === "andrey@tratodebarbados.com.br";
+  const isBarbeiroUser = user?.role === "barbeiro";
+  const isRecepcionistaUser = user?.role === "recepcionista";
 
   // Todas as páginas protegidas SEMPRE usam o Layout principal
   return (
     <Layout>
       <Switch>
-        {/* Dashboard principal - sempre Admin Dashboard para admins */}
-        <Route path="/" exact>
-          {isAdmin ? <AdminDashboard /> : isBarbeiro ? <BarbeiroDashboard /> : <RecepcionistaDashboard />}
+        {/* Dashboard principal - ADMINISTRADOR tem prioridade ABSOLUTA */}
+        <Route path="/">
+          {isAdminUser && <AdminDashboard />}
+          {!isAdminUser && isBarbeiroUser && <BarbeiroDashboard />}
+          {!isAdminUser && !isBarbeiroUser && isRecepcionistaUser && <RecepcionistaDashboard />}
+          {!isAdminUser && !isBarbeiroUser && !isRecepcionistaUser && <AdminDashboard />}
         </Route>
-        <Route path="/dashboard" exact>
-          {isAdmin ? <AdminDashboard /> : isBarbeiro ? <BarbeiroDashboard /> : <RecepcionistaDashboard />}
+        <Route path="/dashboard">
+          {isAdminUser && <AdminDashboard />}
+          {!isAdminUser && isBarbeiroUser && <BarbeiroDashboard />}
+          {!isAdminUser && !isBarbeiroUser && isRecepcionistaUser && <RecepcionistaDashboard />}
+          {!isAdminUser && !isBarbeiroUser && !isRecepcionistaUser && <AdminDashboard />}
         </Route>
 
         {/* Rotas específicas do Admin - sem condicionais aninhadas */}
