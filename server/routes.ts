@@ -2053,7 +2053,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // AUTENTICAÇÃO BÁSICA
   // =====================================================
 
-  // Login com autenticação real
+  // Login com autenticação real usando cookies
   app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
@@ -2075,10 +2075,22 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Email ou senha incorretos' });
       }
       
-      // Configurar sessão
-      (req.session as any).userId = user.id;
-      (req.session as any).userEmail = user.email;
-      (req.session as any).userRole = user.role;
+      // Configurar cookie de autenticação
+      res.cookie('user_id', user.id.toString(), { 
+        httpOnly: true, 
+        secure: false, 
+        maxAge: 24 * 60 * 60 * 1000 // 24 horas
+      });
+      res.cookie('user_email', user.email, { 
+        httpOnly: true, 
+        secure: false, 
+        maxAge: 24 * 60 * 60 * 1000 
+      });
+      res.cookie('user_role', user.role, { 
+        httpOnly: true, 
+        secure: false, 
+        maxAge: 24 * 60 * 60 * 1000 
+      });
       
       res.json({
         success: true,
@@ -2095,29 +2107,25 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // Logout com limpeza completa da sessão
+  // Logout com limpeza completa dos cookies
   app.post('/api/auth/logout', (req: Request, res: Response) => {
-    req.session.destroy((err: any) => {
-      if (err) {
-        console.error('Erro ao destruir sessão:', err);
-        return res.status(500).json({ message: 'Erro ao fazer logout' });
-      }
-      res.clearCookie('connect.sid');
-      res.json({ success: true, message: 'Logout realizado com sucesso' });
-    });
+    res.clearCookie('user_id');
+    res.clearCookie('user_email');
+    res.clearCookie('user_role');
+    res.json({ success: true, message: 'Logout realizado com sucesso' });
   });
 
-  // Dados do usuário com verificação de sessão
+  // Dados do usuário com verificação via cookies
   app.get('/api/auth/me', async (req: Request, res: Response) => {
     try {
-      const session = req.session as any;
+      const userId = req.cookies.user_id;
       
-      if (!session || !session.userId) {
+      if (!userId) {
         return res.status(401).json({ message: 'Não autenticado' });
       }
       
       // Buscar dados atualizados do usuário
-      const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.userId));
+      const [user] = await db.select().from(schema.users).where(eq(schema.users.id, parseInt(userId)));
       
       if (!user) {
         return res.status(401).json({ message: 'Usuário não encontrado' });
