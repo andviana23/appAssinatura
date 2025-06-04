@@ -325,15 +325,15 @@ export default function Servicos() {
                         checkNomeDuplicata(novoNome);
                       }}
                       placeholder="Ex: Corte Masculino"
-                      className={`h-12 rounded-xl border-2 border-border focus:border-primary transition-colors ${
-                        nomeError ? 'border-red-500 focus:border-red-500' : ''
+                      className={`h-12 rounded-xl border-2 transition-colors ${
+                        nomeError ? 'border-orange-300 focus:border-orange-400 bg-orange-50' : 'border-border focus:border-primary'
                       }`}
                       required
                     />
                     
                     {nomeError && (
                       <div className="space-y-3">
-                        <p className="text-red-500 text-sm font-medium flex items-center gap-2">
+                        <p className="text-orange-600 text-sm font-medium flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />
                           {nomeError}
                         </p>
@@ -429,7 +429,7 @@ export default function Servicos() {
                           className={`px-3 py-1 rounded-full font-semibold ${
                             servico.isAssinatura 
                               ? "bg-green-100 text-green-700 border-green-200" 
-                              : "bg-red-100 text-red-700 border-red-200"
+                              : "bg-gray-100 text-gray-600 border-gray-200"
                           }`}
                         >
                           {servico.isAssinatura ? "Ativo" : "Inativo"}

@@ -597,11 +597,11 @@ export default function Agendamento() {
               }}
             >
               <div className="flex items-center">
-                <div className="w-[120px] bg-red-500 h-1 relative">
-                  <div className="absolute right-0 top-0 w-3 h-3 bg-red-500 rounded-full transform -translate-y-1"></div>
+                <div className="w-[120px] bg-primary h-1 relative">
+                  <div className="absolute right-0 top-0 w-3 h-3 bg-primary rounded-full transform -translate-y-1"></div>
                 </div>
-                <div className="flex-1 bg-red-500 h-1 relative">
-                  <div className="absolute left-2 top-0 bg-red-500 text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
+                <div className="flex-1 bg-primary h-1 relative">
+                  <div className="absolute left-2 top-0 bg-primary text-white text-xs px-2 py-1 rounded transform -translate-y-6 font-medium shadow-lg">
                     {format(currentTime, "HH:mm")}
                   </div>
                 </div>
@@ -660,7 +660,7 @@ export default function Agendamento() {
                         <div 
                           className={`
                             ${agendamento.status === "FINALIZADO" ? "bg-green-500/90 hover:bg-green-500" : ""}
-                            ${agendamento.status === "CANCELADO" ? "bg-red-500/90 hover:bg-red-500" : ""}
+                            ${agendamento.status === "CANCELADO" ? "bg-gray-500/90 hover:bg-gray-600" : ""}
                             ${agendamento.status === "AGENDADO" ? "bg-primary/90 hover:bg-primary" : ""}
                             ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500/90 hover:bg-amber-500" : ""}
                             rounded-md p-3 text-xs h-full transition-all duration-200 cursor-pointer text-white shadow-md hover:shadow-lg
