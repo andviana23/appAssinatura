@@ -3333,20 +3333,25 @@ export async function registerRoutes(app: Express): Promise<Express> {
           eq(schema.profissionais.ativo, true)
         ));
 
-      // Buscar atendimentos do mês para cada barbeiro
+      // Buscar atendimentos da lista-da-vez do mês para cada barbeiro
       const resultado = await Promise.all(barbeiros.map(async (barbeiro) => {
-        // Contar atendimentos finalizados do mês
-        const atendimentosFinalizados = await db.select()
-          .from(schema.agendamentos)
+        // Contar atendimentos da lista-da-vez do mês
+        const atendimentosListaVez = await db.select()
+          .from(schema.listaVezAtendimentos)
           .where(and(
-            eq(schema.agendamentos.barbeiroId, barbeiro.id),
-            eq(schema.agendamentos.status, 'FINALIZADO'),
-            sql`DATE_TRUNC('month', ${schema.agendamentos.dataHora}) = ${mes + '-01'}`
+            eq(schema.listaVezAtendimentos.barbeiroId, barbeiro.id),
+            eq(schema.listaVezAtendimentos.mesAno, mes),
+            eq(schema.listaVezAtendimentos.tipoAcao, 'ATENDIMENTO')
           ));
 
-        // Buscar registro de "passou a vez" (se existir na tabela)
-        // Por enquanto, retornamos 0 - implementaremos a lógica depois
-        const diasPassouAVez = 0;
+        // Contar quantas vezes passou a vez no mês
+        const passouVez = await db.select()
+          .from(schema.listaVezAtendimentos)
+          .where(and(
+            eq(schema.listaVezAtendimentos.barbeiroId, barbeiro.id),
+            eq(schema.listaVezAtendimentos.mesAno, mes),
+            eq(schema.listaVezAtendimentos.tipoAcao, 'PASSOU_VEZ')
+          ));
 
         return {
           barbeiro: {
@@ -3355,8 +3360,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
             email: barbeiro.email,
             ativo: barbeiro.ativo
           },
-          totalAtendimentosMes: atendimentosFinalizados.length,
-          diasPassouAVez: diasPassouAVez
+          totalAtendimentosMes: atendimentosListaVez.length,
+          diasPassouAVez: passouVez.length
         };
       }));
 
@@ -3389,14 +3394,14 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Nenhum barbeiro ativo encontrado' });
       }
 
-      // Contar atendimentos de cada barbeiro no mês
+      // Contar atendimentos da lista-da-vez de cada barbeiro no mês
       const barbeirosComContagem = await Promise.all(barbeiros.map(async (barbeiro) => {
         const atendimentos = await db.select()
-          .from(schema.agendamentos)
+          .from(schema.listaVezAtendimentos)
           .where(and(
-            eq(schema.agendamentos.barbeiroId, barbeiro.id),
-            eq(schema.agendamentos.status, 'FINALIZADO'),
-            sql`DATE_TRUNC('month', ${schema.agendamentos.dataHora}) = ${mesAno + '-01'}`
+            eq(schema.listaVezAtendimentos.barbeiroId, barbeiro.id),
+            eq(schema.listaVezAtendimentos.mesAno, mesAno),
+            eq(schema.listaVezAtendimentos.tipoAcao, 'ATENDIMENTO')
           ));
 
         return {
@@ -3405,47 +3410,18 @@ export async function registerRoutes(app: Express): Promise<Express> {
         };
       }));
 
-      // Encontrar barbeiro com menos atendimentos
+      // Encontrar barbeiro com menos atendimentos na lista-da-vez
       const proximoBarbeiro = barbeirosComContagem.reduce((menor, atual) => 
         atual.totalAtendimentos < menor.totalAtendimentos ? atual : menor
       );
 
-      // Buscar um serviço padrão para criar o agendamento
-      const servicoPadrao = await db.select()
-        .from(schema.servicos)
-        .limit(1);
-
-      if (servicoPadrao.length === 0) {
-        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
-      }
-
-      // Buscar ou criar cliente padrão para lista da vez
-      let clientePadrao = await db.select()
-        .from(schema.clientes)
-        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
-        .limit(1);
-
-      if (clientePadrao.length === 0) {
-        // Criar cliente padrão
-        const novoCliente = await db.insert(schema.clientes)
-          .values({
-            nome: 'Cliente Lista da Vez',
-            telefone: '(00) 00000-0000',
-            email: 'listadavez@sistema.com'
-          })
-          .returning();
-        clientePadrao = novoCliente;
-      }
-
-      // Criar agendamento automaticamente finalizado
-      const novoAgendamento = await db.insert(schema.agendamentos)
+      // Registrar atendimento na lista-da-vez (sistema isolado)
+      const novoRegistro = await db.insert(schema.listaVezAtendimentos)
         .values({
-          clienteId: clientePadrao[0].id,
           barbeiroId: proximoBarbeiro.id,
-          servicoId: servicoPadrao[0].id,
-          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
-          status: 'FINALIZADO',
-          observacoes: `Atendimento via Lista da Vez - ${tipoAtendimento || 'NORMAL'}`
+          data: data,
+          mesAno: mesAno,
+          tipoAcao: 'ATENDIMENTO'
         })
         .returning();
 
@@ -3455,8 +3431,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
           id: proximoBarbeiro.id,
           nome: proximoBarbeiro.nome
         },
-        agendamento: novoAgendamento[0],
-        message: 'Atendimento adicionado com sucesso'
+        registro: novoRegistro[0],
+        message: 'Atendimento registrado na lista-da-vez com sucesso'
       });
 
     } catch (error) {
@@ -3488,41 +3464,13 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Barbeiro não encontrado ou inativo' });
       }
 
-      // Buscar um serviço padrão
-      const servicoPadrao = await db.select()
-        .from(schema.servicos)
-        .limit(1);
-
-      if (servicoPadrao.length === 0) {
-        return res.status(400).json({ message: 'Nenhum serviço cadastrado' });
-      }
-
-      // Buscar ou criar cliente padrão
-      let clientePadrao = await db.select()
-        .from(schema.clientes)
-        .where(eq(schema.clientes.nome, 'Cliente Lista da Vez'))
-        .limit(1);
-
-      if (clientePadrao.length === 0) {
-        const novoCliente = await db.insert(schema.clientes)
-          .values({
-            nome: 'Cliente Lista da Vez',
-            telefone: '(00) 00000-0000',
-            email: 'listadavez@sistema.com'
-          })
-          .returning();
-        clientePadrao = novoCliente;
-      }
-
-      // Criar agendamento manual finalizado
-      const novoAgendamento = await db.insert(schema.agendamentos)
+      // Registrar atendimento manual na lista-da-vez (sistema isolado)
+      const novoRegistro = await db.insert(schema.listaVezAtendimentos)
         .values({
-          clienteId: clientePadrao[0].id,
           barbeiroId: parseInt(barbeiroId),
-          servicoId: servicoPadrao[0].id,
-          dataHora: new Date(data + 'T' + new Date().toTimeString().split(' ')[0]),
-          status: 'FINALIZADO',
-          observacoes: `Atendimento Manual via Lista da Vez - ${tipoAtendimento || 'MANUAL'}`
+          data: data,
+          mesAno: mesAno,
+          tipoAcao: 'ATENDIMENTO'
         })
         .returning();
 
@@ -3532,8 +3480,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
           id: barbeiro[0].id,
           nome: barbeiro[0].nome
         },
-        agendamento: novoAgendamento[0],
-        message: 'Atendimento manual adicionado com sucesso'
+        registro: novoRegistro[0],
+        message: 'Atendimento manual registrado na lista-da-vez com sucesso'
       });
 
     } catch (error) {
