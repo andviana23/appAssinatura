@@ -148,8 +148,15 @@ export default function ListaDaVez() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao adicionar atendimento manual');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erro ao adicionar atendimento manual');
+        } else {
+          const errorText = await response.text();
+          console.error('Erro não-JSON na resposta manual:', errorText);
+          throw new Error('Erro no servidor - resposta inválida');
+        }
       }
       
       return response.json();
@@ -187,8 +194,15 @@ export default function ListaDaVez() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao passar a vez');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erro ao passar a vez');
+        } else {
+          const errorText = await response.text();
+          console.error('Erro não-JSON ao passar a vez:', errorText);
+          throw new Error('Erro no servidor - resposta inválida');
+        }
       }
 
       return response.json();
