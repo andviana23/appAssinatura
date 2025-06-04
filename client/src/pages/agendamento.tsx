@@ -314,6 +314,10 @@ export default function Agendamento() {
       await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
       
+      // Invalidar dados de comissão para atualização em tempo real
+      await queryClient.invalidateQueries({ queryKey: ["/api/comissao/stats"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/comissao/barbeiros"] });
+      
       toast({
         title: "Agendamento cancelado!",
         description: "O agendamento foi cancelado com sucesso.",

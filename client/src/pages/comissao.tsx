@@ -267,51 +267,51 @@ export default function Comissao() {
         ) : (
           barbeirosComissao.map((item, index) => (
             <Card key={item.barbeiro.id} className="hover:shadow-md transition-shadow cursor-pointer bg-card border-border">
-              <CardContent className="p-6" onClick={() => handleBarbeiroClick(item)}>
+              <CardContent className="p-4" onClick={() => handleBarbeiroClick(item)}>
                 <div className="w-full">
                   {/* Cabeçalho do barbeiro */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full font-bold">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full font-bold text-sm">
                         {index + 1}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-foreground">
+                        <h3 className="text-base font-semibold text-foreground">
                           {item.barbeiro.nome}
                         </h3>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="flex items-center space-x-3 text-xs text-muted-foreground">
                           <span className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
+                            <Clock className="h-3 w-3 mr-1" />
                             <span className={item.minutosTrabalhadosMes === 0 ? "opacity-60" : ""}>
                               {item.minutosTrabalhadosMes === 0 ? "0h 0min" : formatMinutesToHours(item.minutosTrabalhadosMes)}
                             </span>
                           </span>
                           <span className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
+                            <Users className="h-3 w-3 mr-1" />
                             <span className={item.numeroServicos === 0 ? "opacity-60" : ""}>
                               {item.numeroServicos} serviços
                             </span>
                           </span>
-                          <Badge variant="secondary" className={`${item.comissaoAssinatura === 0 ? "bg-muted text-muted-foreground opacity-60" : "bg-primary/10 text-primary"}`}>
+                          <Badge variant="secondary" className={`text-xs ${item.comissaoAssinatura === 0 ? "bg-muted text-muted-foreground opacity-60" : "bg-primary/10 text-primary"}`}>
                             {item.percentualTempo.toFixed(1)}% do tempo total
                           </Badge>
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
 
                   {/* Valores destacados em cards separados */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {/* Faturamento Total Assinatura */}
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-green-800 dark:text-green-200">
+                    <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-green-800 dark:text-green-200">
                           Faturamento Total Assinatura
                         </span>
-                        <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <DollarSign className="h-3 w-3 text-green-600 dark:text-green-400" />
                       </div>
-                      <div className={`text-xl font-bold ${item.faturamentoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-green-700 dark:text-green-300"}`}>
+                      <div className={`text-lg font-bold ${item.faturamentoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-green-700 dark:text-green-300"}`}>
                         {item.faturamentoAssinatura === 0 ? "R$ 0,00" : formatCurrency(item.faturamentoAssinatura)}
                       </div>
                       <p className="text-xs text-green-600 dark:text-green-400 mt-1">
@@ -320,14 +320,14 @@ export default function Comissao() {
                     </div>
 
                     {/* Comissão Total a Receber */}
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-blue-800 dark:text-blue-200">
                           Comissão Total a Receber
                         </span>
-                        <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <DollarSign className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div className={`text-xl font-bold ${item.comissaoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-blue-700 dark:text-blue-300"}`}>
+                      <div className={`text-lg font-bold ${item.comissaoAssinatura === 0 ? "text-muted-foreground opacity-60" : "text-blue-700 dark:text-blue-300"}`}>
                         {item.comissaoAssinatura === 0 ? "R$ 0,00" : formatCurrency(item.comissaoAssinatura)}
                       </div>
                       <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
