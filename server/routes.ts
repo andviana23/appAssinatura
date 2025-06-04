@@ -1280,10 +1280,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
   // ROTAS CONSOLIDADAS - OTIMIZAÇÃO DE PERFORMANCE
   
-  // Clientes unificados com filtros
+  // Clientes unificados com filtros - FONTE ÚNICA DE DADOS
   app.get('/api/clientes', async (req: Request, res: Response) => {
     try {
-      const { status, forAgendamento, page = 1, limit = 100 } = req.query;
+      const { status, forAgendamento, page = 1, limit = 100, search } = req.query;
       
       let whereClause = eq(schema.clientes.id, schema.clientes.id); // Always true base condition
       
@@ -1292,16 +1292,52 @@ export async function registerRoutes(app: Express): Promise<Express> {
         whereClause = eq(schema.clientes.statusAssinatura, 'ATIVO');
       }
       
-      const clientes = await db.select().from(schema.clientes).where(whereClause).orderBy(schema.clientes.nome);
+      let clientes = await db.select().from(schema.clientes).where(whereClause).orderBy(schema.clientes.nome);
+      
+      // Aplicar filtro de busca se fornecido
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase();
+        clientes = clientes.filter(cliente => 
+          cliente.nome.toLowerCase().includes(searchTerm) ||
+          cliente.email.toLowerCase().includes(searchTerm) ||
+          (cliente.telefone && cliente.telefone.includes(searchTerm)) ||
+          (cliente.cpf && cliente.cpf.includes(searchTerm))
+        );
+      }
+      
+      // Validação anti-duplicidade por email, telefone ou CPF
+      const clientesUnicos = new Map();
+      clientes.forEach(cliente => {
+        const chaveEmail = cliente.email?.toLowerCase();
+        const chaveTelefone = cliente.telefone;
+        const chaveCpf = cliente.cpf;
+        
+        // Verificar se já existe cliente com mesmo email, telefone ou CPF
+        let isDuplicate = false;
+        for (const existingCliente of clientesUnicos.values()) {
+          if ((chaveEmail && existingCliente.email?.toLowerCase() === chaveEmail) ||
+              (chaveTelefone && existingCliente.telefone === chaveTelefone) ||
+              (chaveCpf && existingCliente.cpf === chaveCpf)) {
+            isDuplicate = true;
+            break;
+          }
+        }
+        
+        if (!isDuplicate) {
+          clientesUnicos.set(cliente.id, cliente);
+        }
+      });
+      
+      const clientesFinais = Array.from(clientesUnicos.values());
       
       // Paginação
       const startIndex = (Number(page) - 1) * Number(limit);
       const endIndex = startIndex + Number(limit);
-      const paginatedClientes = clientes.slice(startIndex, endIndex);
+      const paginatedClientes = clientesFinais.slice(startIndex, endIndex);
       
       res.json({
         data: paginatedClientes,
-        total: clientes.length,
+        total: clientesFinais.length,
         page: Number(page),
         limit: Number(limit)
       });
@@ -1367,15 +1403,29 @@ export async function registerRoutes(app: Express): Promise<Express> {
   async function buscarOuCriarCliente(dadosCliente: any): Promise<{ clienteId: number, tipoOperacao: 'existente' | 'criado' }> {
     const { email, telefone, cpf, cnpj, nome, asaasCustomerId } = dadosCliente;
     
-    // Verificar se cliente já existe por email, telefone ou CPF/CNPJ
-    const clienteExistente = await db.select()
-      .from(schema.clientes)
-      .where(
-        sql`(${schema.clientes.email} = ${email} OR 
-             ${schema.clientes.telefone} = ${telefone} OR 
-             ${schema.clientes.cpf} = ${cpf || cnpj})`
-      )
-      .limit(1);
+    // Verificar se cliente já existe por email, telefone ou CPF/CNPJ (com validação de nulos)
+    let clienteExistente = [];
+    
+    if (email) {
+      clienteExistente = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.email, email))
+        .limit(1);
+    }
+    
+    if (clienteExistente.length === 0 && telefone) {
+      clienteExistente = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.telefone, telefone))
+        .limit(1);
+    }
+    
+    if (clienteExistente.length === 0 && (cpf || cnpj)) {
+      clienteExistente = await db.select()
+        .from(schema.clientes)
+        .where(eq(schema.clientes.cpf, cpf || cnpj))
+        .limit(1);
+    }
 
     if (clienteExistente.length > 0) {
       console.log(`Cliente existente encontrado: ID ${clienteExistente[0].id}, Nome: ${clienteExistente[0].nome}`);
