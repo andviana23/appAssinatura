@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Clock, Scissors, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import type { Servico } from "@shared/schema";
 
 interface ServicoFormData {
@@ -38,16 +39,65 @@ export default function Servicos() {
     tempoMinutos: 30,
   });
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: servicos, isLoading } = useQuery<Servico[]>({
     queryKey: ["/api/servicos"],
   });
 
+  const createMutation = useMutation({
+    mutationFn: async (data: ServicoFormData) => {
+      const response = await fetch("/api/servicos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: data.nome,
+          tempoMinutos: data.tempoMinutos,
+          percentualComissao: 40, // Valor padrão
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao cadastrar serviço");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/servicos"] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Serviço cadastrado com sucesso!",
+        description: "O novo serviço foi adicionado à lista.",
+      });
+    },
+    onError: (error) => {
+      console.error("Erro ao cadastrar serviço:", error);
+      toast({
+        title: "Erro ao cadastrar serviço",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Apenas estrutura visual - não implementar lógica de cadastro ainda
-    console.log("Formulário submetido:", formData);
-    setIsDialogOpen(false);
-    resetForm();
+    
+    if (!formData.nome.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe o nome do serviço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createMutation.mutate(formData);
   };
 
   const resetForm = () => {
@@ -164,9 +214,10 @@ export default function Servicos() {
                     </Button>
                     <Button
                       type="submit"
-                      className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                      disabled={createMutation.isPending}
+                      className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                     >
-                      Cadastrar
+                      {createMutation.isPending ? "Cadastrando..." : "Cadastrar"}
                     </Button>
                   </DialogFooter>
                 </form>
