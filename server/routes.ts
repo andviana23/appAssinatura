@@ -3549,10 +3549,26 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Não autenticado' });
       }
 
-      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
-      let barbeiroId = req.user.id;
+      // Buscar o profissional correspondente ao usuário logado
+      let profissionalId: number;
+      
       if (req.user.role === 'admin' && req.query.barbeiroId) {
-        barbeiroId = parseInt(req.query.barbeiroId as string);
+        profissionalId = parseInt(req.query.barbeiroId as string);
+      } else {
+        // Buscar profissional pelo email do usuário logado
+        const profissional = await db.select()
+          .from(schema.profissionais)
+          .where(and(
+            eq(schema.profissionais.email, req.user.email),
+            eq(schema.profissionais.tipo, 'barbeiro')
+          ))
+          .limit(1);
+
+        if (profissional.length === 0) {
+          return res.status(404).json({ message: 'Profissional barbeiro não encontrado' });
+        }
+
+        profissionalId = profissional[0].id;
       }
 
       const hoje = new Date();

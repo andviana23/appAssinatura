@@ -1,0 +1,33 @@
+🛠️ AJUSTE DE INTEGRAÇÃO E MAPEAMENTO — PAINEL DO BARBEIRO 🛠️
+
+Após análise completa dos códigos, endpoints e payloads, identifiquei o seguinte:
+
+- Os endpoints estão retornando **valores zerados** (serviços finalizados, tempo trabalhado, comissão, agenda vazia, etc).
+- O motivo é provavelmente um **erro de mapeamento de ID entre as tabelas** (`users` x `profissionais`), já que o `req.user.id` está vindo da tabela de users, mas as buscas em agendamento usam o ID da tabela profissionais.
+- O sistema está buscando dados de agendamento pelo ID errado, então mesmo que existam agendamentos no banco, os filtros nunca encontram registros válidos.
+
+**O que precisa ser feito:**
+
+1. **Ajuste o mapeamento de IDs:**
+   - Certifique-se que, ao autenticar um barbeiro, o sistema sabe o **ID do profissional na tabela `profissionais`** correspondente ao usuário logado (`users.id`).
+   - Se necessário, crie um campo de referência (ex: `userId` em profissionais) para mapear diretamente entre `users` e `profissionais`.
+   - Sempre que for consultar agendamentos, use o ID do profissional correto (da tabela profissionais), não o ID do usuário.
+
+2. **Revise todos os endpoints do painel do barbeiro:**
+   - `/api/barbeiro/estatisticas-mes`
+   - `/api/barbeiro/agenda`
+   - `/api/barbeiro/lista-da-vez`
+   - `/api/barbeiro/comissao-mes`
+   - Ajuste todos para usar o ID correto, buscando agendamentos, serviços, lista da vez, comissão e outros dados SEMPRE pelo ID da tabela profissionais vinculado ao barbeiro logado.
+
+3. **Garanta o filtro por status e período está funcionando:**
+   - Para estatísticas, tempo trabalhado e comissão, filtre só agendamentos com status FINALIZADO do barbeiro correto e do mês atual.
+   - Para agenda, filtre agendamentos do barbeiro do dia/data consultada.
+
+4. **Se necessário, ajuste o processo de login/autenticação para já trazer o `profissionalId` correto no contexto do usuário barbeiro.**
+
+5. **Não altere nenhuma lógica do frontend ou dos cálculos, apenas ajuste o backend para garantir que as queries retornem os dados REAIS do barbeiro logado.**
+
+Quando corrigir, teste com agendamentos finalizados reais e me avise para validar os dados.
+
+Se identificar falta de dados de teste, me informe e oriente como cadastrar agendamentos finalizados para simular o fluxo real.
