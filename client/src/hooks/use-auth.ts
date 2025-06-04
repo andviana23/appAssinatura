@@ -37,19 +37,17 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
+      // Limpar completamente os dados do usuário
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.clear();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso",
-      });
+      // Forçar recarga da página para garantir limpeza completa
+      window.location.href = "/login";
     },
     onError: () => {
-      toast({
-        title: "Erro ao fazer logout",
-        description: "Tente novamente",
-        variant: "destructive",
-      });
+      // Em caso de erro, limpar dados localmente mesmo assim
+      queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.clear();
+      window.location.href = "/login";
     },
   });
 

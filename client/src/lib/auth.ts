@@ -4,6 +4,7 @@ export interface User {
   id: number;
   email: string;
   role: "admin" | "barbeiro" | "recepcionista";
+  nome?: string;
   barbeiroId?: number;
 }
 

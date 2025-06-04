@@ -2053,36 +2053,86 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // AUTENTICAÇÃO BÁSICA
   // =====================================================
 
-  // Login simplificado
-  app.post('/api/auth/login', (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email e senha são obrigatórios' });
-    }
-    
-    res.json({
-      success: true,
-      user: {
-        id: 1,
-        email: email,
-        name: "Admin Trato"
+  // Login com autenticação real
+  app.post('/api/auth/login', async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email e senha são obrigatórios' });
       }
-    });
+      
+      // Buscar usuário no banco
+      const [user] = await db.select().from(schema.users).where(eq(schema.users.email, email));
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Email ou senha incorretos' });
+      }
+      
+      // Verificar senha
+      const senhaValida = await bcrypt.compare(password, user.password);
+      if (!senhaValida) {
+        return res.status(401).json({ message: 'Email ou senha incorretos' });
+      }
+      
+      // Configurar sessão
+      (req.session as any).userId = user.id;
+      (req.session as any).userEmail = user.email;
+      (req.session as any).userRole = user.role;
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          nome: user.nome
+        }
+      });
+    } catch (error) {
+      console.error('Erro no login:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
   });
 
-  // Logout simplificado
+  // Logout com limpeza completa da sessão
   app.post('/api/auth/logout', (req: Request, res: Response) => {
-    res.json({ success: true, message: 'Logout realizado com sucesso' });
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Erro ao destruir sessão:', err);
+        return res.status(500).json({ message: 'Erro ao fazer logout' });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true, message: 'Logout realizado com sucesso' });
+    });
   });
 
-  // Dados do usuário
-  app.get('/api/auth/me', (req: Request, res: Response) => {
-    res.json({
-      id: 1,
-      email: "admin@tratobarbados.com",
-      name: "Admin Trato"
-    });
+  // Dados do usuário com verificação de sessão
+  app.get('/api/auth/me', async (req: Request, res: Response) => {
+    try {
+      const session = req.session as any;
+      
+      if (!session || !session.userId) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+      
+      // Buscar dados atualizados do usuário
+      const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.userId));
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Usuário não encontrado' });
+      }
+      
+      res.json({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        nome: user.nome
+      });
+    } catch (error) {
+      console.error('Erro ao buscar dados do usuário:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
   });
 
   // =====================================================

@@ -1,0 +1,33 @@
+⚠️ AJUSTE DE AUTENTICAÇÃO, LAYOUT E PERMISSÃO ADMINISTRATIVA ⚠️
+
+1. **LOGIN/LOGOUT:**
+   - Quando o usuário faz logout, o sistema deve:
+      • Limpar todas as credenciais/token da sessão.
+      • Redirecionar imediatamente para a tela de login.
+      • Garantir que nenhuma página privada (dashboard, clientes, etc.) seja acessível sem login válido.
+   - Quando faz login, se for bem-sucedido:
+      • Redirecionar para o dashboard (ou rota padrão protegida), usando o layout principal do sistema (com menu lateral, header e tudo mais).
+
+2. **LAYOUT:**
+   - O layout principal (menu lateral, header, etc.) deve aparecer em TODAS as rotas privadas do sistema (dashboard, clientes, agendamentos, assinaturas, etc).
+   - A página de login deve ser a ÚNICA que usa o layout clean/simples, sem menu/header.
+   - Não pode existir cenário onde, após login, só aparece header ou nenhuma navegação. Tudo deve estar como o padrão testado.
+
+3. **PERMISSÃO DO ADMINISTRADOR:**
+   - Garanta que o usuário `andrey@tratodebarbados.com.br` seja reconhecido como **administrador MASTER**, com acesso liberado a todas as funcionalidades, telas e recursos do sistema, SEM nenhuma restrição.
+   - Não restrinja acesso, menu ou recursos para este usuário. Ele deve ver tudo.
+
+4. **IMPORTANTE:**
+   - **NÃO altere nem mexa em nada que já funciona na área do cliente.**
+   - A lógica/testes do cliente (usuários comuns, área de cliente, etc.) estão 100% ok. NÃO mude nada lá.
+   - Ajuste APENAS o fluxo de autenticação/layout para usuários internos e o credenciamento/administração do usuário master acima.
+
+5. **VERIFICAÇÕES FINAIS:**
+   - Teste login, logout e troca de usuários para garantir:
+      • Logout limpa tudo e volta sempre para login.
+      • Login correto carrega dashboard e todas as páginas privadas com layout completo (menu, header, etc.).
+      • Usuário master (andrey@tratodebarbados.com.br) vê tudo SEM restrição.
+   - Não deve existir acesso a nenhuma página protegida sem autenticação.
+
+Me avise quando ajustar para eu testar.  
+Se precisar de referência do padrão/layout, use o que já está em produção/testado.
