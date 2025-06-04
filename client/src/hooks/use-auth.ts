@@ -28,10 +28,13 @@ export function useAuth() {
       queryClient.setQueryData(["/api/auth/me"], user);
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${user.email}!`,
+        description: `Bem-vindo, ${user.nome || user.email}!`,
       });
     },
-    // Removido o onError para permitir tratamento manual do erro
+    onError: (error: any) => {
+      console.error("Erro no login:", error);
+      // Não fazemos nada aqui para permitir tratamento manual
+    }
   });
 
   const logoutMutation = useMutation({

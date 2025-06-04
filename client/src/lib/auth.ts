@@ -15,7 +15,14 @@ export interface LoginCredentials {
 
 export async function login(credentials: LoginCredentials): Promise<User> {
   const response = await apiRequest("/api/auth/login", "POST", credentials);
-  return response.json();
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || "Erro no login");
+  }
+  
+  // A API retorna { success: true, user: {...} }
+  return data.user || data;
 }
 
 export async function logout(): Promise<void> {

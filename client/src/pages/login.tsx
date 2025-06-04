@@ -26,13 +26,14 @@ export default function Login() {
       return;
     }
 
-    try {
-      await login({ email, password });
-      // Redirecionar para o dashboard após login bem-sucedido
-      setLocation("/dashboard");
-    } catch (err) {
-      setError("Email ou senha incorretos");
-    }
+    login({ email, password }, {
+      onSuccess: () => {
+        setLocation("/dashboard");
+      },
+      onError: (error: any) => {
+        setError(error.message || "Email ou senha incorretos");
+      }
+    });
   };
 
   return (
