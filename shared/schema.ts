@@ -150,18 +150,15 @@ export const agendamentos = pgTable("agendamentos", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Lista da Vez - Atendimentos Diários
-export const atendimentosDiarios = pgTable("atendimentos_diarios", {
+// Lista da Vez - Sistema separado dos agendamentos
+export const listaVezAtendimentos = pgTable("lista_vez_atendimentos", {
   id: serial("id").primaryKey(),
-  barbeiroId: integer("barbeiro_id").references(() => barbeiros.id).notNull(),
+  barbeiroId: integer("barbeiro_id").references(() => profissionais.id).notNull(),
   data: text("data").notNull(), // formato "YYYY-MM-DD"
   mesAno: text("mes_ano").notNull(), // formato "YYYY-MM"
-  tipoAtendimento: text("tipo_atendimento").default("NORMAL"), // NORMAL, MANUAL, PASSOU_VEZ
+  tipoAcao: text("tipo_acao").default("ATENDIMENTO"), // ATENDIMENTO, PASSOU_VEZ
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  uniqueBarbeiroDataMes: unique("unique_barbeiro_data_mes").on(table.barbeiroId, table.data, table.mesAno),
-}));
+});
 
 // Configuração da sequência de barbeiros
 export const sequenciaBarbeiros = pgTable("sequencia_barbeiros", {
@@ -251,10 +248,9 @@ export const insertAgendamentoSchema = createInsertSchema(agendamentos).omit({
   )
 });
 
-export const insertAtendimentoDiarioSchema = createInsertSchema(atendimentosDiarios).omit({
+export const insertListaVezAtendimentoSchema = createInsertSchema(listaVezAtendimentos).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 });
 
 // Tabela para gerenciar ordem personalizada da fila
@@ -323,8 +319,8 @@ export type InsertTotalServico = z.infer<typeof insertTotalServicoSchema>;
 export type Agendamento = typeof agendamentos.$inferSelect;
 export type InsertAgendamento = z.infer<typeof insertAgendamentoSchema>;
 
-export type AtendimentoDiario = typeof atendimentosDiarios.$inferSelect;
-export type InsertAtendimentoDiario = z.infer<typeof insertAtendimentoDiarioSchema>;
+export type ListaVezAtendimento = typeof listaVezAtendimentos.$inferSelect;
+export type InsertListaVezAtendimento = z.infer<typeof insertListaVezAtendimentoSchema>;
 
 export type SequenciaBarbeiro = typeof sequenciaBarbeiros.$inferSelect;
 export type InsertSequenciaBarbeiro = z.infer<typeof insertSequenciaBarbeiroSchema>;
