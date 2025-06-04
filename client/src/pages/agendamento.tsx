@@ -61,11 +61,15 @@ export default function Agendamento() {
 
   const queryClient = useQueryClient();
 
+  // Padronizar formato da data para evitar divergências
+  const dataPadronizada = format(selectedDate, "yyyy-MM-dd");
+  
   // Fetch data
   const { data: agendamentos = [] } = useQuery({
-    queryKey: ["/api/agendamentos", format(selectedDate, "yyyy-MM-dd")],
+    queryKey: ["/api/agendamentos", dataPadronizada],
     queryFn: async () => {
-      const response = await fetch(`/api/agendamentos?data=${format(selectedDate, "yyyy-MM-dd")}`);
+      console.log("Query agendamentos - Data:", dataPadronizada, "QueryKey:", ["/api/agendamentos", dataPadronizada]);
+      const response = await fetch(`/api/agendamentos?data=${dataPadronizada}`);
       if (!response.ok) throw new Error("Erro ao buscar agendamentos");
       return response.json();
     },
@@ -182,8 +186,12 @@ export default function Agendamento() {
       return response.json();
     },
     onSuccess: () => {
+      // Usar a mesma data padronizada para invalidação
+      const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
+      console.log("Invalidando cache - Data:", dataParaInvalidar, "QueryKey:", ["/api/agendamentos", dataParaInvalidar]);
+      
       // Invalidar cache específico da data selecionada
-      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", format(selectedDate, "yyyy-MM-dd")] });
+      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
       // Invalidar também queries gerais de agendamentos
       queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       setIsModalOpen(false);
