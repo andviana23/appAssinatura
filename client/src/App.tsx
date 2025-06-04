@@ -8,7 +8,7 @@ import { IdleLogoutManager } from "@/components/IdleLogoutManager";
 import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/error-boundary";
-// import { ThemeProvider } from "@/contexts/theme-context";
+
 
 // Pages
 import Login from "@/pages/login-basico";
