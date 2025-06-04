@@ -73,18 +73,33 @@ export function Layout({ children }: LayoutProps) {
     );
   }
 
-  // Layout desktop/tablet
+  // Layout desktop/tablet - Estrutura fixa conforme vídeo
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <Sidebar collapsed={true} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col bg-background text-foreground">
+      {/* Header fixo no topo */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-card border-b border-border/50 shadow-sm">
         <Header 
           showMenuButton={false}
           onMenuToggle={() => {}}
         />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+      </div>
+      
+      <div className="flex flex-1 pt-16"> {/* pt-16 para compensar header fixo */}
+        {/* Sidebar fixo na lateral */}
+        <div className="fixed left-0 top-16 bottom-0 z-30 bg-card border-r border-border/50 shadow-lg">
+          <Sidebar collapsed={false} />
+        </div>
+        
+        {/* Área de conteúdo central com rolagem */}
+        <div className="flex-1 ml-72"> {/* ml-72 para compensar sidebar */}
+          <main className="h-full overflow-y-auto bg-background">
+            <div className="container-responsive py-6 px-6">
+              <div className="max-w-7xl mx-auto">
+                {children}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

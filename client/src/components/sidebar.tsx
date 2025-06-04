@@ -90,7 +90,7 @@ interface SidebarProps {
 export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps = {}) {
   const [location] = useLocation();
   const { user, logout, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(collapsed);
+  const [isCollapsed, setIsCollapsed] = useState(mobile ? false : collapsed);
   
   // Navegação dinâmica baseada no perfil do usuário
   const getNavigationItems = () => {
@@ -157,19 +157,15 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   return (
     <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300 relative`}>
       
-      {/* Toggle Button - Premium Style */}
-      {!mobile && (
-        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-4 border-b border-border/50`}>
+      {/* Toggle Button - Apenas para mobile */}
+      {mobile && (
+        <div className="flex justify-end p-4 border-b border-border/50">
           <button
-            onClick={toggleCollapse}
+            onClick={onClose}
             className="bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+            title="Fechar menu"
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
+            <ChevronLeft className="h-6 w-6" />
           </button>
         </div>
       )}
