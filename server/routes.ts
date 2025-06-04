@@ -2709,10 +2709,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const { nome, email, telefone, cpfCnpj, plano } = req.body;
       
       // 1. Validar dados obrigatórios
-      if (!nome || !email || !telefone || !cpfCnpj) {
+      if (!nome || !email || !telefone) {
         return res.status(400).json({ 
           success: false,
-          message: 'Campos obrigatórios: nome, email, telefone, cpfCnpj' 
+          message: 'Campos obrigatórios: nome, email, telefone' 
         });
       }
 
@@ -2736,7 +2736,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         name: nome,
         email: email,
         phone: telefone,
-        cpfCnpj: cpfCnpj
+        cpfCnpj: cpfCnpj || undefined
       };
 
       console.log('🔄 Criando cliente no Asaas:', customerData);
