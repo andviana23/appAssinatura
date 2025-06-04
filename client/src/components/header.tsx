@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { LogOut, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+// import { ThemeToggle } from "@/components/theme-toggle";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import logoTratoBarbados from "@/assets/logo-trato-barbados.jpg";
 
@@ -92,8 +92,6 @@ export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {
             )}
 
             <PWAInstallButton />
-            
-            <ThemeToggle />
 
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="hidden md:block text-right">
