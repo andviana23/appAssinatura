@@ -114,12 +114,12 @@ export class AsaasIntegrationService {
 
   // Sincronizar clientes da conta Andrey
   async syncClientesAndrey(): Promise<{ success: boolean; total: number; sincronizados: number; erros: number }> {
-    const logId = await this.iniciarLogSync('ASAAS_ANDREY', 'SYNC_CLIENTES');
+    const logId = await this.iniciarLogSync('ASAAS_AND', 'SYNC_CLIENTES');
     
     try {
-      const apiKey = process.env.ASAAS_ANDREY;
+      const apiKey = process.env.ASAAS_AND;
       if (!apiKey) {
-        throw new Error('ASAAS_ANDREY não configurada');
+        throw new Error('ASAAS_AND não configurada');
       }
 
       const payments = await this.buscarCobrancasConfirmadas(apiKey);
@@ -131,7 +131,7 @@ export class AsaasIntegrationService {
           const customer = await this.buscarClienteAsaas(apiKey, payment.customer);
           
           if (customer) {
-            await this.sincronizarClienteFromPayment(customer, payment, 'ASAAS_ANDREY');
+            await this.sincronizarClienteFromPayment(customer, payment, 'ASAAS_AND');
             sincronizados++;
           }
         } catch (error) {
