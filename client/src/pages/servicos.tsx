@@ -39,6 +39,7 @@ export default function Servicos() {
     tempoMinutos: 30,
   });
 
+  const [nomeError, setNomeError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -105,6 +106,44 @@ export default function Servicos() {
 
   const resetForm = () => {
     setFormData({ nome: "", tempoMinutos: 30 });
+    setNomeError(null);
+  };
+
+  // Validação em tempo real para verificar duplicatas
+  const checkNomeDuplicata = (nome: string) => {
+    if (!servicos || nome.trim().length === 0) {
+      setNomeError(null);
+      return;
+    }
+
+    const nomeFormatado = nome.trim().toLowerCase();
+    const servicoExistente = servicos.find(s => 
+      s.nome.toLowerCase().trim() === nomeFormatado
+    );
+
+    if (servicoExistente) {
+      setNomeError(`Já existe um serviço com o nome "${servicoExistente.nome}"`);
+    } else {
+      setNomeError(null);
+    }
+  };
+
+  // Sugestões automáticas de nomes alternativos
+  const gerarSugestoesNome = (nomeBase: string): string[] => {
+    if (!servicos) return [];
+    
+    const sugestoes = [
+      `${nomeBase} Tradicional`,
+      `${nomeBase} Premium`,
+      `${nomeBase} Express`,
+      `${nomeBase} Completo`,
+      `${nomeBase} Especial`
+    ];
+
+    return sugestoes.filter(sugestao => {
+      const sugestaoFormatada = sugestao.toLowerCase().trim();
+      return !servicos.some(s => s.nome.toLowerCase().trim() === sugestaoFormatada);
+    }).slice(0, 3);
   };
 
   const openDialog = () => {
@@ -177,11 +216,49 @@ export default function Servicos() {
                     <Input
                       id="nome"
                       value={formData.nome}
-                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                      onChange={(e) => {
+                        const novoNome = e.target.value;
+                        setFormData({ ...formData, nome: novoNome });
+                        checkNomeDuplicata(novoNome);
+                      }}
                       placeholder="Ex: Corte Masculino"
-                      className="h-12 rounded-xl border-2 border-border focus:border-primary transition-colors"
+                      className={`h-12 rounded-xl border-2 border-border focus:border-primary transition-colors ${
+                        nomeError ? 'border-red-500 focus:border-red-500' : ''
+                      }`}
                       required
                     />
+                    
+                    {nomeError && (
+                      <div className="space-y-3">
+                        <p className="text-red-500 text-sm font-medium flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {nomeError}
+                        </p>
+                        
+                        {formData.nome.trim() && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-blue-700 text-sm font-medium mb-2">
+                              Sugestões de nomes disponíveis:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {gerarSugestoesNome(formData.nome.trim()).map((sugestao, index) => (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ ...formData, nome: sugestao });
+                                    setNomeError(null);
+                                  }}
+                                  className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm rounded-full transition-colors"
+                                >
+                                  {sugestao}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-3">
