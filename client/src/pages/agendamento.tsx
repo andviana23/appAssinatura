@@ -4,7 +4,7 @@ import { format, addDays, subDays, isToday, isSameDay, startOfMonth, endOfMonth,
 import { ptBR } from "date-fns/locale";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, Plus, Check, X, Search, CalendarDays, Settings, User, Star } from "lucide-react";
 
 interface Agendamento {
@@ -110,7 +110,7 @@ export default function Agendamento() {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate timeline position - ajustado para 08:00-20:00
+  // Calculate timeline position - alinhamento preciso com timeline 08:00-20:00
   const isTodaySelected = isToday(selectedDate);
   useEffect(() => {
     if (isTodaySelected) {
@@ -122,8 +122,17 @@ export default function Agendamento() {
       const dayEnd = 20 * 60 + 30; // 8:30 PM
       
       if (totalMinutes >= dayStart && totalMinutes <= dayEnd) {
-        const percentage = ((totalMinutes - dayStart) / (dayEnd - dayStart)) * 100;
-        setTimelinePosition(percentage);
+        // Calcular posição exata baseada nos slots de tempo disponíveis
+        const minutesFromStart = totalMinutes - dayStart;
+        const totalDayMinutes = dayEnd - dayStart;
+        
+        // Cada slot tem 30 minutos, então calculamos o slot atual
+        const slotIndex = Math.floor(minutesFromStart / 30);
+        const minutesIntoSlot = minutesFromStart % 30;
+        
+        // Posição precisa: slot + progresso dentro do slot
+        const exactPosition = slotIndex + (minutesIntoSlot / 30);
+        setTimelinePosition(exactPosition);
       } else {
         setTimelinePosition(null);
       }
@@ -155,6 +164,15 @@ export default function Agendamento() {
     const barbeiroId = agendamento.barbeiroId;
     const timeSlot = agendamento.dataHora.split(' ')[1]?.substring(0, 5);
     
+    console.log("Processando agendamento:", {
+      id: agendamento.id,
+      barbeiroId,
+      timeSlot,
+      dataHora: agendamento.dataHora,
+      cliente: agendamento.cliente?.nome,
+      servico: agendamento.servico?.nome
+    });
+    
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
     }
@@ -165,6 +183,9 @@ export default function Agendamento() {
     
     return acc;
   }, {}) : {};
+  
+  console.log("Agendamentos organizados por barbeiro:", agendamentosByBarbeiro);
+  console.log("Total de agendamentos recebidos:", agendamentos?.length || 0);
 
   // Check if date has agendamentos
   const hasAgendamentos = (date: Date) => {
@@ -185,15 +206,18 @@ export default function Agendamento() {
       if (!response.ok) throw new Error("Erro ao criar agendamento");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Usar a mesma data padronizada para invalidação
       const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
       console.log("Invalidando cache - Data:", dataParaInvalidar, "QueryKey:", ["/api/agendamentos", dataParaInvalidar]);
       
-      // Invalidar cache específico da data selecionada
-      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
-      // Invalidar também queries gerais de agendamentos
-      queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      // Invalidar e refetch imediato para garantir atualização
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      
+      // Refetch explícito para garantir dados atualizados
+      await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      
       setIsModalOpen(false);
       resetForm();
     },
@@ -355,7 +379,7 @@ export default function Agendamento() {
                 <div
                   className="absolute left-0 right-0 z-20 pointer-events-none"
                   style={{
-                    top: `${64 + (timelinePosition * 0.01 * (timeSlots.length * 24))}px`,
+                    top: `${64 + (timelinePosition * 24)}px`,
                   }}
                 >
                   <div className="flex items-center">
@@ -598,9 +622,9 @@ export default function Agendamento() {
               <CalendarDays className="h-6 w-6 text-primary" />
               Novo Agendamento
             </DialogTitle>
-            <p className="text-muted-foreground text-sm mt-2">
+            <DialogDescription className="text-muted-foreground text-sm mt-2">
               Preencha os dados para criar um novo agendamento
-            </p>
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-6">

@@ -1,0 +1,49 @@
+❗ BUGS NA PÁGINA DE AGENDAMENTO — ANÁLISE COMPLETA ❗
+
+Estamos enfrentando dois problemas críticos na agenda do sistema:
+
+---
+
+**1. Linha azul de horário atual (agora):**
+- A linha azul que indica o horário atual do dia deve ficar TRAVADA exatamente no horário correspondente da agenda.
+    - Exemplo: se são 14h07, a linha azul tem que estar perfeitamente alinhada na linha das 14:00 na visualização da agenda diária.
+    - Conforme o tempo passa, a linha azul deve atualizar sua posição automaticamente, SEM atrasos ou desalinhamento.
+- **Problema atual:** a linha azul não está travada/certinha na faixa do horário correspondente na timeline da agenda.
+- **Ajuste:** alinhar a posição da linha azul exatamente ao horário real da agenda, sempre em tempo real.
+
+---
+
+**2. Erro ao gerar/agendar cliente — card de agendamento não aparece:**
+- Ao tentar criar/agendar um novo cliente, NÃO está aparecendo o card do agendamento na agenda do dia.
+    - Não mostra nome do cliente, serviço, horário, nem nada.
+- No console, aparece:
+    ```
+    Query agendamentos – Data: 2025-06-04 QueryKey: ["/api/agendamentos", "2025-06-04"]
+    // (array vazio retornado, nenhum agendamento listado)
+    Warning: Missing Description or aria-describedby={undefined} for {DialogContent}.
+    ```
+- **O que fazer:**
+    1. Analise todo o código de frontend e backend responsável por criar um agendamento:
+        - Veja se o POST de novo agendamento está realmente salvando o dado no backend/banco.
+        - Verifique o payload enviado: está indo com todos os campos obrigatórios (cliente, serviço, profissional, horário)?
+        - Após o POST, o backend retorna sucesso? Ou há algum erro (mesmo que silencioso)?
+    2. Analise a rota/listagem dos agendamentos do dia (`/api/agendamentos` com a data selecionada):
+        - Está buscando os dados corretamente?
+        - O backend está retornando a lista com os agendamentos recém criados?
+        - O frontend está atualizando/refrescando a agenda após criar/agendar um cliente?
+    3. Confira possíveis erros de filtro de data, filtro por profissional, ou cache travando a atualização da agenda.
+    4. Valide se o erro do `DialogContent` (acessibilidade) está travando a renderização ou é só warning (corrija se puder).
+    5. Analise todo o fluxo: ao criar um agendamento, o card TEM QUE aparecer na timeline da agenda, no horário e profissional certo, com nome do cliente, serviço, etc.
+
+---
+
+**Resumindo:**
+- Alinhar e travar a linha azul do horário atual no ponto certo.
+- Garantir que, ao criar um agendamento, o card aparece IMEDIATAMENTE na agenda do dia, com todas as infos.
+- Analisar e corrigir qualquer problema nas requisições, integração front-back, filtros e renderização.
+
+**IMPORTANTE:**  
+Não altere funcionalidades de outras páginas/sessões do sistema.  
+Tudo aqui é SÓ da agenda.
+
+Quando corrigir, me avise para testar!
