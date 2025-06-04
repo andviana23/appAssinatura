@@ -1440,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
-      // Query com JOINs para retornar dados completos
+      // Query com JOINs para retornar dados completos e filtro de horário
       const agendamentos = await db
         .select({
           id: schema.agendamentos.id,
@@ -1465,7 +1465,9 @@ export async function registerRoutes(app: Express): Promise<Express> {
         .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
         .leftJoin(schema.profissionais, eq(schema.agendamentos.barbeiroId, schema.profissionais.id))
         .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
-        .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${dataFiltro}%`}`)
+        .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${dataFiltro}%`} 
+                   AND EXTRACT(HOUR FROM ${schema.agendamentos.dataHora}) >= 8 
+                   AND EXTRACT(HOUR FROM ${schema.agendamentos.dataHora}) <= 20`)
         .orderBy(schema.agendamentos.dataHora);
       
       res.json(agendamentos);
