@@ -157,11 +157,6 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   return (
     <div className={`${sidebarWidth} bg-card shadow-lg border-r border-border/50 flex flex-col ${mobile ? 'h-full' : 'min-h-screen'} transition-all duration-300 relative`}>
       
-      {/* TESTE: Indicador Visual - REMOVER DEPOIS */}
-      <div className="bg-red-500 text-white p-2 text-center font-bold">
-        AJUSTE APLICADO - SIDEBAR ATIVA
-      </div>
-
       {/* Toggle Button - Premium Style */}
       {!mobile && (
         <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} p-4 border-b border-border/50`}>
@@ -229,7 +224,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
                   isActive 
                     ? "text-white" 
                     : isCollapsed 
-                      ? "text-foreground dark:text-primary-foreground group-hover:text-primary"
+                      ? "text-primary dark:text-white group-hover:text-accent"
                       : "text-muted-foreground group-hover:text-accent"
                 )} />
                 {!isCollapsed && <span>{item.name}</span>}
@@ -257,7 +252,7 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
               location === "/configuracoes" 
                 ? "text-white" 
                 : isCollapsed 
-                  ? "text-foreground dark:text-primary-foreground group-hover:text-primary"
+                  ? "text-primary dark:text-white group-hover:text-accent"
                   : "text-muted-foreground group-hover:text-accent"
             )} />
             {!isCollapsed && <span>Configurações</span>}
