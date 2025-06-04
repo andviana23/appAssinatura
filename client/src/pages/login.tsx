@@ -14,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [, setLocation] = useLocation();
   const { login, isLoggingIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +28,8 @@ export default function Login() {
 
     try {
       await login({ email, password });
-      alert("Login efetuado!");
+      // Redirecionamento será feito automaticamente pelo sistema de autenticação
+      setLocation("/");
     } catch (err) {
       setError("Email ou senha incorretos");
     }

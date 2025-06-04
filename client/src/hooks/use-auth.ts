@@ -20,13 +20,6 @@ export function useAuth() {
     refetchOnMount: true,
     refetchOnReconnect: false,
     enabled: true,
-    // Forçar usuário admin para desenvolvimento
-    initialData: {
-      id: 1,
-      email: "admin@tratobarbados.com",
-      name: "Admin Trato",
-      role: "admin"
-    }
   });
 
   const loginMutation = useMutation({
