@@ -66,21 +66,26 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Create server instance
-  const server = app.listen(5000, "0.0.0.0", () => {
-    log(`serving on port 5000`);
-    
-    // Iniciar sincronização automática com Asaas
-    iniciarSincronizacaoAutomatica();
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Setup vite BEFORE creating server instance
   if (app.get("env") === "development") {
+    // Create server instance first for HMR
+    const server = app.listen(5000, "0.0.0.0", () => {
+      log(`serving on port 5000`);
+      
+      // Iniciar sincronização automática com Asaas
+      iniciarSincronizacaoAutomatica();
+    });
+    
     await setupVite(app, server);
   } else {
     serveStatic(app);
+    
+    const server = app.listen(5000, "0.0.0.0", () => {
+      log(`serving on port 5000`);
+      
+      // Iniciar sincronização automática com Asaas
+      iniciarSincronizacaoAutomatica();
+    });
   }
 
   // Função para sincronização automática com Asaas
