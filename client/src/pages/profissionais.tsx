@@ -25,6 +25,10 @@ export default function Profissionais() {
   const [location, setLocation] = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isRedefinirSenhaOpen, setIsRedefinirSenhaOpen] = useState(false);
+  const [profissionalSelecionado, setProfissionalSelecionado] = useState<Profissional | null>(null);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [usarSenhaPadrao, setUsarSenhaPadrao] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -42,6 +46,35 @@ export default function Profissionais() {
   });
 
   const profissionais = response?.data || [];
+
+  // Mutation para redefinir senha
+  const redefinirSenha = useMutation({
+    mutationFn: async ({ id, novaSenha, usarSenhaPadrao }: { id: number, novaSenha?: string, usarSenhaPadrao: boolean }) => {
+      const response = await apiRequest(`/api/profissionais/${id}/redefinir-senha`, "PATCH", {
+        novaSenha,
+        usarSenhaPadrao
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
+      toast({
+        title: "Sucesso",
+        description: data.message || "Senha redefinida com sucesso",
+      });
+      setIsRedefinirSenhaOpen(false);
+      setProfissionalSelecionado(null);
+      setNovaSenha("");
+      setUsarSenhaPadrao(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao redefinir senha",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Mutation para cadastrar profissional
   const criarProfissional = useMutation({
@@ -91,6 +124,34 @@ export default function Profissionais() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Função para abrir modal de redefinir senha
+  const abrirModalRedefinirSenha = (profissional: Profissional) => {
+    setProfissionalSelecionado(profissional);
+    setIsRedefinirSenhaOpen(true);
+    setNovaSenha("");
+    setUsarSenhaPadrao(true);
+  };
+
+  // Função para confirmar redefinição de senha
+  const confirmarRedefinirSenha = () => {
+    if (!profissionalSelecionado) return;
+
+    if (!usarSenhaPadrao && (!novaSenha || novaSenha.length < 8)) {
+      toast({
+        title: "Erro",
+        description: "Nova senha deve ter pelo menos 8 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    redefinirSenha.mutate({
+      id: profissionalSelecionado.id,
+      novaSenha: usarSenhaPadrao ? undefined : novaSenha,
+      usarSenhaPadrao
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -385,16 +446,10 @@ export default function Profissionais() {
                         variant="outline"
                         size="sm"
                         className="flex-1"
-                        onClick={() => {
-                          // TODO: Implementar edição
-                          toast({
-                            title: "Em desenvolvimento",
-                            description: "Funcionalidade de edição será implementada em breve",
-                          });
-                        }}
+                        onClick={() => abrirModalRedefinirSenha(profissional)}
                       >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
+                        <Shield className="h-4 w-4 mr-1" />
+                        Redefinir Senha
                       </Button>
                       <Button
                         variant="destructive"
@@ -412,6 +467,108 @@ export default function Profissionais() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Redefinir Senha */}
+      <Dialog open={isRedefinirSenhaOpen} onOpenChange={setIsRedefinirSenhaOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center pb-4">
+            <DialogTitle className="text-2xl font-bold text-foreground">
+              Redefinir Senha
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Defina uma nova senha para {profissionalSelecionado?.nome}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Opção Senha Padrão */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="senha-padrao"
+                  name="tipo-senha"
+                  checked={usarSenhaPadrao}
+                  onChange={(e) => setUsarSenhaPadrao(e.target.checked)}
+                  className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
+                />
+                <Label htmlFor="senha-padrao" className="text-sm font-medium text-foreground">
+                  Usar senha padrão do sistema
+                </Label>
+              </div>
+              {usarSenhaPadrao && (
+                <div className="ml-6 p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    A senha padrão <strong>"12345678"</strong> será definida para este profissional.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Opção Nova Senha */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="nova-senha"
+                  name="tipo-senha"
+                  checked={!usarSenhaPadrao}
+                  onChange={(e) => setUsarSenhaPadrao(!e.target.checked)}
+                  className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
+                />
+                <Label htmlFor="nova-senha" className="text-sm font-medium text-foreground">
+                  Definir nova senha personalizada
+                </Label>
+              </div>
+              {!usarSenhaPadrao && (
+                <div className="ml-6 space-y-2">
+                  <Label htmlFor="nova-senha-input" className="text-sm font-medium text-foreground">
+                    Nova senha (mínimo 8 caracteres)
+                  </Label>
+                  <Input
+                    id="nova-senha-input"
+                    type="password"
+                    value={novaSenha}
+                    onChange={(e) => setNovaSenha(e.target.value)}
+                    placeholder="Digite a nova senha"
+                    className="w-full"
+                    minLength={8}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setIsRedefinirSenhaOpen(false)}
+                disabled={redefinirSenha.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-primary hover:bg-primary/90"
+                onClick={confirmarRedefinirSenha}
+                disabled={redefinirSenha.isPending}
+              >
+                {redefinirSenha.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
+                    Redefinindo...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Redefinir Senha
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
