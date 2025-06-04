@@ -278,12 +278,81 @@ export default function Agendamento() {
     },
   });
 
+  // Mutation para cancelar agendamento
+  const cancelarMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/agendamentos/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Erro ao cancelar agendamento");
+      return response.json();
+    },
+    onSuccess: async () => {
+      const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
+      
+      toast({
+        title: "Agendamento cancelado!",
+        description: "O agendamento foi cancelado com sucesso.",
+      });
+      
+      setContextMenu({ visible: false, x: 0, y: 0, agendamento: null });
+    },
+    onError: (error) => {
+      console.error("Erro ao cancelar agendamento:", error);
+      toast({
+        title: "Erro ao cancelar",
+        description: "Não foi possível cancelar o agendamento. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetForm = () => {
     setSelectedHour("");
     setSelectedBarbeiro("");
     setSelectedCliente("");
     setSelectedServico("");
   };
+
+  // Funções do menu de contexto
+  const handleContextMenu = (e: React.MouseEvent, agendamento: Agendamento) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      agendamento: agendamento
+    });
+  };
+
+  const hideContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0, agendamento: null });
+  };
+
+  const handleCancelAgendamento = () => {
+    if (contextMenu.agendamento) {
+      cancelarMutation.mutate(contextMenu.agendamento.id);
+    }
+  };
+
+  // Fechar menu de contexto ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        hideContextMenu();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenu.visible]);
+
+
 
   const criarAgendamento = () => {
     if (!selectedHour || !selectedBarbeiro || !selectedCliente || !selectedServico) {
@@ -319,15 +388,7 @@ export default function Agendamento() {
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent, agendamento: Agendamento) => {
-    e.preventDefault();
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-      agendamento,
-    });
-  };
+
 
   const confirmarCancelamento = () => {
     if (agendamentoToCancel) {
