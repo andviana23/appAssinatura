@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { eq, like, sql } from 'drizzle-orm';
+import { eq, like, sql, and } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 export async function registerRoutes(app: Express): Promise<Express> {
@@ -1518,8 +1518,11 @@ export async function registerRoutes(app: Express): Promise<Express> {
 
       // Validar se barbeiro existe e está ativo
       const barbeiro = await db.select()
-        .from(schema.barbeiros)
-        .where(eq(schema.barbeiros.id, barbeiroId))
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.id, barbeiroId),
+          eq(schema.profissionais.tipo, 'barbeiro')
+        ))
         .limit(1);
 
       if (barbeiro.length === 0) {
