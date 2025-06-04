@@ -37,8 +37,7 @@ import PlanosAssinatura from "@/pages/planos-assinatura";
 import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { ImportarClientes } from "@/pages/importar-clientes";
-import { GerenciarClientes } from "@/pages/gerenciar-clientes";
+
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
@@ -91,8 +90,6 @@ function AuthenticatedRoutes() {
         <Route path="/planos-assinatura" component={PlanosAssinatura} />
         <Route path="/test-asaas" component={TestAsaas} />
         <Route path="/configuracoes" component={Configuracoes} />
-        <Route path="/importar-clientes" component={ImportarClientes} />
-        <Route path="/gerenciar-clientes" component={GerenciarClientes} />
         
         {/* Rotas específicas do Barbeiro */}
         <Route path="/barbeiro" component={BarbeiroDashboard} />
@@ -154,12 +151,16 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-slate-50 text-slate-900">
-          <AppContent />
-          <Toaster />
-        </div>
-      </QueryClientProvider>
+      <ThemeProvider defaultTheme="light" storageKey="trato-barbados-theme">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <div className="min-h-screen bg-background text-foreground">
+              <AppContent />
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
