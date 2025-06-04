@@ -3544,10 +3544,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Estatísticas do mês para o barbeiro
   app.get('/api/barbeiro/estatisticas-mes', async (req: Request, res: Response) => {
     try {
-      const { barbeiroId } = req.query;
-      
-      if (!barbeiroId) {
-        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      // Verificar autenticação
+      if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
+      if (req.user.role === 'admin' && req.query.barbeiroId) {
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const hoje = new Date();
@@ -3614,10 +3619,20 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Agenda do barbeiro para um dia específico
   app.get('/api/barbeiro/agenda', async (req: Request, res: Response) => {
     try {
-      const { barbeiroId, data } = req.query;
-      
-      if (!barbeiroId || !data) {
-        return res.status(400).json({ message: 'BarbeiroId e data são obrigatórios' });
+      // Verificar autenticação
+      if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
+      if (req.user.role === 'admin' && req.query.barbeiroId) {
+        barbeiroId = parseInt(req.query.barbeiroId as string);
+      }
+
+      const { data } = req.query;
+      if (!data) {
+        return res.status(400).json({ message: 'Data é obrigatória' });
       }
 
       const dataInicio = new Date(data as string + 'T00:00:00');
@@ -3659,10 +3674,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Dados da lista da vez do barbeiro
   app.get('/api/barbeiro/lista-da-vez', async (req: Request, res: Response) => {
     try {
-      const { barbeiroId } = req.query;
-      
-      if (!barbeiroId) {
-        return res.status(400).json({ message: 'BarbeiroId é obrigatório' });
+      // Verificar autenticação
+      if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+
+      // Se for barbeiro, usar o próprio ID; se for admin, permitir barbeiroId
+      let barbeiroId = req.user.id;
+      if (req.user.role === 'admin' && req.query.barbeiroId) {
+        barbeiroId = parseInt(req.query.barbeiroId as string);
       }
 
       const hoje = new Date();
