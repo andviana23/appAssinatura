@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, Plus, Check, X, Search } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Clock, Plus, Check, X, Search, CalendarDays, Settings, User, Star } from "lucide-react";
 
 interface Agendamento {
   id: number;
@@ -581,26 +581,40 @@ export default function Agendamento() {
 
       {/* Modal de Novo Agendamento */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Novo Agendamento</DialogTitle>
+        <DialogContent className="max-w-md sm:max-w-lg mx-4 rounded-xl shadow-2xl border-0 bg-card">
+          <DialogHeader className="text-center pb-6 border-b border-border/50">
+            <DialogTitle className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
+              <CalendarDays className="h-6 w-6 text-primary" />
+              Novo Agendamento
+            </DialogTitle>
+            <p className="text-muted-foreground text-sm mt-2">
+              Preencha os dados para criar um novo agendamento
+            </p>
           </DialogHeader>
           
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Data e Hora</label>
-                <div className="flex gap-2 mt-2">
+          <div className="space-y-6 py-6">
+            {/* Data e Hora */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold text-foreground">Data e Hora</label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Data</label>
                   <input
                     type="date"
                     value={format(selectedDate, "yyyy-MM-dd")}
                     onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                    className="flex-1 px-3 py-2 border border-border rounded-md text-sm"
+                    className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Horário</label>
                   <select
                     value={selectedHour}
                     onChange={(e) => setSelectedHour(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-border rounded-md text-sm"
+                    className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
                   >
                     <option value="">Selecionar horário</option>
                     {timeSlots.map(time => (
@@ -609,64 +623,96 @@ export default function Agendamento() {
                   </select>
                 </div>
               </div>
-
-              <div>
-                <label className="text-sm font-medium">Barbeiro</label>
-                <select
-                  value={selectedBarbeiro}
-                  onChange={(e) => setSelectedBarbeiro(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-border rounded-md text-sm"
-                >
-                  <option value="">Selecionar barbeiro</option>
-                  {activeBarbeiros.map((barbeiro: any) => (
-                    <option key={barbeiro.id} value={barbeiro.id.toString()}>
-                      {barbeiro.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Cliente</label>
-                <select
-                  value={selectedCliente}
-                  onChange={(e) => setSelectedCliente(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-border rounded-md text-sm"
-                >
-                  <option value="">Selecionar cliente</option>
-                  {clientesData?.data?.map((cliente: any) => (
-                    <option key={cliente.id} value={cliente.id.toString()}>
-                      {cliente.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Serviço</label>
-                <select
-                  value={selectedServico}
-                  onChange={(e) => setSelectedServico(e.target.value)}
-                  className="w-full mt-2 px-3 py-2 border border-border rounded-md text-sm"
-                >
-                  <option value="">Selecionar serviço</option>
-                  {servicosData?.data?.map((servico: any) => (
-                    <option key={servico.id} value={servico.id.toString()}>
-                      {servico.nome} - {servico.tempoMinutos}min
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={criarAgendamento} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Criando..." : "Agendar"}
-              </Button>
+            {/* Barbeiro */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold text-foreground">Barbeiro</label>
+              </div>
+              <select
+                value={selectedBarbeiro}
+                onChange={(e) => setSelectedBarbeiro(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
+              >
+                <option value="">Selecionar barbeiro</option>
+                {activeBarbeiros.map((barbeiro: any) => (
+                  <option key={barbeiro.id} value={barbeiro.id.toString()}>
+                    {barbeiro.nome}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* Cliente */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold text-foreground">Cliente</label>
+              </div>
+              <select
+                value={selectedCliente}
+                onChange={(e) => setSelectedCliente(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
+              >
+                <option value="">Selecionar cliente</option>
+                {clientesData?.data?.map((cliente: any) => (
+                  <option key={cliente.id} value={cliente.id.toString()}>
+                    {cliente.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Serviço */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold text-foreground">Serviço</label>
+              </div>
+              <select
+                value={selectedServico}
+                onChange={(e) => setSelectedServico(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
+              >
+                <option value="">Selecionar serviço</option>
+                {servicosData?.data?.map((servico: any) => (
+                  <option key={servico.id} value={servico.id.toString()}>
+                    {servico.nome} - {servico.tempoMinutos}min
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Botões de Ação */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/50">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 py-3 border-border hover:bg-muted/50 transition-all"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button 
+              onClick={criarAgendamento} 
+              disabled={createMutation.isPending}
+              className="flex-1 py-3 bg-primary hover:bg-primary/90 transition-all shadow-md"
+            >
+              {createMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Agendar
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
