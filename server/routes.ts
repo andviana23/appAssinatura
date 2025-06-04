@@ -1363,28 +1363,90 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
-  // POST Agendamentos - Implementação completa com validações
+  // Função auxiliar para buscar ou criar cliente automaticamente
+  async function buscarOuCriarCliente(dadosCliente: any): Promise<{ clienteId: number, tipoOperacao: 'existente' | 'criado' }> {
+    const { email, telefone, cpf, cnpj, nome, asaasCustomerId } = dadosCliente;
+    
+    // Verificar se cliente já existe por email, telefone ou CPF/CNPJ
+    const clienteExistente = await db.select()
+      .from(schema.clientes)
+      .where(
+        sql`(${schema.clientes.email} = ${email} OR 
+             ${schema.clientes.telefone} = ${telefone} OR 
+             ${schema.clientes.cpf} = ${cpf || cnpj})`
+      )
+      .limit(1);
+
+    if (clienteExistente.length > 0) {
+      console.log(`Cliente existente encontrado: ID ${clienteExistente[0].id}, Nome: ${clienteExistente[0].nome}`);
+      return {
+        clienteId: clienteExistente[0].id,
+        tipoOperacao: 'existente'
+      };
+    }
+
+    // Cliente não existe, criar novo
+    const [novoCliente] = await db.insert(schema.clientes)
+      .values({
+        nome: nome || 'Cliente',
+        email: email || null,
+        telefone: telefone || null,
+        cpf: cpf || cnpj || null,
+        asaasCustomerId: asaasCustomerId || null,
+        statusAssinatura: 'ATIVO',
+        origem: 'AGENDAMENTO_AUTOMATICO'
+      })
+      .returning();
+
+    console.log(`Novo cliente criado: ID ${novoCliente.id}, Nome: ${novoCliente.nome}`);
+    return {
+      clienteId: novoCliente.id,
+      tipoOperacao: 'criado'
+    };
+  }
+
+  // POST Agendamentos - Implementação com busca/criação automática de cliente
   app.post('/api/agendamentos', async (req: Request, res: Response) => {
     try {
-      // Validação do payload usando o schema
-      const validationResult = schema.insertAgendamentoSchema.safeParse(req.body);
+      console.log('=== INÍCIO DO AGENDAMENTO ===');
+      console.log('Body recebido:', JSON.stringify(req.body, null, 2));
       
-      if (!validationResult.success) {
+      const { 
+        clienteId, 
+        dadosCliente, 
+        barbeiroId, 
+        servicoId, 
+        dataHora, 
+        observacoes 
+      } = req.body;
+      
+      console.log('Valores extraídos:', { clienteId, dadosCliente, barbeiroId, servicoId, dataHora });
+
+      let clienteIdFinal = clienteId;
+      let tipoOperacaoCliente: 'existente' | 'criado' | 'fornecido' = 'fornecido';
+
+      // Se não foi fornecido clienteId mas foram fornecidos dadosCliente, buscar ou criar cliente
+      if (!clienteId && dadosCliente) {
+        const resultado = await buscarOuCriarCliente(dadosCliente);
+        clienteIdFinal = resultado.clienteId;
+        tipoOperacaoCliente = resultado.tipoOperacao;
+      } else if (!clienteId) {
         return res.status(400).json({
-          message: 'Dados inválidos fornecidos',
-          errors: validationResult.error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
+          message: 'ClienteId ou dadosCliente são obrigatórios'
         });
       }
 
-      const dadosValidados = validationResult.data;
+      // Validação básica dos campos obrigatórios
+      if (!barbeiroId || !servicoId || !dataHora) {
+        return res.status(400).json({
+          message: 'BarbeiroId, servicoId e dataHora são obrigatórios'
+        });
+      }
 
       // Validar se cliente existe e está ativo
       const cliente = await db.select()
         .from(schema.clientes)
-        .where(eq(schema.clientes.id, dadosValidados.clienteId))
+        .where(eq(schema.clientes.id, clienteIdFinal))
         .limit(1);
 
       if (cliente.length === 0) {
@@ -1402,7 +1464,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Validar se barbeiro existe e está ativo
       const barbeiro = await db.select()
         .from(schema.barbeiros)
-        .where(eq(schema.barbeiros.id, dadosValidados.barbeiroId))
+        .where(eq(schema.barbeiros.id, barbeiroId))
         .limit(1);
 
       if (barbeiro.length === 0) {
@@ -1420,7 +1482,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Validar se serviço existe
       const servico = await db.select()
         .from(schema.servicos)
-        .where(eq(schema.servicos.id, dadosValidados.servicoId))
+        .where(eq(schema.servicos.id, servicoId))
         .limit(1);
 
       if (servico.length === 0) {
@@ -1429,12 +1491,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Verificar conflito de horário - não permitir agendamentos duplicados no mesmo horário para o barbeiro
+      // Verificar conflito de horário
       const agendamentoExistente = await db.select()
         .from(schema.agendamentos)
         .where(
-          sql`${schema.agendamentos.barbeiroId} = ${dadosValidados.barbeiroId} 
-              AND ${schema.agendamentos.dataHora} = ${dadosValidados.dataHora}
+          sql`${schema.agendamentos.barbeiroId} = ${barbeiroId} 
+              AND ${schema.agendamentos.dataHora} = ${dataHora}
               AND ${schema.agendamentos.status} = 'AGENDADO'`
         )
         .limit(1);
@@ -1448,46 +1510,36 @@ export async function registerRoutes(app: Express): Promise<Express> {
       // Criar o agendamento
       const [novoAgendamento] = await db.insert(schema.agendamentos)
         .values({
-          clienteId: dadosValidados.clienteId,
-          barbeiroId: dadosValidados.barbeiroId,
-          servicoId: dadosValidados.servicoId,
-          dataHora: dadosValidados.dataHora,
-          observacoes: dadosValidados.observacoes || null,
+          clienteId: clienteIdFinal,
+          barbeiroId: barbeiroId,
+          servicoId: servicoId,
+          dataHora: dataHora,
+          observacoes: observacoes || null,
           status: 'AGENDADO'
         })
         .returning();
 
-      // Buscar dados completos para retorno
-      const agendamentoCompleto = await db.select({
-        id: schema.agendamentos.id,
-        clienteId: schema.agendamentos.clienteId,
-        barbeiroId: schema.agendamentos.barbeiroId,
-        servicoId: schema.agendamentos.servicoId,
-        dataHora: schema.agendamentos.dataHora,
-        observacoes: schema.agendamentos.observacoes,
-        status: schema.agendamentos.status,
-        createdAt: schema.agendamentos.createdAt,
-        updatedAt: schema.agendamentos.updatedAt,
-        clienteNome: schema.clientes.nome,
-        barbeiroNome: schema.barbeiros.nome,
-        servicoNome: schema.servicos.nome,
-        servicoTempo: schema.servicos.tempoMinutos
-      })
-      .from(schema.agendamentos)
-      .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
-      .leftJoin(schema.barbeiros, eq(schema.agendamentos.barbeiroId, schema.barbeiros.id))
-      .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
-      .where(eq(schema.agendamentos.id, novoAgendamento.id))
-      .limit(1);
-
-      res.status(201).json({
-        message: 'Agendamento criado com sucesso',
-        agendamento: agendamentoCompleto[0]
-      });
+      // Resposta conforme especificado
+      if (tipoOperacaoCliente === 'criado') {
+        res.status(201).json({
+          success: true,
+          cliente: 'criado',
+          clienteId: clienteIdFinal,
+          agendamentoId: novoAgendamento.id
+        });
+      } else {
+        res.status(201).json({
+          success: true,
+          cliente: 'existente',
+          clienteId: clienteIdFinal,
+          agendamentoId: novoAgendamento.id
+        });
+      }
 
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
       res.status(500).json({ 
+        success: false,
         message: 'Erro interno do servidor ao criar agendamento' 
       });
     }
