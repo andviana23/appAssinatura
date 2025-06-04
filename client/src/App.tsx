@@ -34,6 +34,7 @@ import GerenciarFila from "@/pages/gerenciar-fila";
 import GerenciarAssinaturas from "@/pages/gerenciar-assinaturas";
 import PlanosAssinatura from "@/pages/planos-assinatura";
 import TestAsaas from "@/pages/test-asaas";
+import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoutes() {
@@ -163,7 +164,12 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <div className="min-h-screen bg-background text-foreground">
-              <AppContent />
+              <Switch>
+                <Route path="/login" component={LoginNovo} />
+                <Route>
+                  <AppContent />
+                </Route>
+              </Switch>
               <Toaster />
             </div>
           </TooltipProvider>

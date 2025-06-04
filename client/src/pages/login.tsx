@@ -3,76 +3,146 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Scissors } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import logoSlogan from "@assets/Logotipo Slogan.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const { login, isLoggingIn } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({ email, password });
+    setError("");
+    
+    if (!email || !password) {
+      setError("Email e senha são obrigatórios");
+      return;
+    }
+
+    try {
+      await login({ email, password });
+      alert("Login efetuado!");
+    } catch (err) {
+      setError("Email ou senha incorretos");
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#8B4513] via-[#A0522D] to-[#8B4513] p-6">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center space-y-6 pb-8">
-          <div className="mx-auto h-20 w-20 bg-gradient-to-r from-[#8B4513] to-[#A0522D] rounded-3xl flex items-center justify-center shadow-lg">
-            <Scissors className="h-10 w-10 text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-[#8B4513] mb-2">Trato de Barbados</h1>
-            <p className="text-gray-600 text-lg font-medium">Sistema de Gestão</p>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-semibold">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite seu e-mail"
-                required
-                className="h-12 text-lg border-2 border-gray-200 focus:border-[#8B4513] focus:ring-[#8B4513] rounded-xl"
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="bg-card border-border shadow-lg">
+          <CardHeader className="space-y-6 text-center">
+            {/* Logo da Barbearia */}
+            <div className="flex justify-center">
+              <img 
+                src={logoSlogan} 
+                alt="Trato de Barbados"
+                className="h-20 w-auto object-contain"
               />
             </div>
-
+            
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700 font-semibold">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite sua senha"
-                required
-                className="h-12 text-lg border-2 border-gray-200 focus:border-[#8B4513] focus:ring-[#8B4513] rounded-xl"
-              />
+              <CardTitle className="text-2xl font-bold text-foreground">
+                Bem-vindo de volta
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Faça login para acessar o sistema
+              </CardDescription>
             </div>
+          </CardHeader>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#8B4513] to-[#A0522D] hover:from-[#A0522D] hover:to-[#8B4513] text-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? "Entrando..." : "ENTRAR"}
-            </Button>
-          </form>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Campo Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">
+                  Email
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 bg-background border-input text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-ring"
+                    disabled={isLoggingIn}
+                  />
+                </div>
+              </div>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500 font-medium">
-              TrotoTech © 2025
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Campo Senha */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 bg-background border-input text-foreground placeholder:text-muted-foreground focus:ring-ring focus:border-ring"
+                    disabled={isLoggingIn}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    disabled={isLoggingIn}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mensagem de Erro */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Botão de Login */}
+              <Button 
+                type="submit" 
+                className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium"
+                disabled={isLoggingIn}
+              >
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
+
+            {/* Informações Adicionais */}
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Sistema de Gestão
+                <br />
+                <span className="font-medium text-primary">Trato de Barbados</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
