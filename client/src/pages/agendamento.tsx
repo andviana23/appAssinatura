@@ -281,14 +281,29 @@ export default function Agendamento() {
   // Mutation para cancelar agendamento
   const cancelarMutation = useMutation({
     mutationFn: async (id: number) => {
+      console.log("Cancelando agendamento ID:", id);
       const response = await fetch(`/api/agendamentos/${id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      if (!response.ok) throw new Error("Erro ao cancelar agendamento");
-      return response.json();
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Erro na resposta:", response.status, errorData);
+        throw new Error(`Erro ${response.status}: ${errorData}`);
+      }
+      
+      const result = await response.json();
+      console.log("Agendamento cancelado com sucesso:", result);
+      return result;
     },
     onSuccess: async () => {
+      console.log("Processando sucesso do cancelamento...");
       const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
+      
+      // Invalidar e refetch para garantir atualização
       await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
       await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos"] });
       await queryClient.refetchQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
@@ -298,15 +313,19 @@ export default function Agendamento() {
         description: "O agendamento foi cancelado com sucesso.",
       });
       
+      // Fechar menu de contexto
       setContextMenu({ visible: false, x: 0, y: 0, agendamento: null });
     },
     onError: (error) => {
-      console.error("Erro ao cancelar agendamento:", error);
+      console.error("Erro detalhado ao cancelar agendamento:", error);
       toast({
         title: "Erro ao cancelar",
-        description: "Não foi possível cancelar o agendamento. Tente novamente.",
+        description: error instanceof Error ? error.message : "Não foi possível cancelar o agendamento. Tente novamente.",
         variant: "destructive",
       });
+      
+      // Fechar menu de contexto mesmo em caso de erro
+      setContextMenu({ visible: false, x: 0, y: 0, agendamento: null });
     },
   });
 
