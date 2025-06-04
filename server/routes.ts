@@ -2579,5 +2579,160 @@ export async function registerRoutes(app: Express): Promise<Express> {
     });
   });
 
+  // =====================================================
+  // CRIAR CLIENTE + ASSINATURA RECORRENTE (ENDPOINT COMPLETO)
+  // =====================================================
+  
+  app.post("/api/create-customer-subscription", async (req: Request, res: Response) => {
+    try {
+      const { cliente, assinatura } = req.body;
+      
+      if (!cliente || !assinatura) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Dados do cliente e assinatura são obrigatórios' 
+        });
+      }
+
+      if (!cliente.name || !assinatura.value) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Nome do cliente e valor da assinatura são obrigatórios' 
+        });
+      }
+
+      const asaasApiKey = process.env.ASAAS_AND;
+      if (!asaasApiKey) {
+        return res.status(500).json({ 
+          success: false,
+          message: 'Chave API ASAAS não configurada' 
+        });
+      }
+
+      const baseUrl = 'https://www.asaas.com/api/v3';
+
+      // 1. Criar cliente no ASAAS
+      const customerData = {
+        name: cliente.name,
+        email: cliente.email || undefined,
+        phone: cliente.phone || undefined,
+        cpfCnpj: cliente.cpfCnpj || undefined
+      };
+
+      console.log('🔄 Criando cliente no ASAAS:', customerData);
+
+      const customerResponse = await fetch(`${baseUrl}/customers`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      const customerResult = await customerResponse.json();
+
+      if (!customerResponse.ok) {
+        console.error('❌ Erro ao criar cliente:', customerResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar cliente no ASAAS',
+          error: customerResult
+        });
+      }
+
+      console.log('✅ Cliente criado:', customerResult.id);
+
+      // 2. Criar assinatura recorrente
+      const subscriptionData = {
+        customer: customerResult.id,
+        billingType: 'CREDIT_CARD', // Para checkout com cartão
+        nextDueDate: new Date().toISOString().split('T')[0],
+        value: parseFloat(assinatura.value),
+        cycle: assinatura.subscriptionCycle || 'MONTHLY',
+        description: assinatura.description || assinatura.name || 'Assinatura Mensal'
+      };
+
+      console.log('🔄 Criando assinatura recorrente:', subscriptionData);
+
+      const subscriptionResponse = await fetch(`${baseUrl}/subscriptions`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(subscriptionData)
+      });
+
+      const subscriptionResult = await subscriptionResponse.json();
+
+      if (!subscriptionResponse.ok) {
+        console.error('❌ Erro ao criar assinatura:', subscriptionResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar assinatura no ASAAS',
+          error: subscriptionResult
+        });
+      }
+
+      console.log('✅ Assinatura criada:', subscriptionResult.id);
+
+      // 3. Criar paymentLink para o primeiro pagamento
+      const paymentLinkData = {
+        name: `${assinatura.name} - Primeiro Pagamento`,
+        value: parseFloat(assinatura.value),
+        billingType: 'CREDIT_CARD',
+        chargeType: 'DETACHED',
+        dueDateLimitDays: 7,
+        subscriptionId: subscriptionResult.id,
+        description: `Primeiro pagamento da assinatura: ${assinatura.description || assinatura.name}`
+      };
+
+      console.log('🔄 Criando paymentLink:', paymentLinkData);
+
+      const paymentLinkResponse = await fetch(`${baseUrl}/paymentLinks`, {
+        method: 'POST',
+        headers: {
+          'access_token': asaasApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentLinkData)
+      });
+
+      const paymentLinkResult = await paymentLinkResponse.json();
+
+      if (!paymentLinkResponse.ok) {
+        console.error('❌ Erro ao criar paymentLink:', paymentLinkResult);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao criar link de pagamento',
+          error: paymentLinkResult
+        });
+      }
+
+      console.log('✅ PaymentLink criado:', paymentLinkResult.url);
+
+      // Resposta de sucesso no formato esperado pelo frontend
+      res.json({
+        success: true,
+        customer: customerResult,
+        subscription: subscriptionResult,
+        paymentLink: {
+          id: paymentLinkResult.id,
+          url: paymentLinkResult.url
+        },
+        message: 'Cliente e assinatura criados com sucesso'
+      });
+
+    } catch (error) {
+      console.error('💥 Erro ao criar cliente + assinatura:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   return app;
 }
