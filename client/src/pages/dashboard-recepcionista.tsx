@@ -1,30 +1,51 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, Clock, CreditCard, Plus, Calendar } from "lucide-react";
-import { Link } from "wouter";
+import { CalendarDays, Users, Clock, Calendar, User } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function DashboardRecepcionista() {
-  // Buscar dados para métricas básicas
-  const { data: clientes } = useQuery({
-    queryKey: ["/api/clientes/unified"],
-  });
-
-  const { data: agendamentos } = useQuery({
-    queryKey: ["/api/agendamentos"],
-  });
-
-  const clientesAtivos = Array.isArray(clientes) ? clientes.filter((c: any) => c.ativo).length : 0;
-  
-  // Buscar agendamentos com parâmetro de data
   const hoje = new Date().toISOString().split('T')[0];
+  
+  // Buscar todos os clientes
+  const { data: clientesData } = useQuery({
+    queryKey: ["/api/clientes"],
+    queryFn: async () => {
+      const response = await fetch('/api/clientes');
+      if (!response.ok) throw new Error('Erro ao carregar clientes');
+      return response.json();
+    }
+  });
+
+  // Buscar agendamentos de hoje
   const { data: agendamentosHoje } = useQuery({
     queryKey: ["/api/agendamentos", hoje],
-    queryFn: () => fetch(`/api/agendamentos?data=${hoje}`).then(res => res.json()),
+    queryFn: async () => {
+      const response = await fetch(`/api/agendamentos?data=${hoje}`);
+      if (!response.ok) throw new Error('Erro ao carregar agendamentos');
+      return response.json();
+    }
   });
 
-  const agendamentosCount = Array.isArray(agendamentosHoje?.data) ? agendamentosHoje.data.length : 0;
-  const proximosAtendimentos = Array.isArray(agendamentosHoje?.data) ? agendamentosHoje.data.slice(0, 3) : [];
+  // Buscar agendamentos futuros
+  const { data: agendamentosFuturos } = useQuery({
+    queryKey: ["/api/agendamentos/futuros"],
+    queryFn: async () => {
+      const response = await fetch('/api/agendamentos');
+      if (!response.ok) throw new Error('Erro ao carregar agendamentos futuros');
+      const data = await response.json();
+      const agora = new Date();
+      return Array.isArray(data) ? data.filter((ag: any) => new Date(ag.dataHora) > agora) : [];
+    }
+  });
+
+  // Calcular métricas
+  const clientes = clientesData?.data || [];
+  const clientesAtivos = clientes.filter((c: any) => c.statusAssinatura === 'ATIVO').length;
+  const totalClientes = clientes.length;
+  const agendamentosHojeCount = Array.isArray(agendamentosHoje) ? agendamentosHoje.length : 0;
+  const proximosAgendamentosCount = Array.isArray(agendamentosFuturos) ? agendamentosFuturos.length : 0;
+  const proximosAtendimentos = Array.isArray(agendamentosHoje) ? agendamentosHoje.slice(0, 5) : [];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -34,55 +55,8 @@ export default function DashboardRecepcionista() {
         <p className="text-muted-foreground">Bem-vinda! Aqui estão as informações principais do dia.</p>
       </div>
 
-      {/* Atalhos Rápidos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <Link href="/agendamentos">
-              <Button className="w-full h-16 text-lg" size="lg">
-                <Plus className="mr-2 h-5 w-5" />
-                Novo Agendamento
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <Link href="/lista-da-vez">
-              <Button variant="outline" className="w-full h-16 text-lg" size="lg">
-                <Clock className="mr-2 h-5 w-5" />
-                Ver Lista da Vez
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <Link href="/clientes">
-              <Button variant="outline" className="w-full h-16 text-lg" size="lg">
-                <Users className="mr-2 h-5 w-5" />
-                Gerenciar Clientes
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <Link href="/planos">
-              <Button variant="outline" className="w-full h-16 text-lg" size="lg">
-                <CreditCard className="mr-2 h-5 w-5" />
-                Ver Planos
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Métricas Básicas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
@@ -91,7 +65,20 @@ export default function DashboardRecepcionista() {
           <CardContent>
             <div className="text-2xl font-bold">{clientesAtivos}</div>
             <p className="text-xs text-muted-foreground">
-              Total de clientes cadastrados
+              Com assinatura ativa
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalClientes}</div>
+            <p className="text-xs text-muted-foreground">
+              Clientes cadastrados no sistema
             </p>
           </CardContent>
         </Card>
@@ -99,10 +86,10 @@ export default function DashboardRecepcionista() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Agendamentos Hoje</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agendamentosCount}</div>
+            <div className="text-2xl font-bold">{agendamentosHojeCount}</div>
             <p className="text-xs text-muted-foreground">
               Atendimentos programados para hoje
             </p>
@@ -115,18 +102,19 @@ export default function DashboardRecepcionista() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{proximosAtendimentos.length}</div>
+            <div className="text-2xl font-bold">{proximosAgendamentosCount}</div>
             <p className="text-xs text-muted-foreground">
               Agendamentos futuros confirmados
             </p>
           </CardContent>
         </Card>
+
       </div>
 
       {/* Lista de Próximos Atendimentos */}
       <Card>
         <CardHeader>
-          <CardTitle>Próximos Atendimentos</CardTitle>
+          <CardTitle>Próximos Atendimentos de Hoje</CardTitle>
         </CardHeader>
         <CardContent>
           {proximosAtendimentos.length > 0 ? (
@@ -136,18 +124,15 @@ export default function DashboardRecepcionista() {
                   <div className="space-y-1">
                     <p className="font-medium">{agendamento.nomeCliente || 'Cliente'}</p>
                     <p className="text-sm text-muted-foreground">
-                      {agendamento.servicoId || 'Serviço'} • {agendamento.barbeiroId || 'Profissional'}
+                      {agendamento.servicoNome || 'Serviço'} • {agendamento.barbeiroNome || 'Profissional'}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleDateString() : 'Data'}
+                      {agendamento.dataHora ? format(new Date(agendamento.dataHora), 'dd/MM/yyyy', { locale: ptBR }) : 'Data'}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {agendamento.dataHora ? new Date(agendamento.dataHora).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      }) : 'Horário'}
+                      {agendamento.dataHora ? format(new Date(agendamento.dataHora), 'HH:mm') : 'Horário'}
                     </p>
                   </div>
                 </div>
@@ -159,13 +144,6 @@ export default function DashboardRecepcionista() {
               <p>Nenhum agendamento encontrado para hoje</p>
             </div>
           )}
-          <div className="mt-4">
-            <Link href="/agendamento">
-              <Button variant="outline" className="w-full">
-                Ver Todos os Agendamentos
-              </Button>
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>
