@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Clock, Scissors, ArrowLeft } from "lucide-react";
+import { Plus, Clock, Scissors, ArrowLeft, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import type { Servico } from "@shared/schema";
@@ -294,7 +294,7 @@ export default function Servicos() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createMutation.isPending}
+                      disabled={createMutation.isPending || !!nomeError || !formData.nome.trim()}
                       className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                     >
                       {createMutation.isPending ? "Cadastrando..." : "Cadastrar"}

@@ -1503,27 +1503,18 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
       
-      // Verificar duplicação de nome (case-insensitive) com debug
+      // Verificar duplicação de nome (case-insensitive)
       const nomeFormatado = nome.trim().toLowerCase();
-      console.log('DEBUG - Verificando duplicata para nome:', nome, '-> formatado:', nomeFormatado);
-      
       const servicoExistente = await db.select().from(schema.servicos)
         .where(sql`LOWER(TRIM(${schema.servicos.nome})) = ${nomeFormatado}`)
         .limit(1);
       
-      console.log('DEBUG - Serviços encontrados:', servicoExistente.length);
-      
       if (servicoExistente.length > 0) {
-        console.log('DEBUG - Serviço duplicado encontrado:', servicoExistente[0]);
         return res.status(400).json({
           success: false,
-          message: 'Já existe um serviço com este nome',
+          message: `Já existe um serviço com o nome "${servicoExistente[0].nome}"`,
           errors: ['Nome duplicado'],
-          debug: {
-            nomeEnviado: nome,
-            nomeFormatado: nomeFormatado,
-            servicoExistente: servicoExistente[0]
-          }
+          servicoExistente: servicoExistente[0].nome
         });
       }
       
