@@ -1660,7 +1660,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
           clienteId: clienteIdFinal,
           barbeiroId: barbeiroId,
           servicoId: servicoId,
-          dataHora: dataHoraDate,
+          dataHora: dataHoraFinal,
           observacoes: observacoes || null,
           status: 'AGENDADO'
         })
