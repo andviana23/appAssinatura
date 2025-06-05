@@ -36,6 +36,19 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.use((req: any, res: any, next: any) => {
     next();
   });
+
+  // Servir arquivos PWA
+  app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.resolve(import.meta.dirname, '../client/public/manifest.json'));
+  });
+
+  app.get('/logo-192.png', (req, res) => {
+    res.sendFile(path.resolve(import.meta.dirname, '../client/public/logo-192.png'));
+  });
+
+  app.get('/logo-512.png', (req, res) => {
+    res.sendFile(path.resolve(import.meta.dirname, '../client/public/logo-512.png'));
+  });
   
   // Middleware de autenticação para anexar usuário à requisição
   app.use(async (req: any, res: Response, next: NextFunction) => {
