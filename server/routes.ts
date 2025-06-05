@@ -1,5 +1,6 @@
 import { Express, Request, Response, NextFunction } from 'express';
 import { Server } from 'http';
+import express from 'express';
 import { db } from './db';
 import * as schema from '../shared/schema';
 import { eq, like, sql, and, gte, lte } from 'drizzle-orm';
@@ -37,17 +38,61 @@ export async function registerRoutes(app: Express): Promise<Express> {
     next();
   });
 
-  // Servir arquivos PWA
-  app.get('/manifest.json', (req, res) => {
-    res.sendFile(path.resolve(import.meta.dirname, '../client/public/manifest.json'));
-  });
-
+  // Servir arquivos estáticos PWA
   app.get('/logo-192.png', (req, res) => {
-    res.sendFile(path.resolve(import.meta.dirname, '../client/public/logo-192.png'));
+    res.sendFile('logo-192.png', { root: 'client/public' });
   });
 
   app.get('/logo-512.png', (req, res) => {
-    res.sendFile(path.resolve(import.meta.dirname, '../client/public/logo-512.png'));
+    res.sendFile('logo-512.png', { root: 'client/public' });
+  });
+
+  // Servir arquivos PWA
+  app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.json({
+      "name": "Trato de Barbados",
+      "short_name": "Barbados",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#21283b",
+      "theme_color": "#1e232d",
+      "description": "Sistema de Gestão Trato de Barbados",
+      "orientation": "portrait",
+      "scope": "/",
+      "lang": "pt-BR",
+      "icons": [
+        {
+          "src": "/logo-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any maskable"
+        },
+        {
+          "src": "/logo-192.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "any maskable"
+        }
+      ],
+      "categories": ["business", "productivity"],
+      "shortcuts": [
+        {
+          "name": "Agendamentos",
+          "short_name": "Agenda",
+          "description": "Acessar agendamentos",
+          "url": "/agendamentos",
+          "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+        },
+        {
+          "name": "Clientes",
+          "short_name": "Clientes",
+          "description": "Gerenciar clientes",
+          "url": "/clientes",
+          "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+        }
+      ]
+    });
   });
   
   // Middleware de autenticação para anexar usuário à requisição
