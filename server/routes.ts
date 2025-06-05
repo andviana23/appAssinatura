@@ -47,6 +47,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
     res.sendFile('logo-512.png', { root: 'client/public' });
   });
 
+  app.get('/sw.js', (req, res) => {
+    res.sendFile('sw.js', { root: 'client/public' });
+  });
+
   // Servir arquivos PWA
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
