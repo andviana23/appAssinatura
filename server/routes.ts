@@ -55,6 +55,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.json({
+      "id": "/",
       "name": "Trato de Barbados",
       "short_name": "Barbados",
       "start_url": "/",
@@ -65,18 +66,31 @@ export async function registerRoutes(app: Express): Promise<Express> {
       "orientation": "portrait",
       "scope": "/",
       "lang": "pt-BR",
+      "launch_handler": { "client_mode": "auto" },
       "icons": [
         {
-          "src": "/logo-512.png",
-          "sizes": "512x512",
+          "src": "/logo-192.png",
+          "sizes": "192x192",
           "type": "image/png",
-          "purpose": "any maskable"
+          "purpose": "any"
         },
         {
           "src": "/logo-192.png",
           "sizes": "192x192",
           "type": "image/png",
-          "purpose": "any maskable"
+          "purpose": "maskable"
+        },
+        {
+          "src": "/logo-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any"
+        },
+        {
+          "src": "/logo-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "maskable"
         }
       ],
       "categories": ["business", "productivity"],
