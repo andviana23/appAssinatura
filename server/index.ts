@@ -3,7 +3,7 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -82,26 +82,15 @@ app.get('/dashboard', (req, res) => {
     throw err;
   });
 
-  // Setup vite
-  if (app.get("env") === "development") {
-    const server = app.listen(5000, "0.0.0.0", () => {
-      log(`serving on port 5000`);
-      
-      // Iniciar sincronização automática com Asaas
-      iniciarSincronizacaoAutomatica();
-    });
+  // Serve static files from client directory
+  app.use(express.static(path.resolve(import.meta.dirname, '..', 'client')));
+
+  const server = app.listen(5000, "0.0.0.0", () => {
+    log(`serving on port 5000`);
     
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-    
-    const server = app.listen(5000, "0.0.0.0", () => {
-      log(`serving on port 5000`);
-      
-      // Iniciar sincronização automática com Asaas
-      iniciarSincronizacaoAutomatica();
-    });
-  }
+    // Iniciar sincronização automática com Asaas
+    iniciarSincronizacaoAutomatica();
+  });
 
   // Função para sincronização automática com Asaas
   async function syncAsaasAutomatico() {
