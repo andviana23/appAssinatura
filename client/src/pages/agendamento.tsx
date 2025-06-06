@@ -93,10 +93,13 @@ export default function Agendamento() {
     queryKey: ["/api/servicos"],
   });
 
-  // Generate time slots - 08:00 to 20:00
+  // Generate time slots - 08:00 to 20:00 (último horário às 20:00)
   const timeSlots = [];
   for (let hour = 8; hour <= 20; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
+      // Parar no último slot válido (20:00)
+      if (hour === 20 && minute > 0) break;
+      
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       timeSlots.push(timeString);
     }
@@ -253,13 +256,18 @@ export default function Agendamento() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("Erro ao criar agendamento");
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
+        throw new Error(errorData.message || `Erro ${response.status}: ${response.statusText}`);
+      }
+      
       return response.json();
     },
     onSuccess: async () => {
       // Usar a mesma data padronizada para invalidação
       const dataParaInvalidar = format(selectedDate, "yyyy-MM-dd");
-      console.log("Invalidando cache - Data:", dataParaInvalidar, "QueryKey:", ["/api/agendamentos", dataParaInvalidar]);
+      console.log("✅ Agendamento criado com sucesso! Invalidando cache...");
       
       // Invalidar e refetch imediato para garantir atualização
       await queryClient.invalidateQueries({ queryKey: ["/api/agendamentos", dataParaInvalidar] });
@@ -270,6 +278,19 @@ export default function Agendamento() {
       
       setIsModalOpen(false);
       resetForm();
+      
+      toast({
+        title: "Agendamento criado!",
+        description: "O agendamento foi criado com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error("❌ Erro ao criar agendamento:", error.message);
+      toast({
+        title: "Erro ao agendar",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
