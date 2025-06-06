@@ -54,7 +54,7 @@ export default function BarbeiroAgenda() {
   const [dataSelecionada, setDataSelecionada] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
-  // Buscar agendamentos da fonte oficial (mesma da página principal)
+  // Buscar agendamentos do endpoint oficial da página de agendamento
   const { data: agendamentos, isLoading } = useQuery({
     queryKey: ["/api/agendamentos", dataSelecionada],
     queryFn: async () => {
@@ -64,17 +64,13 @@ export default function BarbeiroAgenda() {
     },
   });
 
-  // Filtrar apenas agendamentos do barbeiro logado da fonte oficial
-  // Para barbeiros, usar user.id como barbeiroId, pois barbeiros são profissionais
+  // Filtrar apenas agendamentos do barbeiro logado
   const barbeiroId = user?.barbeiroId || user?.id;
   const agendamentosBarbeiro = Array.isArray(agendamentos) 
     ? agendamentos.filter((agendamento: any) => 
         agendamento.barbeiroId === barbeiroId
       )
     : [];
-
-  // Debug: log para verificar se está filtrando corretamente
-  console.log(`Barbeiro logado ID: ${barbeiroId}, Total agendamentos: ${Array.isArray(agendamentos) ? agendamentos.length : 0}, Filtrados: ${agendamentosBarbeiro.length}`);
 
   // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
@@ -262,29 +258,29 @@ export default function BarbeiroAgenda() {
         </Card>
 
         {/* Estatísticas do Dia */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-4">
           <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-white">{totalAgendamentos}</div>
-              <div className="text-xs text-gray-400">Total</div>
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-white mb-1">{totalAgendamentos}</div>
+              <div className="text-sm text-gray-400">Total</div>
             </CardContent>
           </Card>
           <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-400">{finalizados}</div>
-              <div className="text-xs text-gray-400">Finalizados</div>
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-green-400 mb-1">{finalizados}</div>
+              <div className="text-sm text-gray-400">Finalizados</div>
             </CardContent>
           </Card>
           <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-400">{agendados}</div>
-              <div className="text-xs text-gray-400">Agendados</div>
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-blue-400 mb-1">{agendados}</div>
+              <div className="text-sm text-gray-400">Agendados</div>
             </CardContent>
           </Card>
           <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-400">{cancelados}</div>
-              <div className="text-xs text-gray-400">Cancelados</div>
+            <CardContent className="p-6 text-center">
+              <div className="text-3xl font-bold text-red-400 mb-1">{cancelados}</div>
+              <div className="text-sm text-gray-400">Cancelados</div>
             </CardContent>
           </Card>
         </div>
