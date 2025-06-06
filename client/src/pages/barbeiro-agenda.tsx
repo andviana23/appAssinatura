@@ -60,11 +60,9 @@ export default function BarbeiroAgenda() {
     queryFn: () => apiRequest(`/api/barbeiro/agenda?data=${dataSelecionada}`),
   });
 
-  // Filtrar agendamentos do barbeiro logado
+  // Os agendamentos já vêm filtrados pelo backend para o barbeiro logado
   const agendamentosBarbeiro = Array.isArray(agendamentos?.agendamentos) 
-    ? agendamentos.agendamentos.filter((agendamento: Agendamento) => 
-        agendamento.barbeiroId === user?.barbeiroId
-      )
+    ? agendamentos.agendamentos
     : [];
 
   // Aplicar filtro de status
@@ -231,9 +229,14 @@ export default function BarbeiroAgenda() {
               <Eye className="h-6 w-6 text-[#365e78]" />
               Minha Agenda
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Visualização dos seus agendamentos - somente leitura
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                SOMENTE VISUALIZAÇÃO
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Seus agendamentos da base oficial do sistema
+              </p>
+            </div>
           </div>
         </div>
 
