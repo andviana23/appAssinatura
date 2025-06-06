@@ -38,17 +38,17 @@ export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {
   });
 
   return (
-    <header className="bg-card shadow-lg border-b border-border/50 sticky top-0 z-40">
-      <div className="px-4 sm:px-6 py-4 sm:py-5">
+    <header className="bg-card shadow-lg border-b border-border/50 sticky top-0 z-40 safe-area-inset">
+      <div className="mobile-container py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
             {/* Botão Menu Mobile */}
             {showMenuButton && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onMenuToggle}
-                className="p-2 lg:hidden rounded-xl"
+                className="touch-friendly p-2 lg:hidden rounded-xl"
               >
                 <Menu className="h-6 w-6" />
               </Button>
