@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -76,26 +76,39 @@ export default function BarbeiroAgendaMobile() {
   const barbeiroId = profissional?.id;
 
   // Filtrar agendamentos do barbeiro
-  const agendamentosBarbeiro = Array.isArray(agendamentos) && barbeiroId
-    ? agendamentos.filter((agendamento: any) => agendamento.barbeiroId === barbeiroId)
-    : [];
+  const agendamentosBarbeiro = useMemo(() => {
+    if (!Array.isArray(agendamentos) || !barbeiroId) return [];
+    return agendamentos.filter((agendamento: any) => agendamento.barbeiroId === barbeiroId);
+  }, [agendamentos, barbeiroId]);
 
-  // Aplicar filtro de status
-  const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
-    if (filtroStatus === "todos") return true;
-    return agendamento.status === filtroStatus;
-  });
+  // Calcular estatísticas uma única vez
+  const estatisticas = useMemo(() => {
+    const total = agendamentosBarbeiro.length;
+    const finalizados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'FINALIZADO');
+    const agendados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'AGENDADO');
+    const cancelados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'CANCELADO');
+    
+    return {
+      total,
+      finalizados: finalizados.length,
+      agendados: agendados.length,
+      cancelados: cancelados.length,
+      listasCompletas: {
+        finalizados,
+        agendados,
+        cancelados
+      }
+    };
+  }, [agendamentosBarbeiro]);
 
-  // Separar por status
-  const agendamentosFinalizados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'FINALIZADO');
-  const agendamentosAgendados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'AGENDADO');
-  const agendamentosCancelados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'CANCELADO');
-
-  // Calcular totais
-  const totalAgendamentos = agendamentosBarbeiro.length;
-  const finalizados = agendamentosFinalizados.length;
-  const agendados = agendamentosAgendados.length;
-  const cancelados = agendamentosCancelados.length;
+  // Aplicar filtro baseado no status selecionado
+  const agendamentosFiltrados = useMemo(() => {
+    if (filtroStatus === "todos") return agendamentosBarbeiro;
+    if (filtroStatus === "FINALIZADO") return estatisticas.listasCompletas.finalizados;
+    if (filtroStatus === "AGENDADO") return estatisticas.listasCompletas.agendados;
+    if (filtroStatus === "CANCELADO") return estatisticas.listasCompletas.cancelados;
+    return [];
+  }, [agendamentosBarbeiro, filtroStatus, estatisticas.listasCompletas]);
 
   // Navegação de data
   const navegarData = (direcao: 'anterior' | 'proximo') => {
@@ -193,19 +206,19 @@ export default function BarbeiroAgendaMobile() {
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-center">
-            <div className="text-2xl font-bold text-white mb-1">{totalAgendamentos}</div>
+            <div className="text-2xl font-bold text-white mb-1">{estatisticas.total}</div>
             <div className="text-xs text-gray-400">Total</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-center">
-            <div className="text-2xl font-bold text-green-400 mb-1">{finalizados}</div>
+            <div className="text-2xl font-bold text-green-400 mb-1">{estatisticas.finalizados}</div>
             <div className="text-xs text-gray-400">Finalizados</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-center">
-            <div className="text-2xl font-bold text-blue-400 mb-1">{agendados}</div>
+            <div className="text-2xl font-bold text-blue-400 mb-1">{estatisticas.agendados}</div>
             <div className="text-xs text-gray-400">Agendados</div>
           </div>
           <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-center">
-            <div className="text-2xl font-bold text-red-400 mb-1">{cancelados}</div>
+            <div className="text-2xl font-bold text-red-400 mb-1">{estatisticas.cancelados}</div>
             <div className="text-xs text-gray-400">Cancelados</div>
           </div>
         </div>
@@ -218,10 +231,10 @@ export default function BarbeiroAgendaMobile() {
           </div>
           <div className="flex gap-2 overflow-x-auto">
             {[
-              { value: "todos", label: "Todos", count: totalAgendamentos },
-              { value: "AGENDADO", label: "Agendados", count: agendados },
-              { value: "FINALIZADO", label: "Finalizados", count: finalizados },
-              { value: "CANCELADO", label: "Cancelados", count: cancelados }
+              { value: "todos", label: "Todos", count: estatisticas.total },
+              { value: "AGENDADO", label: "Agendados", count: estatisticas.agendados },
+              { value: "FINALIZADO", label: "Finalizados", count: estatisticas.finalizados },
+              { value: "CANCELADO", label: "Cancelados", count: estatisticas.cancelados }
             ].map((filtro) => (
               <Button
                 key={filtro.value}
@@ -240,125 +253,43 @@ export default function BarbeiroAgendaMobile() {
           </div>
         </div>
 
-        {/* Lista de Agendamentos */}
+        {/* Lista de Agendamentos Filtrados */}
         <div className="space-y-4">
-          
-          {/* Agendados */}
-          {(filtroStatus === "todos" || filtroStatus === "AGENDADO") && agendados > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Clock className="h-3 w-3 text-white" />
-                </div>
-                <h3 className="text-white font-semibold">Agendados</h3>
-                <span className="text-xs text-gray-400">({agendados})</span>
-              </div>
-              <div className="space-y-2">
-                {agendamentosAgendados.map((agendamento) => (
-                  <div key={agendamento.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-bold text-blue-400">
-                        {format(new Date(agendamento.dataHora), "HH:mm")}
-                      </div>
-                      <Badge className="bg-blue-600 text-white text-xs px-2 py-1">
-                        AGENDADO
-                      </Badge>
+          {agendamentosFiltrados.length > 0 ? (
+            <div className="space-y-2">
+              {agendamentosFiltrados.map((agendamento: Agendamento) => (
+                <div key={agendamento.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-bold text-blue-400">
+                      {format(new Date(agendamento.dataHora), "HH:mm")}
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-gray-400" />
-                        <span className="text-white text-sm font-medium">
-                          {agendamento.cliente?.nome || 'Cliente não encontrado'}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {agendamento.servico?.nome || 'Serviço não encontrado'} • {agendamento.servico?.tempoMinutos || 30}min
-                      </div>
+                    <Badge 
+                      className={`text-xs px-2 py-1 ${
+                        agendamento.status === 'FINALIZADO' 
+                          ? 'bg-green-600 text-white'
+                          : agendamento.status === 'CANCELADO'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-blue-600 text-white'
+                      }`}
+                    >
+                      {agendamento.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3 text-gray-400" />
+                      <span className="text-white text-sm font-medium">
+                        {agendamento.cliente?.nome || 'Cliente não encontrado'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {agendamento.servico?.nome || 'Serviço não encontrado'} • {agendamento.servico?.tempoMinutos || 30}min
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Finalizados */}
-          {(filtroStatus === "todos" || filtroStatus === "FINALIZADO") && finalizados > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-3 w-3 text-white" />
                 </div>
-                <h3 className="text-white font-semibold">Finalizados</h3>
-                <span className="text-xs text-gray-400">({finalizados})</span>
-              </div>
-              <div className="space-y-2">
-                {agendamentosFinalizados.map((agendamento) => (
-                  <div key={agendamento.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-bold text-green-400">
-                        {format(new Date(agendamento.dataHora), "HH:mm")}
-                      </div>
-                      <Badge className="bg-green-600 text-white text-xs px-2 py-1">
-                        FINALIZADO
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-gray-400" />
-                        <span className="text-white text-sm font-medium">
-                          {agendamento.cliente?.nome || 'Cliente não encontrado'}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {agendamento.servico?.nome || 'Serviço não encontrado'} • {agendamento.servico?.tempoMinutos || 30}min
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
-          )}
-
-          {/* Cancelados */}
-          {(filtroStatus === "todos" || filtroStatus === "CANCELADO") && cancelados > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                  <XCircle className="h-3 w-3 text-white" />
-                </div>
-                <h3 className="text-white font-semibold">Cancelados</h3>
-                <span className="text-xs text-gray-400">({cancelados})</span>
-              </div>
-              <div className="space-y-2">
-                {agendamentosCancelados.map((agendamento) => (
-                  <div key={agendamento.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-bold text-red-400">
-                        {format(new Date(agendamento.dataHora), "HH:mm")}
-                      </div>
-                      <Badge className="bg-red-600 text-white text-xs px-2 py-1">
-                        CANCELADO
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-gray-400" />
-                        <span className="text-white text-sm font-medium">
-                          {agendamento.cliente?.nome || 'Cliente não encontrado'}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {agendamento.servico?.nome || 'Serviço não encontrado'} • {agendamento.servico?.tempoMinutos || 30}min
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Estado vazio */}
-          {totalAgendamentos === 0 && (
+          ) : estatisticas.total === 0 ? (
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 text-center">
               <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-3" />
               <h3 className="text-white font-semibold mb-1">Nenhum agendamento</h3>
