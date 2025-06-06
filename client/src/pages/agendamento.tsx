@@ -157,9 +157,9 @@ export default function Agendamento() {
   const monthEnd = endOfMonth(currentCalendarDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Função para calcular quantos slots de 15 minutos um serviço ocupa
+  // Função para calcular quantos slots de 30 minutos um serviço ocupa
   const calcularSlotsOcupados = (tempoMinutos: number) => {
-    return Math.ceil(tempoMinutos / 15); // Cada slot = 15 minutos
+    return Math.ceil(tempoMinutos / 30); // Cada slot = 30 minutos
   };
 
   // Função para gerar todos os slots ocupados por um agendamento
@@ -168,11 +168,11 @@ export default function Agendamento() {
     const [hora, minuto] = horaInicio.split(':').map(Number);
     const minutosInicio = hora * 60 + minuto;
     
-    // Calcular quantos slots de 15 minutos são necessários
-    const totalSlots = Math.ceil(tempoMinutos / 15);
+    // Calcular quantos slots de 30 minutos são necessários
+    const totalSlots = Math.ceil(tempoMinutos / 30);
     
     for (let i = 0; i < totalSlots; i++) {
-      const minutosAtual = minutosInicio + (i * 15);
+      const minutosAtual = minutosInicio + (i * 30);
       const horaAtual = Math.floor(minutosAtual / 60);
       const minutoAtual = minutosAtual % 60;
       
