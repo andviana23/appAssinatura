@@ -92,7 +92,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps = {}) {
+export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { user, logout, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(mobile ? false : collapsed);

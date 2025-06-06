@@ -23,7 +23,7 @@ interface HeaderProps {
   onMenuToggle?: () => void;
 }
 
-export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps = {}) {
+export function Header({ showMenuButton = false, onMenuToggle }: HeaderProps) {
   const [location] = useLocation();
   const { user, logout, isAdmin } = useAuth();
   
