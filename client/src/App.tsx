@@ -39,7 +39,7 @@ import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import LoginComRemember from "@/pages/login-com-remember";
 import NotFound from "@/pages/not-found";
-import BarbeiroAgenda from "@/pages/barbeiro-agenda-mobile";
+import BarbeiroAgenda from "@/pages/barbeiro-agenda-mobile-fixed";
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
