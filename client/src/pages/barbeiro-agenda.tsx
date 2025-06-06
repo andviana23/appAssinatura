@@ -61,11 +61,16 @@ export default function BarbeiroAgenda() {
   });
 
   // Filtrar apenas agendamentos do barbeiro logado da fonte oficial
+  // Para barbeiros, usar user.id como barbeiroId, pois barbeiros são profissionais
+  const barbeiroId = user?.barbeiroId || user?.id;
   const agendamentosBarbeiro = Array.isArray(agendamentos) 
     ? agendamentos.filter((agendamento: any) => 
-        agendamento.barbeiroId === user?.barbeiroId
+        agendamento.barbeiroId === barbeiroId
       )
     : [];
+
+  // Debug: log para verificar se está filtrando corretamente
+  console.log(`Barbeiro logado ID: ${barbeiroId}, Total agendamentos: ${agendamentos?.length || 0}, Filtrados: ${agendamentosBarbeiro.length}`);
 
   // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
