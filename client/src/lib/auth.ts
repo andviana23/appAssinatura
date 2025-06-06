@@ -11,6 +11,7 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export async function login(credentials: LoginCredentials): Promise<User> {

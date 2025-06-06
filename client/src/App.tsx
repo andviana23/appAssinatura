@@ -36,6 +36,7 @@ import GerenciarAssinaturas from "@/pages/gerenciar-assinaturas";
 import PlanosAssinatura from "@/pages/planos-assinatura";
 import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
+import LoginComRemember from "@/pages/login-com-remember";
 import NotFound from "@/pages/not-found";
 import BarbeiroAgenda from "@/pages/barbeiro-agenda";
 
@@ -129,7 +130,7 @@ function AppContent() {
     <Switch>
       {/* Rota de login */}
       <Route path="/login">
-        {isAuthenticated ? <Redirect to="/" /> : <LoginNovo />}
+        {isAuthenticated ? <Redirect to="/" /> : <LoginComRemember />}
       </Route>
       
       {/* Rotas protegidas */}

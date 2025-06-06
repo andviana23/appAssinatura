@@ -2601,7 +2601,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // Login com autenticação real usando cookies
   app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ message: 'Email e senha são obrigatórios' });
@@ -2620,22 +2620,23 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(401).json({ message: 'Email ou senha incorretos' });
       }
       
-      // Configurar cookie de autenticação
-      res.cookie('user_id', user.id.toString(), { 
-        httpOnly: true, 
-        secure: false, 
-        maxAge: 24 * 60 * 60 * 1000 // 24 horas
-      });
-      res.cookie('user_email', user.email, { 
-        httpOnly: true, 
-        secure: false, 
-        maxAge: 24 * 60 * 60 * 1000 
-      });
-      res.cookie('user_role', user.role, { 
-        httpOnly: true, 
-        secure: false, 
-        maxAge: 24 * 60 * 60 * 1000 
-      });
+      // Configurar duração da sessão baseado em rememberMe
+      const sessionDuration = rememberMe 
+        ? 30 * 24 * 60 * 60 * 1000 // 30 dias se "Me manter logado" estiver marcado
+        : 24 * 60 * 60 * 1000;     // 24 horas para sessão normal
+      
+      // Configurar cookies de autenticação
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        maxAge: sessionDuration
+      };
+      
+      res.cookie('user_id', user.id.toString(), cookieOptions);
+      res.cookie('user_email', user.email, cookieOptions);
+      res.cookie('user_role', user.role, cookieOptions);
+      res.cookie('remember_me', rememberMe ? 'true' : 'false', cookieOptions);
       
       res.json({
         success: true,
