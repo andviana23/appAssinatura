@@ -298,64 +298,163 @@ export default function BarbeiroAgenda() {
         </Card>
 
         {/* Estatísticas do Dia */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-[#365e78]">{totalAgendamentos}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Total</div>
+        <div className="grid grid-cols-4 gap-3">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-white">{totalAgendamentos}</div>
+              <div className="text-xs text-gray-400">Total</div>
             </CardContent>
           </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{finalizados}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Finalizados</div>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-green-400">{finalizados}</div>
+              <div className="text-xs text-gray-400">Finalizados</div>
             </CardContent>
           </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{agendados}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Agendados</div>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-blue-400">{agendados}</div>
+              <div className="text-xs text-gray-400">Agendados</div>
             </CardContent>
           </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{cancelados}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Cancelados</div>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-red-400">{cancelados}</div>
+              <div className="text-xs text-gray-400">Cancelados</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Lista de Agendamentos por Status */}
-        <div className="space-y-8">
+        {/* Timeline de Agendamentos */}
+        <div className="space-y-6">
           
-          {/* Agendamentos Pendentes */}
+          {/* Agendados */}
           {(filtroStatus === "todos" || filtroStatus === "AGENDADO") && (
-            <SecaoAgendamentos
-              titulo="Agendados"
-              agendamentos={agendamentosAgendados}
-              icon={<AlertCircle className="h-5 w-5 text-blue-600" />}
-              cor="bg-blue-100 text-blue-600"
-            />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-800 rounded-lg">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Agendados</h3>
+                  <p className="text-sm text-gray-400">{agendados} agendamentos</p>
+                </div>
+              </div>
+              
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="p-6">
+                  {agendamentosAgendados.length > 0 ? (
+                    <div className="space-y-3">
+                      {agendamentosAgendados.map((agendamento) => (
+                        <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-medium text-blue-400">
+                              {format(new Date(agendamento.dataHora), "HH:mm")}
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">{agendamento.cliente?.nome}</p>
+                              <p className="text-sm text-gray-400">{agendamento.servico?.nome}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-blue-500 text-white">AGENDADO</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum agendamento agendados para esta data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
-          {/* Agendamentos Finalizados */}
+          {/* Finalizados */}
           {(filtroStatus === "todos" || filtroStatus === "FINALIZADO") && (
-            <SecaoAgendamentos
-              titulo="Finalizados"
-              agendamentos={agendamentosFinalizados}
-              icon={<CheckCircle className="h-5 w-5 text-green-600" />}
-              cor="bg-green-100 text-green-600"
-            />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-800 rounded-lg">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Finalizados</h3>
+                  <p className="text-sm text-gray-400">{finalizados} agendamentos</p>
+                </div>
+              </div>
+              
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="p-6">
+                  {agendamentosFinalizados.length > 0 ? (
+                    <div className="space-y-3">
+                      {agendamentosFinalizados.map((agendamento) => (
+                        <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-medium text-green-400">
+                              {format(new Date(agendamento.dataHora), "HH:mm")}
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">{agendamento.cliente?.nome}</p>
+                              <p className="text-sm text-gray-400">{agendamento.servico?.nome}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-500 text-white">FINALIZADO</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum agendamento finalizados para esta data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
-          {/* Agendamentos Cancelados */}
+          {/* Cancelados */}
           {(filtroStatus === "todos" || filtroStatus === "CANCELADO") && (
-            <SecaoAgendamentos
-              titulo="Cancelados"
-              agendamentos={agendamentosCancelados}
-              icon={<XCircle className="h-5 w-5 text-red-600" />}
-              cor="bg-red-100 text-red-600"
-            />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-800 rounded-lg">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <XCircle className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Cancelados</h3>
+                  <p className="text-sm text-gray-400">{cancelados} agendamentos</p>
+                </div>
+              </div>
+              
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="p-6">
+                  {agendamentosCancelados.length > 0 ? (
+                    <div className="space-y-3">
+                      {agendamentosCancelados.map((agendamento) => (
+                        <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-medium text-red-400">
+                              {format(new Date(agendamento.dataHora), "HH:mm")}
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">{agendamento.cliente?.nome}</p>
+                              <p className="text-sm text-gray-400">{agendamento.servico?.nome}</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-red-500 text-white">CANCELADO</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <XCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum agendamento cancelados para esta data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 
