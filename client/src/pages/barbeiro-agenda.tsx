@@ -1,40 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfDay, endOfDay, isToday, parseISO } from "date-fns";
+import { format, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar, Clock, User, Filter, Search, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  ArrowLeft, 
+  Clock, 
+  User, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle,
+  Eye,
+  Filter
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { Separator } from "@/components/ui/separator";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+
+// Definir tipos
+interface Cliente {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string;
+}
+
+interface Servico {
+  id: number;
+  nome: string;
+  preco: number;
+  tempoMinutos: number;
+}
 
 interface Agendamento {
   id: number;
-  clienteId: number;
-  barbeiroId: number;
-  servicoId: number;
   dataHora: string;
   status: 'AGENDADO' | 'FINALIZADO' | 'CANCELADO';
-  observacoes?: string;
-  cliente?: { nome: string };
-  servico?: { nome: string; tempoMinutos: number };
+  clienteId: number;
+  servicoId: number;
+  barbeiroId: number;
+  cliente?: Cliente;
+  servico?: Servico;
 }
 
 export default function BarbeiroAgenda() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
-  
-  // Estados para filtros
   const [dataSelecionada, setDataSelecionada] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
-  const [termoBusca, setTermoBusca] = useState("");
-  
-  // Buscar agendamentos do barbeiro
-  const { data: agendamentos = [], isLoading } = useQuery({
-    queryKey: ["/api/barbeiro/agenda", dataSelecionada],
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+
+  // Buscar agendamentos do barbeiro para a data selecionada
+  const { data: agendamentos, isLoading } = useQuery({
+    queryKey: ["/api/barbeiro/agenda", user?.id, dataSelecionada],
     queryFn: () => apiRequest(`/api/barbeiro/agenda?data=${dataSelecionada}`),
   });
 
@@ -45,27 +67,28 @@ export default function BarbeiroAgenda() {
       )
     : [];
 
-  // Aplicar filtros
+  // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
-    const matchStatus = filtroStatus === "todos" || agendamento.status === filtroStatus;
-    const matchBusca = !termoBusca || 
-      agendamento.cliente?.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      agendamento.servico?.nome.toLowerCase().includes(termoBusca.toLowerCase());
-    
-    return matchStatus && matchBusca;
+    if (filtroStatus === "todos") return true;
+    return agendamento.status === filtroStatus;
   });
+
+  // Separar agendamentos por status
+  const agendamentosFinalizados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'FINALIZADO');
+  const agendamentosAgendados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'AGENDADO');
+  const agendamentosCancelados = agendamentosFiltrados.filter((a: Agendamento) => a.status === 'CANCELADO');
 
   // Estatísticas do dia
   const totalAgendamentos = agendamentosBarbeiro.length;
-  const finalizados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'FINALIZADO').length;
-  const cancelados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'CANCELADO').length;
-  const pendentes = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'AGENDADO').length;
+  const finalizados = agendamentosFinalizados.length;
+  const agendados = agendamentosAgendados.length;
+  const cancelados = agendamentosCancelados.length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'FINALIZADO': return 'bg-green-100 text-green-800 border-green-200';
-      case 'CANCELADO': return 'bg-red-100 text-red-800 border-red-200';
       case 'AGENDADO': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'CANCELADO': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -73,187 +96,274 @@ export default function BarbeiroAgenda() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'FINALIZADO': return <CheckCircle className="h-4 w-4" />;
-      case 'CANCELADO': return <XCircle className="h-4 w-4" />;
       case 'AGENDADO': return <AlertCircle className="h-4 w-4" />;
+      case 'CANCELADO': return <XCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#365e78]/5 via-white to-[#2a4a5e]/5">
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header Mobile First */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => setLocation("/barbeiro")}
-              className="flex items-center gap-2 text-[#365e78] hover:text-[#2a4a5e] transition-all duration-200 hover:scale-105 bg-white/80 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg hover:shadow-xl"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-semibold text-sm">Voltar</span>
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gradient-to-br from-[#365e78] to-[#2a4a5e] rounded-xl flex items-center justify-center shadow-lg">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+  const navegarData = (direcao: 'anterior' | 'proximo') => {
+    const dataAtual = new Date(dataSelecionada);
+    const novaData = direcao === 'anterior' 
+      ? subDays(dataAtual, 1) 
+      : addDays(dataAtual, 1);
+    setDataSelecionada(format(novaData, "yyyy-MM-dd"));
+  };
+
+  const AgendamentoCard = ({ agendamento }: { agendamento: Agendamento }) => (
+    <Card className="hover:shadow-md transition-shadow border-l-4 border-l-[#365e78]">
+      <CardContent className="p-4">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-center w-12 h-12 bg-[#365e78]/10 rounded-full">
+              <Clock className="h-6 w-6 text-[#365e78]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg font-semibold text-[#365e78]">
+                  {format(new Date(agendamento.dataHora), "HH:mm")}
+                </span>
+                <Badge className={`${getStatusColor(agendamento.status)} text-xs`}>
+                  <span className="flex items-center gap-1">
+                    {getStatusIcon(agendamento.status)}
+                    {agendamento.status}
+                  </span>
+                </Badge>
               </div>
-              <div>
-                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-[#365e78] to-[#2a4a5e] bg-clip-text text-transparent">
-                  Minha Agenda
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  {isToday(parseISO(dataSelecionada)) ? "Hoje" : format(parseISO(dataSelecionada), "dd/MM/yyyy")}
-                </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">{agendamento.cliente?.nome || 'Cliente não encontrado'}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Serviço:</span> {agendamento.servico?.nome || 'Serviço não encontrado'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Duração: {agendamento.servico?.tempoMinutos || 30} min
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Filtros Mobile Responsive */}
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4">
-              <div className="space-y-3">
-                {/* Data e Status */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1">
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">Data</label>
-                    <Input
-                      type="date"
-                      value={dataSelecionada}
-                      onChange={(e) => setDataSelecionada(e.target.value)}
-                      className="w-full text-sm"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">Status</label>
-                    <select 
-                      value={filtroStatus} 
-                      onChange={(e) => setFiltroStatus(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#365e78]/20 focus:border-[#365e78]"
-                    >
-                      <option value="todos">Todos</option>
-                      <option value="AGENDADO">Agendados</option>
-                      <option value="FINALIZADO">Finalizados</option>
-                      <option value="CANCELADO">Cancelados</option>
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Busca */}
-                <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">Buscar</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Nome do cliente ou serviço..."
-                      value={termoBusca}
-                      onChange={(e) => setTermoBusca(e.target.value)}
-                      className="pl-10 text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
+      </CardContent>
+    </Card>
+  );
 
-        {/* Cards de Estatísticas - Mobile First */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-[#365e78]">{totalAgendamentos}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Total</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-green-600">{finalizados}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Finalizados</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">{pendentes}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Pendentes</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-lg sm:text-2xl font-bold text-red-600">{cancelados}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Cancelados</div>
-            </CardContent>
-          </Card>
+  const SecaoAgendamentos = ({ titulo, agendamentos, icon, cor }: { 
+    titulo: string; 
+    agendamentos: Agendamento[]; 
+    icon: React.ReactNode;
+    cor: string;
+  }) => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${cor}`}>
+          {icon}
         </div>
-
-        {/* Lista de Agendamentos - Mobile First */}
-        <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-lg p-3 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-              Agendamentos ({agendamentosFiltrados.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6">
-            {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-[#365e78] border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-gray-500 text-sm">Carregando agendamentos...</p>
-              </div>
-            ) : agendamentosFiltrados.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">Nenhum agendamento encontrado para os filtros selecionados.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {agendamentosFiltrados.map((agendamento: Agendamento) => (
-                  <Card key={agendamento.id} className="border border-gray-200 hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        {/* Informações principais */}
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-[#365e78]" />
-                            <span className="font-semibold text-sm sm:text-base text-gray-900">
-                              {agendamento.cliente?.nome || "Cliente não identificado"}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {format(parseISO(agendamento.dataHora), "HH:mm")}
-                            </div>
-                            <div className="hidden sm:block">•</div>
-                            <div>
-                              {agendamento.servico?.nome} ({agendamento.servico?.tempoMinutos}min)
-                            </div>
-                          </div>
-                          
-                          {agendamento.observacoes && (
-                            <div className="text-xs text-gray-500 italic">
-                              "{agendamento.observacoes}"
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Status */}
-                        <div className="flex justify-start sm:justify-end">
-                          <Badge className={`${getStatusColor(agendamento.status)} flex items-center gap-1 text-xs px-2 py-1`}>
-                            {getStatusIcon(agendamento.status)}
-                            {agendamento.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {titulo}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {agendamentos.length} agendamento{agendamentos.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+      
+      {agendamentos.length > 0 ? (
+        <div className="space-y-3">
+          {agendamentos.map((agendamento) => (
+            <AgendamentoCard key={agendamento.id} agendamento={agendamento} />
+          ))}
+        </div>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-400 dark:text-gray-600 mb-2">
+              {icon}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Nenhum agendamento {titulo.toLowerCase()} para esta data
+            </p>
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            </div>
+            <div className="space-y-4">
+              <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => window.location.href = "/barbeiro"}
+            className="flex items-center gap-2 self-start"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+              <Eye className="h-6 w-6 text-[#365e78]" />
+              Minha Agenda
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Visualização dos seus agendamentos - somente leitura
+            </p>
+          </div>
+        </div>
+
+        {/* Controles de Data e Filtro */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              
+              {/* Navegação de Data */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navegarData('anterior')}
+                  className="p-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#365e78]/10 rounded-lg">
+                  <Calendar className="h-4 w-4 text-[#365e78]" />
+                  <span className="font-medium text-[#365e78] min-w-[120px] text-center">
+                    {format(new Date(dataSelecionada), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navegarData('proximo')}
+                  className="p-2"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Filtro de Status */}
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="AGENDADO">Agendados</SelectItem>
+                    <SelectItem value="FINALIZADO">Finalizados</SelectItem>
+                    <SelectItem value="CANCELADO">Cancelados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Estatísticas do Dia */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-[#365e78]">{totalAgendamentos}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Total</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{finalizados}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Finalizados</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{agendados}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Agendados</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">{cancelados}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Cancelados</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lista de Agendamentos por Status */}
+        <div className="space-y-8">
+          
+          {/* Agendamentos Pendentes */}
+          {(filtroStatus === "todos" || filtroStatus === "AGENDADO") && (
+            <SecaoAgendamentos
+              titulo="Agendados"
+              agendamentos={agendamentosAgendados}
+              icon={<AlertCircle className="h-5 w-5 text-blue-600" />}
+              cor="bg-blue-100 text-blue-600"
+            />
+          )}
+
+          {/* Agendamentos Finalizados */}
+          {(filtroStatus === "todos" || filtroStatus === "FINALIZADO") && (
+            <SecaoAgendamentos
+              titulo="Finalizados"
+              agendamentos={agendamentosFinalizados}
+              icon={<CheckCircle className="h-5 w-5 text-green-600" />}
+              cor="bg-green-100 text-green-600"
+            />
+          )}
+
+          {/* Agendamentos Cancelados */}
+          {(filtroStatus === "todos" || filtroStatus === "CANCELADO") && (
+            <SecaoAgendamentos
+              titulo="Cancelados"
+              agendamentos={agendamentosCancelados}
+              icon={<XCircle className="h-5 w-5 text-red-600" />}
+              cor="bg-red-100 text-red-600"
+            />
+          )}
+        </div>
+
+        {/* Mensagem quando não há agendamentos */}
+        {totalAgendamentos === 0 && (
+          <Card className="border-dashed">
+            <CardContent className="p-12 text-center">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Nenhum agendamento encontrado
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Você não tem agendamentos para {format(new Date(dataSelecionada), "dd/MM/yyyy", { locale: ptBR })}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
     </div>
   );
