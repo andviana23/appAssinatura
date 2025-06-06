@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useLocation } from "wouter";
 import { LoadingClientsState, GenericErrorState } from "@/components/error-illustrations";
 
 interface ClientePagante {
@@ -39,6 +40,7 @@ interface ApiResponse {
 
 export default function Clientes() {
   const [busca, setBusca] = useState("");
+  const [, navigate] = useLocation();
 
   // Buscar clientes pagantes do mês vigente
   const { data: dadosPagamentos, isLoading, error, refetch } = useQuery<ApiResponse>({
@@ -113,10 +115,20 @@ export default function Clientes() {
             Pagamentos realizados em {mesAtualFormatado}
           </p>
         </div>
-        <Button onClick={() => refetch()} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => navigate("/clientes/cadastro")} 
+            variant="default" 
+            size="sm"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Cadastrar Cliente
+          </Button>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Cards de Resumo */}
