@@ -218,25 +218,34 @@ export default function BarbeiroDashboardNovo() {
             </CardContent>
           </Card>
 
-          {/* Posição na Fila */}
+          {/* Lista da Vez */}
           <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
             <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">
-                    Posição na Fila
-                  </p>
-                  <p className="text-lg sm:text-2xl font-bold text-[#365e78] mt-1">
-                    {filaLoading ? "..." : `${posicaoNaFila}º`}
-                  </p>
-                  <p className="text-xs text-orange-600 mt-2 flex items-center">
-                    <Target className="inline h-3 w-3 mr-1" />
-                    <span className="truncate">{ehMinhaVez ? "É sua vez!" : "Aguardando"}</span>
-                  </p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">
+                      Lista da Vez
+                    </p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#365e78] mt-1">
+                      {filaLoading ? "..." : `${posicaoNaFila}º posição`}
+                    </p>
+                    <p className="text-xs text-orange-600 mt-2 flex items-center">
+                      <Target className="inline h-3 w-3 mr-1" />
+                      <span className="truncate">{ehMinhaVez ? "É sua vez!" : "Aguardando"}</span>
+                    </p>
+                  </div>
+                  <div className={`h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br ${ehMinhaVez ? 'from-green-500 to-emerald-600' : 'from-orange-500 to-orange-600'} rounded-xl flex items-center justify-center shadow-lg ml-3`}>
+                    <Award className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  </div>
                 </div>
-                <div className={`h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br ${ehMinhaVez ? 'from-green-500 to-emerald-600' : 'from-orange-500 to-orange-600'} rounded-xl flex items-center justify-center shadow-lg ml-3`}>
-                  <Award className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
+                <Button 
+                  onClick={() => setLocation("/barbeiro/agenda")}
+                  className="w-full bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white hover:from-[#2a4a5e] hover:to-[#365e78] text-sm py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Agenda
+                </Button>
               </div>
             </CardContent>
           </Card>

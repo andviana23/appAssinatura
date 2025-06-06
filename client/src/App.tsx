@@ -37,6 +37,7 @@ import PlanosAssinatura from "@/pages/planos-assinatura";
 import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import BarbeiroAgenda from "@/pages/barbeiro-agenda";
 
 function AuthenticatedRoutes() {
   const { user } = useAuth();
@@ -93,6 +94,7 @@ function AuthenticatedRoutes() {
         
         {/* Rotas específicas do Barbeiro */}
         <Route path="/barbeiro" component={BarbeiroDashboard} />
+        <Route path="/barbeiro/agenda" component={BarbeiroAgenda} />
 
         {/* Fallback para qualquer rota não encontrada */}
         <Route>
