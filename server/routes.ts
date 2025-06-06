@@ -535,6 +535,136 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // POST - Importação em lote de clientes via Excel
+  app.post('/api/clientes/importar-lote', async (req: Request, res: Response) => {
+    try {
+      const { clientes } = req.body;
+
+      if (!clientes || !Array.isArray(clientes) || clientes.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Lista de clientes é obrigatória'
+        });
+      }
+
+      let novos = 0;
+      let atualizados = 0;
+      const erros: { linha: number; motivo: string }[] = [];
+
+      console.log(`📥 Iniciando importação em lote de ${clientes.length} clientes...`);
+
+      // Processar cada cliente
+      for (let index = 0; index < clientes.length; index++) {
+        const cliente = clientes[index];
+        const linha = index + 2; // +2 porque começa da linha 2 (linha 1 é cabeçalho)
+
+        try {
+          const { nome, telefone, email } = cliente;
+
+          // Validações básicas
+          if (!nome || nome.trim().length < 2) {
+            erros.push({ linha, motivo: "Nome deve ter pelo menos 2 caracteres" });
+            continue;
+          }
+
+          if (!telefone || telefone.trim().length < 10) {
+            erros.push({ linha, motivo: "Telefone deve ter pelo menos 10 dígitos" });
+            continue;
+          }
+
+          // Email é opcional, mas se fornecido deve ser válido
+          let emailValidado = null;
+          if (email && email.trim() !== "") {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.trim())) {
+              erros.push({ linha, motivo: "Email inválido" });
+              continue;
+            }
+            emailValidado = email.trim();
+          }
+
+          // Verificar se cliente já existe (por telefone ou email)
+          let whereCondition;
+          if (emailValidado) {
+            whereCondition = sql`${schema.clientes.email} = ${emailValidado} OR ${schema.clientes.telefone} = ${telefone.trim()}`;
+          } else {
+            whereCondition = sql`${schema.clientes.telefone} = ${telefone.trim()}`;
+          }
+
+          const clienteExistente = await db.select()
+            .from(schema.clientes)
+            .where(whereCondition)
+            .limit(1);
+
+          if (clienteExistente.length > 0) {
+            // Cliente existe - atualizar dados
+            const clienteAtual = clienteExistente[0];
+            
+            const updateData: any = {
+              nome: nome.trim(),
+              telefone: telefone.trim()
+            };
+
+            if (emailValidado) {
+              updateData.email = emailValidado;
+            }
+            
+            await db.update(schema.clientes)
+              .set(updateData)
+              .where(eq(schema.clientes.id, clienteAtual.id));
+
+            atualizados++;
+            console.log(`🔄 Cliente atualizado via Excel: ${nome.trim()}`);
+          } else {
+            // Cliente novo - inserir
+            const insertData: any = {
+              nome: nome.trim(),
+              telefone: telefone.trim(),
+              email: emailValidado || 'sem-email@exemplo.com',
+              origem: 'EXTERNO',
+              planoNome: 'Importação Excel',
+              planoValor: '0.00',
+              formaPagamento: 'PENDENTE',
+              statusAssinatura: 'INATIVO',
+              dataInicioAssinatura: new Date(),
+              dataVencimentoAssinatura: new Date()
+            };
+
+            await db.insert(schema.clientes).values(insertData);
+
+            novos++;
+            console.log(`✅ Novo cliente via Excel: ${nome.trim()}`);
+          }
+
+        } catch (error) {
+          console.error(`Erro ao processar cliente linha ${linha}:`, error);
+          erros.push({ 
+            linha, 
+            motivo: `Erro no processamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+          });
+        }
+      }
+
+      console.log(`📊 Importação concluída: ${novos} novos, ${atualizados} atualizados, ${erros.length} erros`);
+
+      res.json({
+        success: true,
+        novos,
+        atualizados,
+        erros,
+        message: `Importação concluída: ${novos} novos clientes, ${atualizados} atualizados`
+      });
+
+    } catch (error) {
+      console.error('Erro na importação em lote:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor na importação',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   // Endpoint para buscar clientes pagantes do mês vigente
   app.get('/api/clientes/pagamentos-mes', async (req: Request, res: Response) => {
     try {
