@@ -57,7 +57,11 @@ export default function BarbeiroAgenda() {
   // Buscar agendamentos da fonte oficial (mesma da página principal)
   const { data: agendamentos, isLoading } = useQuery({
     queryKey: ["/api/agendamentos", dataSelecionada],
-    queryFn: () => apiRequest(`/api/agendamentos?data=${dataSelecionada}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/agendamentos?data=${dataSelecionada}`);
+      if (!response.ok) throw new Error('Erro ao buscar agendamentos');
+      return response.json();
+    },
   });
 
   // Filtrar apenas agendamentos do barbeiro logado da fonte oficial
@@ -70,7 +74,7 @@ export default function BarbeiroAgenda() {
     : [];
 
   // Debug: log para verificar se está filtrando corretamente
-  console.log(`Barbeiro logado ID: ${barbeiroId}, Total agendamentos: ${agendamentos?.length || 0}, Filtrados: ${agendamentosBarbeiro.length}`);
+  console.log(`Barbeiro logado ID: ${barbeiroId}, Total agendamentos: ${Array.isArray(agendamentos) ? agendamentos.length : 0}, Filtrados: ${agendamentosBarbeiro.length}`);
 
   // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
@@ -154,47 +158,7 @@ export default function BarbeiroAgenda() {
     </Card>
   );
 
-  const SecaoAgendamentos = ({ titulo, agendamentos, icon, cor }: { 
-    titulo: string; 
-    agendamentos: Agendamento[]; 
-    icon: React.ReactNode;
-    cor: string;
-  }) => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${cor}`}>
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {titulo}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {agendamentos.length} agendamento{agendamentos.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
-      
-      {agendamentos.length > 0 ? (
-        <div className="space-y-3">
-          {agendamentos.map((agendamento) => (
-            <AgendamentoCard key={agendamento.id} agendamento={agendamento} />
-          ))}
-        </div>
-      ) : (
-        <Card className="border-dashed">
-          <CardContent className="p-8 text-center">
-            <div className="text-gray-400 dark:text-gray-600 mb-2">
-              {icon}
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Nenhum agendamento {titulo.toLowerCase()} para esta data
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+
 
   if (isLoading) {
     return (
