@@ -1731,7 +1731,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
         return res.status(400).json({ message: 'Data é obrigatória' });
       }
       
-      // Query com JOINs para retornar dados completos e filtro de horário
+      console.log(`🔍 Buscando agendamentos para data: ${dataFiltro}`);
+      
+      // Criar range de data completo para o dia
+      const dataInicio = new Date(`${dataFiltro}T00:00:00.000Z`);
+      const dataFim = new Date(`${dataFiltro}T23:59:59.999Z`);
+      
+      console.log(`📅 Range de busca: ${dataInicio.toISOString()} até ${dataFim.toISOString()}`);
+      
+      // Query com JOINs para retornar dados completos
       const agendamentos = await db
         .select({
           id: schema.agendamentos.id,
@@ -1756,10 +1764,15 @@ export async function registerRoutes(app: Express): Promise<Express> {
         .leftJoin(schema.clientes, eq(schema.agendamentos.clienteId, schema.clientes.id))
         .leftJoin(schema.profissionais, eq(schema.agendamentos.barbeiroId, schema.profissionais.id))
         .leftJoin(schema.servicos, eq(schema.agendamentos.servicoId, schema.servicos.id))
-        .where(sql`CAST(${schema.agendamentos.dataHora} AS TEXT) LIKE ${`${dataFiltro}%`} 
-                   AND EXTRACT(HOUR FROM ${schema.agendamentos.dataHora}) >= 8 
-                   AND EXTRACT(HOUR FROM ${schema.agendamentos.dataHora}) <= 20`)
+        .where(
+          and(
+            gte(schema.agendamentos.dataHora, dataInicio),
+            lte(schema.agendamentos.dataHora, dataFim)
+          )
+        )
         .orderBy(schema.agendamentos.dataHora);
+      
+      console.log(`✅ Encontrados ${agendamentos.length} agendamentos para o dia ${dataFiltro}`);
       
       res.json(agendamentos);
     } catch (error) {
@@ -1889,11 +1902,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      if (cliente[0].statusAssinatura !== 'ATIVO') {
-        return res.status(400).json({
-          message: 'Cliente não possui assinatura ativa'
-        });
-      }
+      // Remover validação de assinatura para permitir agendamentos
+      // if (cliente[0].statusAssinatura !== 'ATIVO') {
+      //   return res.status(400).json({
+      //     message: 'Cliente não possui assinatura ativa'
+      //   });
+      // }
 
       // Validar se barbeiro existe e está ativo
       const barbeiro = await db.select()

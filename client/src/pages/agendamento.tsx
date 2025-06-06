@@ -150,17 +150,16 @@ export default function Agendamento() {
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
     
-    // Criar data corrigindo o fuso horário (UTC +3 horas para Brazil)
-    const dataHoraUTC = new Date(agendamento.dataHora);
-    const dataHoraLocal = new Date(dataHoraUTC.getTime() + (3 * 60 * 60 * 1000)); // Adicionar 3 horas
+    // Criar data sem ajuste de fuso horário (usar direto do banco)
+    const dataHoraOriginal = new Date(agendamento.dataHora);
     
-    const timeSlot = dataHoraLocal.toLocaleTimeString("pt-BR", { 
+    const timeSlot = dataHoraOriginal.toLocaleTimeString("pt-BR", { 
       hour: "2-digit", 
       minute: "2-digit",
       hour12: false
     });
     
-    console.log(`Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora original: ${agendamento.dataHora}, DataHora corrigida: ${dataHoraLocal}`);
+    console.log(`📅 Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora: ${agendamento.dataHora}`);
     
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
@@ -173,8 +172,9 @@ export default function Agendamento() {
     return acc;
   }, {}) : {};
   
-  console.log("AgendamentosByBarbeiro final:", agendamentosByBarbeiro);
-  console.log("ActiveBarbeiros:", activeBarbeiros);
+  console.log("🔄 AgendamentosByBarbeiro final:", agendamentosByBarbeiro);
+  console.log("👨‍💼 ActiveBarbeiros:", activeBarbeiros);
+  console.log("📊 Total agendamentos recebidos:", agendamentos.length);
   
 
 
