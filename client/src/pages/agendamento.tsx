@@ -59,6 +59,10 @@ export default function Agendamento() {
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timelinePosition, setTimelinePosition] = useState<number | null>(null);
+  
+  // Estados para busca de cliente
+  const [clienteSearchTerm, setClienteSearchTerm] = useState("");
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -97,6 +101,16 @@ export default function Agendamento() {
       timeSlots.push(timeString);
     }
   }
+
+  // Filtrar clientes com base no termo de busca (nome ou telefone)
+  const clientesFiltrados = (clientesData?.data || []).filter((cliente: any) => {
+    if (!clienteSearchTerm.trim()) return true;
+    const searchLower = clienteSearchTerm.toLowerCase();
+    return (
+      cliente.nome.toLowerCase().includes(searchLower) ||
+      cliente.telefone.includes(clienteSearchTerm.trim())
+    );
+  });
 
   // Get active barbeiros only (filter by tipo)
   const activeBarbeiros = (profissionaisData?.data || []).filter((profissional: any) => 
@@ -315,6 +329,8 @@ export default function Agendamento() {
     setSelectedBarbeiro("");
     setSelectedCliente("");
     setSelectedServico("");
+    setClienteSearchTerm("");
+    setShowClienteDropdown(false);
   };
 
   // Funções do menu de contexto
@@ -419,6 +435,21 @@ export default function Agendamento() {
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, []);
+
+  // Close cliente dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.cliente-search-container')) {
+        setShowClienteDropdown(false);
+      }
+    };
+
+    if (showClienteDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showClienteDropdown]);
 
   return (
     <div className="h-full bg-background text-foreground flex overflow-hidden">
@@ -781,24 +812,65 @@ export default function Agendamento() {
               </select>
             </div>
 
-            {/* Cliente */}
+            {/* Cliente com Busca */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
                 <label className="text-sm font-semibold text-foreground">Cliente</label>
               </div>
-              <select
-                value={selectedCliente}
-                onChange={(e) => setSelectedCliente(e.target.value)}
-                className="w-full px-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
-              >
-                <option value="">Selecionar cliente</option>
-                {clientesData?.data?.map((cliente: any) => (
-                  <option key={cliente.id} value={cliente.id.toString()}>
-                    {cliente.nome}
-                  </option>
-                ))}
-              </select>
+              <div className="relative cliente-search-container">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome ou telefone..."
+                    value={clienteSearchTerm}
+                    onChange={(e) => {
+                      setClienteSearchTerm(e.target.value);
+                      setShowClienteDropdown(true);
+                      setSelectedCliente("");
+                    }}
+                    onFocus={() => setShowClienteDropdown(true)}
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-background"
+                  />
+                </div>
+                
+                {showClienteDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {clientesFiltrados.length > 0 ? (
+                      <>
+                        {clientesFiltrados.map((cliente: any) => (
+                          <div
+                            key={cliente.id}
+                            className="px-4 py-3 hover:bg-muted cursor-pointer border-b border-border/50 last:border-b-0"
+                            onClick={() => {
+                              setSelectedCliente(cliente.id.toString());
+                              setClienteSearchTerm(`${cliente.nome} - ${cliente.telefone}`);
+                              setShowClienteDropdown(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">{cliente.nome}</span>
+                              <span className="text-xs text-muted-foreground">{cliente.telefone}</span>
+                              {cliente.email && (
+                                <span className="text-xs text-muted-foreground">{cliente.email}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="px-4 py-6 text-center text-muted-foreground">
+                        <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Nenhum cliente encontrado</p>
+                        {clienteSearchTerm && (
+                          <p className="text-xs mt-1">Tente buscar por nome ou telefone</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Serviço */}
