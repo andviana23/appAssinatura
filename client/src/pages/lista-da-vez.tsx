@@ -663,7 +663,7 @@ export default function ListaDaVez() {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-3 text-sm">
+                      <div className="grid grid-cols-3 gap-3 text-sm mb-3">
                         <div className="text-center">
                           <div className="text-muted-foreground text-xs mb-1">Atendimentos</div>
                           <Badge variant="secondary" className="bg-secondary/20 text-secondary-foreground border-secondary/30">
@@ -689,6 +689,75 @@ export default function ListaDaVez() {
                           </Badge>
                         </div>
                       </div>
+                      
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: false })}
+                          disabled={toggleBarbeiro.isPending}
+                          className="w-full text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          <PowerOff className="h-3 w-3 mr-1" />
+                          Desativar
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                {/* Barbeiros Inativos */}
+                {barbeirosInativos.map((item: any) => (
+                  <Card key={item.barbeiro.id} className="bg-card border-border opacity-60">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground text-sm">{item.barbeiro.nome}</div>
+                            <div className="text-xs text-muted-foreground">{item.barbeiro.email}</div>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                          Inativo
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div className="text-center">
+                          <div className="text-muted-foreground text-xs mb-1">Atendimentos</div>
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
+                            {item.totalAtendimentosMes}
+                          </Badge>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground text-xs mb-1">Dias que Passou</div>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                            {item.diasPassouAVez}
+                          </Badge>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground text-xs mb-1">Posição</div>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                            -
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: true })}
+                          disabled={toggleBarbeiro.isPending}
+                          className="w-full text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                        >
+                          <Power className="h-3 w-3 mr-1" />
+                          Ativar
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
