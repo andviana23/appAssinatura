@@ -706,7 +706,7 @@ export default function Agendamento() {
                                 w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-visible relative
                               `}
                               style={{
-                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 24)}px`, // 24px por slot de 15min
+                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 60)}px`, // 60px por slot de 30min (24px base + padding)
                                 zIndex: 10,
                                 position: 'relative'
                               }}
