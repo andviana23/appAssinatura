@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { validarCpfCnpj, formatarCpfCnpj } from "@/lib/validate-cpf-cnpj";
 
 // Função para máscara de telefone
 const formatPhone = (value: string) => {
@@ -26,17 +27,11 @@ const formatPhone = (value: string) => {
   return value;
 };
 
-// Função para máscara de CPF
-const formatCPF = (value: string) => {
-  if (!value) return '';
-  const numericValue = value.replace(/\D/g, '');
-  if (numericValue.length <= 11) {
-    return numericValue
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2');
-  }
-  return value;
+// Função para validar e mostrar feedback visual de CPF/CNPJ
+const validarEFormatarCpfCnpj = (value: string) => {
+  const formatted = formatarCpfCnpj(value);
+  const isValid = value ? validarCpfCnpj(value) : true; // Vazio é válido, inválido só se preenchido incorretamente
+  return { formatted, isValid };
 };
 
 interface PlanoAsaas {
