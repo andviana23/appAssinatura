@@ -306,20 +306,25 @@ export default function ListaDaVez() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background text-foreground safe-area-inset">
+      <div className="mobile-container space-y-4 sm:space-y-6">
+        {/* Header Responsivo */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Lista da Vez</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Lista da Vez</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Mês: {dayjs(mesAtual).format("MMMM/YYYY")}
             </p>
           </div>
         </div>
 
-        {/* Cards de Ação */}
-        <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+        {/* Cards de Ação - Mobile Grid */}
+        <div className="mobile-grid"
+             style={{
+               gridTemplateColumns: isAdmin 
+                 ? 'repeat(auto-fit, minmax(280px, 1fr))' 
+                 : 'repeat(auto-fit, minmax(300px, 1fr))'
+             }}>
           {/* Próximo da Fila */}
           <Card className="bg-card border-border">
             <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-t-xl">
@@ -345,7 +350,7 @@ export default function ListaDaVez() {
                     <Button 
                       onClick={() => adicionarCliente.mutate()}
                       disabled={adicionarCliente.isPending}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground touch-friendly"
                     >
                       {adicionarCliente.isPending ? (
                         <div className="flex items-center gap-2">
@@ -364,7 +369,7 @@ export default function ListaDaVez() {
                       onClick={() => passarAVez.mutate(proximoBarbeiro.id)}
                       disabled={passarAVez.isPending}
                       variant="outline"
-                      className="w-full border-primary text-primary hover:bg-primary/10"
+                      className="w-full border-primary text-primary hover:bg-primary/10 touch-friendly"
                     >
                       {passarAVez.isPending ? (
                         <div className="flex items-center gap-2">
@@ -501,7 +506,134 @@ export default function ListaDaVez() {
                 <div>Ações</div>
               </div>
 
-              {/* Linhas da tabela - Desktop */}
+              {/* Mobile Layout - Cards */}
+              <div className="lg:hidden space-y-3">
+                {/* Barbeiros Ativos */}
+                {barbeirosAtivos.map((item: any, index: number) => (
+                  <Card key={item.barbeiro.id} className="bg-card border-border">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                            <User className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground">{item.barbeiro.nome}</div>
+                            <div className="text-sm text-muted-foreground">{item.barbeiro.email}</div>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={index === 0 ? "default" : "outline"}
+                          className={index === 0 ? "bg-primary text-primary-foreground" : "bg-muted/20 text-muted-foreground border-muted/30"}
+                        >
+                          {index + 1}º
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground mb-1">Atendimentos</div>
+                          <Badge variant="secondary" className="bg-secondary/20 text-secondary-foreground border-secondary/30">
+                            {item.totalAtendimentosMes}
+                          </Badge>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground mb-1">Dias Passou</div>
+                          <Badge 
+                            variant={item.diasPassouAVez > 3 ? "destructive" : "outline"}
+                            className={item.diasPassouAVez > 3 ? "bg-destructive/20 text-destructive border-destructive/30" : "bg-muted/20 text-muted-foreground border-muted/30"}
+                          >
+                            {item.diasPassouAVez}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {index === 0 ? (
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-green-200 dark:border-green-800">
+                              Próximo
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-muted/30">
+                              Aguardando
+                            </Badge>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: false })}
+                            disabled={toggleBarbeiro.isPending}
+                            className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 touch-friendly"
+                          >
+                            <PowerOff className="h-3 w-3 mr-1" />
+                            Desativar
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Barbeiros Inativos */}
+                {barbeirosInativos.map((item: any) => (
+                  <Card key={item.barbeiro.id} className="bg-card border-border opacity-60">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center">
+                            <User className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground">{item.barbeiro.nome}</div>
+                            <div className="text-sm text-muted-foreground">{item.barbeiro.email}</div>
+                          </div>
+                        </div>
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-red-200 dark:border-red-800">
+                          Inativo
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground mb-1">Atendimentos</div>
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
+                            {item.totalAtendimentosMes}
+                          </Badge>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground mb-1">Dias Passou</div>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                            {item.diasPassouAVez}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-red-200 dark:border-red-800">
+                          Inativo
+                        </Badge>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: true })}
+                            disabled={toggleBarbeiro.isPending}
+                            className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 touch-friendly"
+                          >
+                            <Power className="h-3 w-3 mr-1" />
+                            Ativar
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Layout - Table */}
               <div className="hidden lg:block divide-y divide-gray-50">
                 {/* Barbeiros Ativos */}
                 {barbeirosAtivos.map((item: any, index: number) => (

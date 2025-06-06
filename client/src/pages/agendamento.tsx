@@ -779,15 +779,112 @@ export default function Agendamento() {
                       </div>
                     );
                   })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Layout Mobile - Lista de Agendamentos */}
+              <div className="md:hidden h-full overflow-y-auto mobile-container py-4 scroll-touch">
+                <div className="space-y-4">
+                  {timeSlots.map((timeSlot) => {
+                    const hasAgendamentos = activeBarbeiros.some(barbeiro => 
+                      agendamentosByBarbeiro[barbeiro.id]?.[timeSlot] && 
+                      !agendamentosByBarbeiro[barbeiro.id][timeSlot].isOccupiedSlot
+                    );
+
+                    if (!hasAgendamentos) {
+                      return (
+                        <div key={timeSlot} className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-primary" />
+                              <span className="font-semibold text-foreground">{timeSlot}</span>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedHour(timeSlot);
+                                setIsModalOpen(true);
+                              }}
+                              className="touch-friendly"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Agendar
+                            </Button>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Horário disponível</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={timeSlot} className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Clock className="h-4 w-4 text-primary" />
+                          <span className="font-semibold text-foreground">{timeSlot}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {activeBarbeiros.map((barbeiro: Barbeiro) => {
+                            const slotData = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
+                            
+                            if (!slotData || slotData.isOccupiedSlot) return null;
+
+                            return (
+                              <div
+                                key={barbeiro.id}
+                                className={`
+                                  ${slotData.status === "FINALIZADO" ? "bg-green-100 border-green-200 dark:bg-green-900/20 dark:border-green-800" : ""}
+                                  ${slotData.status === "CANCELADO" ? "bg-gray-100 border-gray-200 dark:bg-gray-900/20 dark:border-gray-800" : ""}
+                                  ${slotData.status === "AGENDADO" ? "bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" : ""}
+                                  border rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm
+                                `}
+                                onClick={() => abrirComanda(slotData)}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
+                                        <span className="text-primary font-bold text-xs">
+                                          {barbeiro.nome.charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                      <span className="text-sm font-medium text-muted-foreground">
+                                        {barbeiro.nome}
+                                      </span>
+                                    </div>
+                                    <h4 className="font-semibold text-foreground mb-1">
+                                      {slotData.cliente?.nome}
+                                    </h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {slotData.servico?.nome} • {slotData.duracaoMinutos}min
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {slotData.status === "FINALIZADO" && (
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    )}
+                                    {slotData.status === "CANCELADO" && (
+                                      <X className="h-4 w-4 text-red-600" />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* Sidebar do Calendário - Lado Direito */}
-      <div className="w-80 bg-card border-l border-border shadow-2xl flex-shrink-0 overflow-y-auto">
+      {/* Sidebar do Calendário - Responsivo */}
+      <div className="hidden lg:flex lg:w-80 bg-card border-l border-border shadow-2xl flex-shrink-0 overflow-y-auto flex-col">
         <div className="p-6 border-b border-border">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
