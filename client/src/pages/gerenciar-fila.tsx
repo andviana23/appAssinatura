@@ -188,41 +188,43 @@ export default function GerenciarFila() {
             </div>
           </div>
           
-          <div className="flex flex-col lg:flex-row gap-3">
-            {!ordemModificada || ordemModificada.length === 0 ? (
-              <Button
-                onClick={() => inicializarOrdem.mutate()}
-                disabled={inicializarOrdem.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {inicializarOrdem.isPending ? 'Inicializando...' : 'Inicializar Ordem'}
-              </Button>
-            ) : (
-              <>
+          {isAdmin && (
+            <div className="flex flex-col lg:flex-row gap-3">
+              {!ordemModificada || ordemModificada.length === 0 ? (
                 <Button
                   onClick={() => inicializarOrdem.mutate()}
                   disabled={inicializarOrdem.isPending}
-                  variant="outline"
-                  className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  {inicializarOrdem.isPending ? 'Resetando...' : 'Resetar Ordem'}
+                  {inicializarOrdem.isPending ? 'Inicializando...' : 'Inicializar Ordem'}
                 </Button>
-                
-                {alteracoesPendentes && (
+              ) : (
+                <>
                   <Button
-                    onClick={() => salvarOrdem.mutate(ordemModificada)}
-                    disabled={salvarOrdem.isPending}
-                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                    onClick={() => inicializarOrdem.mutate()}
+                    disabled={inicializarOrdem.isPending}
+                    variant="outline"
+                    className="border-[#365e78] text-[#365e78] hover:bg-[#365e78] hover:text-white"
                   >
-                    <Save className="h-4 w-4 mr-2" />
-                    {salvarOrdem.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {inicializarOrdem.isPending ? 'Resetando...' : 'Resetar Ordem'}
                   </Button>
-                )}
-              </>
-            )}
-          </div>
+                  
+                  {alteracoesPendentes && (
+                    <Button
+                      onClick={() => salvarOrdem.mutate(ordemModificada)}
+                      disabled={salvarOrdem.isPending}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {salvarOrdem.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Conteúdo Principal */}
@@ -258,7 +260,10 @@ export default function GerenciarFila() {
             <CardHeader className="bg-gradient-to-r from-[#365e78] to-[#2a4a5e] text-white rounded-t-xl">
               <CardTitle className="text-xl">Ordem Personalizada dos Profissionais</CardTitle>
               <CardDescription className="text-blue-100">
-                Use os controles para reordenar os profissionais e ativar/desativar sua participação na fila
+                {isAdmin 
+                  ? "Use os controles para reordenar os profissionais e ativar/desativar sua participação na fila"
+                  : "Visualização da ordem dos profissionais na fila (somente administradores podem fazer alterações)"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -305,39 +310,43 @@ export default function GerenciarFila() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {/* Controles de reordenação */}
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => moverBarbeiro(index, 'up')}
-                          disabled={index === 0}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ArrowUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => moverBarbeiro(index, 'down')}
-                          disabled={index === ordemModificada.length - 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ArrowDown className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      {/* Controles de reordenação - apenas para administradores */}
+                      {isAdmin && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moverBarbeiro(index, 'up')}
+                            disabled={index === 0}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moverBarbeiro(index, 'down')}
+                            disabled={index === ordemModificada.length - 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
 
-                      {/* Toggle ativo/inativo */}
-                      <div className="flex items-center gap-3 ml-4">
-                        <span className="text-sm font-medium text-gray-700">
-                          {item.ativo ? 'Ativo' : 'Inativo'}
-                        </span>
-                        <Switch
-                          checked={item.ativo}
-                          onCheckedChange={() => toggleStatusLocal(index)}
-                          disabled={toggleBarbeiro.isPending}
-                        />
-                      </div>
+                      {/* Toggle ativo/inativo - apenas para administradores */}
+                      {isAdmin && (
+                        <div className="flex items-center gap-3 ml-4">
+                          <span className="text-sm font-medium text-gray-700">
+                            {item.ativo ? 'Ativo' : 'Inativo'}
+                          </span>
+                          <Switch
+                            checked={item.ativo}
+                            onCheckedChange={() => toggleStatusLocal(index)}
+                            disabled={toggleBarbeiro.isPending}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
