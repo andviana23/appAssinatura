@@ -673,7 +673,7 @@ export default function Agendamento() {
               {timeSlots.map((timeSlot) => (
                 <div 
                   key={timeSlot} 
-                  className="grid border-b border-border min-h-[24px] hover:bg-muted/30 transition-colors group"
+                  className="grid border-b border-border h-12 hover:bg-muted/30 transition-colors group relative"
                   style={{ 
                     gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
                   }}
@@ -689,7 +689,7 @@ export default function Agendamento() {
                     const slotData = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
-                      <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5 min-w-[130px] max-w-[150px] overflow-hidden">
+                      <div key={barbeiro.id} className="border-r border-border relative h-12 p-0.5 min-w-[130px] max-w-[150px] overflow-visible">
                         {slotData ? (
                           // Se é um slot ocupado (não o principal), não renderizar nada - já está coberto pelo card principal
                           slotData.isOccupiedSlot ? (
@@ -706,9 +706,12 @@ export default function Agendamento() {
                                 w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-visible relative
                               `}
                               style={{
-                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 60)}px`, // 60px por slot de 30min (24px base + padding)
+                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 48)}px`, // 48px por slot de 30min
                                 zIndex: 10,
-                                position: 'relative'
+                                position: 'absolute',
+                                top: 0,
+                                left: '2px',
+                                right: '2px'
                               }}
                               onClick={() => abrirComanda(slotData)}
                               onContextMenu={(e) => handleContextMenu(e, slotData)}
