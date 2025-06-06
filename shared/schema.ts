@@ -617,6 +617,11 @@ export const alterarSenhaSchema = z.object({
   path: ["confirmarSenha"],
 });
 
+// Schema para atualizar apenas o status ativo do profissional
+export const toggleProfissionalStatusSchema = z.object({
+  ativo: z.boolean()
+});
+
 // Tipos para profissionais
 export type Profissional = typeof profissionais.$inferSelect;
 export type InsertProfissional = z.infer<typeof insertProfissionalSchema>;

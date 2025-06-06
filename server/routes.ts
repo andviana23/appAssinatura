@@ -2984,17 +2984,35 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      const validation = schema.updateProfissionalSchema.safeParse(req.body);
-      
-      if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          message: 'Dados inválidos',
-          errors: validation.error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message
-          }))
-        });
+      // Se apenas o campo 'ativo' foi enviado, usar schema específico
+      const requestKeys = Object.keys(req.body);
+      if (requestKeys.length === 1 && requestKeys[0] === 'ativo') {
+        const validation = schema.toggleProfissionalStatusSchema.safeParse(req.body);
+        
+        if (!validation.success) {
+          return res.status(400).json({
+            success: false,
+            message: 'Dados inválidos para atualização de status',
+            errors: validation.error.issues.map(issue => ({
+              field: issue.path.join('.'),
+              message: issue.message
+            }))
+          });
+        }
+      } else {
+        // Para outros campos, usar schema completo
+        const validation = schema.updateProfissionalSchema.safeParse(req.body);
+        
+        if (!validation.success) {
+          return res.status(400).json({
+            success: false,
+            message: 'Dados inválidos',
+            errors: validation.error.issues.map(issue => ({
+              field: issue.path.join('.'),
+              message: issue.message
+            }))
+          });
+        }
       }
 
       // Verificar se profissional existe
@@ -3010,25 +3028,28 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Se email foi alterado, verificar se já existe
-      if (validation.data.email && validation.data.email !== profissionalExistente[0].email) {
-        const emailExistente = await db.select()
-          .from(schema.profissionais)
-          .where(eq(schema.profissionais.email, validation.data.email))
-          .limit(1);
+      // Para atualização de status, não verificar email
+      if (requestKeys.length > 1 || requestKeys[0] !== 'ativo') {
+        // Se email foi alterado, verificar se já existe
+        if (req.body.email && req.body.email !== profissionalExistente[0].email) {
+          const emailExistente = await db.select()
+            .from(schema.profissionais)
+            .where(eq(schema.profissionais.email, req.body.email))
+            .limit(1);
 
-        if (emailExistente.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message: 'Email já está em uso por outro profissional'
-          });
+          if (emailExistente.length > 0) {
+            return res.status(409).json({
+              success: false,
+              message: 'Email já está em uso por outro profissional'
+            });
+          }
         }
       }
 
       // Atualizar profissional
       const profissionalAtualizado = await db.update(schema.profissionais)
         .set({
-          ...validation.data,
+          ...req.body,
           updatedAt: new Date()
         })
         .where(eq(schema.profissionais.id, parseInt(id)))
