@@ -244,19 +244,23 @@ export default function BarbeiroDashboardReformulado() {
                     <span>Passou: {listaDaVez?.passouvez || 0}x</span>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => window.location.href = "/barbeiro/agenda"}
-                  className="w-full bg-[#365e78] hover:bg-[#2a4a5e] text-white text-sm py-2"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver Agenda
-                </Button>
+
               </div>
             </CardContent>
           </Card>
         </div>
 
-
+        {/* Botão Ver Agenda */}
+        <div className="flex justify-center">
+          <Button 
+            onClick={() => window.location.href = "/barbeiro/agenda"}
+            className="bg-[#365e78] hover:bg-[#2a4a5e] text-white px-8 py-3"
+            size="lg"
+          >
+            <Calendar className="h-5 w-5 mr-2" />
+            Ver Agenda
+          </Button>
+        </div>
 
         {/* Botão para Relatório Detalhado */}
         <div className="flex justify-center">
