@@ -1,3 +1,7 @@
-import { useTheme as useThemeOriginal } from "@/contexts/theme-context";
-
-export const useTheme = useThemeOriginal;
+// Simple theme hook replacement
+export const useTheme = () => {
+  return {
+    theme: 'dark' as const,
+    setTheme: () => {},
+  };
+};
