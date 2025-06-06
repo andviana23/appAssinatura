@@ -99,7 +99,10 @@ export default function BarbeiroAgendaMobile() {
 
   // Navegação de data
   const navegarData = useCallback((direcao: 'anterior' | 'proximo') => {
-    const dataAtual = new Date(dataSelecionada);
+    // Usar parseISO para evitar problemas de timezone
+    const [ano, mes, dia] = dataSelecionada.split('-').map(Number);
+    const dataAtual = new Date(ano, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
+    
     const novaData = direcao === 'anterior' 
       ? subDays(dataAtual, 1) 
       : addDays(dataAtual, 1);
