@@ -66,11 +66,22 @@ export default function BarbeiroAgenda() {
 
   // Filtrar apenas agendamentos do barbeiro logado
   const barbeiroId = user?.barbeiroId || user?.id;
+  
+  console.log('DEBUG AGENDA:', {
+    userCompleto: user,
+    barbeiroId,
+    totalAgendamentos: agendamentos?.length || 0,
+    primeirosAgendamentos: agendamentos?.slice(0, 3),
+  });
+
   const agendamentosBarbeiro = Array.isArray(agendamentos) 
-    ? agendamentos.filter((agendamento: any) => 
-        agendamento.barbeiroId === barbeiroId
-      )
+    ? agendamentos.filter((agendamento: any) => {
+        console.log(`Agendamento ${agendamento.id}: barbeiroId=${agendamento.barbeiroId}, comparando com ${barbeiroId}`);
+        return agendamento.barbeiroId === barbeiroId;
+      })
     : [];
+  
+  console.log('Agendamentos filtrados para barbeiro:', agendamentosBarbeiro.length);
 
   // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
