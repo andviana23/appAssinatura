@@ -64,24 +64,25 @@ export default function BarbeiroAgenda() {
     },
   });
 
-  // Filtrar apenas agendamentos do barbeiro logado
-  const barbeiroId = user?.barbeiroId || user?.id;
-  
-  console.log('DEBUG AGENDA:', {
-    userCompleto: user,
-    barbeiroId,
-    totalAgendamentos: agendamentos?.length || 0,
-    primeirosAgendamentos: agendamentos?.slice(0, 3),
+  // Buscar dados do profissional baseado no email do usuário
+  const { data: profissionais } = useQuery({
+    queryKey: ["/api/profissionais"],
+    queryFn: async () => {
+      const response = await fetch("/api/profissionais");
+      if (!response.ok) throw new Error('Erro ao buscar profissionais');
+      const data = await response.json();
+      return data.data || [];
+    },
   });
 
-  const agendamentosBarbeiro = Array.isArray(agendamentos) 
-    ? agendamentos.filter((agendamento: any) => {
-        console.log(`Agendamento ${agendamento.id}: barbeiroId=${agendamento.barbeiroId}, comparando com ${barbeiroId}`);
-        return agendamento.barbeiroId === barbeiroId;
-      })
+  // Encontrar o profissional correspondente ao usuário logado
+  const profissional = profissionais?.find((p: any) => p.email === user?.email);
+  const barbeiroId = profissional?.id;
+
+  // Filtrar apenas agendamentos do barbeiro logado
+  const agendamentosBarbeiro = Array.isArray(agendamentos) && barbeiroId
+    ? agendamentos.filter((agendamento: any) => agendamento.barbeiroId === barbeiroId)
     : [];
-  
-  console.log('Agendamentos filtrados para barbeiro:', agendamentosBarbeiro.length);
 
   // Aplicar filtro de status
   const agendamentosFiltrados = agendamentosBarbeiro.filter((agendamento: Agendamento) => {
