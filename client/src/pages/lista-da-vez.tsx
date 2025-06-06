@@ -306,20 +306,20 @@ export default function ListaDaVez() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-4">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header - Mobile First */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Lista da Vez</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Lista da Vez</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Mês: {dayjs(mesAtual).format("MMMM/YYYY")}
             </p>
           </div>
         </div>
 
-        {/* Cards de Ação */}
-        <div className={`grid grid-cols-1 gap-6 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+        {/* Cards de Ação - Mobile First Grid */}
+        <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${isAdmin ? 'lg:grid-cols-3 md:grid-cols-2' : 'md:grid-cols-2'}`}>
           {/* Próximo da Fila */}
           <Card className="bg-card border-border">
             <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-t-xl">
@@ -331,31 +331,33 @@ export default function ListaDaVez() {
                 Barbeiro com menos atendimentos
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               {proximoBarbeiro ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="text-center">
-                    <div className="h-12 w-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <Scissors className="h-6 w-6 text-white" />
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Scissors className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </div>
-                    <h3 className="font-semibold text-lg text-foreground">{proximoBarbeiro.nome}</h3>
-                    <p className="text-sm text-muted-foreground">{proximoBarbeiro.email}</p>
+                    <h3 className="font-semibold text-base sm:text-lg text-foreground">{proximoBarbeiro.nome}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{proximoBarbeiro.email}</p>
                   </div>
                   <div className="space-y-2">
                     <Button 
                       onClick={() => adicionarCliente.mutate()}
                       disabled={adicionarCliente.isPending}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-2 sm:py-3"
                     >
                       {adicionarCliente.isPending ? (
                         <div className="flex items-center gap-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Adicionando...
+                          <span className="hidden sm:inline">Adicionando...</span>
+                          <span className="sm:hidden">...</span>
                         </div>
                       ) : (
                         <>
                           <Plus className="mr-2 h-4 w-4" />
-                          Adicionar Cliente
+                          <span className="hidden sm:inline">Adicionar Cliente</span>
+                          <span className="sm:hidden">Adicionar</span>
                         </>
                       )}
                     </Button>
@@ -364,17 +366,19 @@ export default function ListaDaVez() {
                       onClick={() => passarAVez.mutate(proximoBarbeiro.id)}
                       disabled={passarAVez.isPending}
                       variant="outline"
-                      className="w-full border-primary text-primary hover:bg-primary/10"
+                      className="w-full border-primary text-primary hover:bg-primary/10 text-sm sm:text-base py-2 sm:py-3"
                     >
                       {passarAVez.isPending ? (
                         <div className="flex items-center gap-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          Passando...
+                          <span className="hidden sm:inline">Passando...</span>
+                          <span className="sm:hidden">...</span>
                         </div>
                       ) : (
                         <>
                           <Clock className="mr-2 h-4 w-4" />
-                          Passo a vez
+                          <span className="hidden sm:inline">Passo a vez</span>
+                          <span className="sm:hidden">Passo</span>
                         </>
                       )}
                     </Button>
@@ -382,7 +386,7 @@ export default function ListaDaVez() {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-muted-foreground">Nenhum barbeiro disponível</p>
+                  <p className="text-muted-foreground text-sm">Nenhum barbeiro disponível</p>
                 </div>
               )}
             </CardContent>
