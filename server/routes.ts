@@ -3660,18 +3660,21 @@ export async function registerRoutes(app: Express): Promise<Express> {
           eq(schema.profissionais.ativo, true)
         ));
 
-      // Buscar receita total de assinaturas pagas
-      const assinaturasPagas = await db.select({
-        valor: schema.clientes.planoValor
-      })
-      .from(schema.clientes)
-      .where(eq(schema.clientes.statusAssinatura, 'ATIVO'));
+      // Buscar receita total de assinaturas REALMENTE PAGAS usando a mesma fonte do stats
+      const response = await fetch('http://localhost:5000/api/clientes/pagamentos-mes', {
+        headers: {
+          'User-Agent': 'Internal-Request'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro na requisição: ${response.status}`);
+      }
 
-      const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
-        return total + (parseFloat(assinatura.valor || '0'));
-      }, 0);
+      const dadosPagamentos = await response.json();
+      const receitaTotalAssinatura = dadosPagamentos.valorTotal || 0;
 
-      // Calcular comissão total (40% da receita)
+      // Calcular comissão total (40% da receita REAL PAGA)
       const comissaoTotal = receitaTotalAssinatura * 0.4;
 
       // Buscar agendamentos finalizados com tempo de serviço por barbeiro
