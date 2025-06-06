@@ -467,7 +467,7 @@ export default function Agendamento() {
     }
 
     // Buscar informações do serviço selecionado para validar horário
-    const servicoSelecionado = servicos?.data?.find(s => s.id === parseInt(selectedServico));
+    const servicoSelecionado = servicosData?.data?.find(s => s.id === parseInt(selectedServico));
     if (!servicoSelecionado) {
       toast({
         title: "Serviço não encontrado",
