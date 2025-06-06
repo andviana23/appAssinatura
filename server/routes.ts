@@ -1630,9 +1630,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
       
       let whereClause = eq(schema.clientes.id, schema.clientes.id); // Always true base condition
       
-      // Filtros aplicados
+      // Filtros aplicados - incluir clientes com pagamento externo como ativos
       if (status === 'ativo' || forAgendamento === 'true') {
-        whereClause = eq(schema.clientes.statusAssinatura, 'ATIVO');
+        whereClause = or(
+          eq(schema.clientes.statusAssinatura, 'ATIVO'),
+          eq(schema.clientes.origem, 'EXTERNO') // Clientes com pagamento externo são considerados ativos
+        );
       }
       
       let clientes = await db.select().from(schema.clientes).where(whereClause).orderBy(schema.clientes.nome);
@@ -1648,7 +1651,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         );
       }
       
-      // Validação anti-duplicidade por email, telefone ou CPF
+      // Validação anti-duplicidade por email, telefone ou CPF - priorizando clientes externos
       const clientesUnicos = new Map();
       clientes.forEach(cliente => {
         const chaveEmail = cliente.email?.toLowerCase();
@@ -1656,22 +1659,36 @@ export async function registerRoutes(app: Express): Promise<Express> {
         const chaveCpf = cliente.cpf;
         
         // Verificar se já existe cliente com mesmo email, telefone ou CPF
-        let isDuplicate = false;
+        let clienteExistente = null;
         for (const existingCliente of clientesUnicos.values()) {
           if ((chaveEmail && existingCliente.email?.toLowerCase() === chaveEmail) ||
               (chaveTelefone && existingCliente.telefone === chaveTelefone) ||
               (chaveCpf && existingCliente.cpf === chaveCpf)) {
-            isDuplicate = true;
+            clienteExistente = existingCliente;
             break;
           }
         }
         
-        if (!isDuplicate) {
+        if (!clienteExistente) {
+          // Novo cliente único
           clientesUnicos.set(cliente.id, cliente);
+        } else {
+          // Cliente duplicado - priorizar pagamento externo ou mais recente
+          if (cliente.origem === 'EXTERNO' && clienteExistente.origem !== 'EXTERNO') {
+            // Substituir por cliente com pagamento externo
+            clientesUnicos.delete(clienteExistente.id);
+            clientesUnicos.set(cliente.id, cliente);
+          } else if (cliente.id > clienteExistente.id) {
+            // Manter o mais recente se ambos são do mesmo tipo
+            clientesUnicos.delete(clienteExistente.id);
+            clientesUnicos.set(cliente.id, cliente);
+          }
         }
       });
       
       const clientesFinais = Array.from(clientesUnicos.values());
+      
+      console.log(`📊 Lista de clientes: ${clientesFinais.length} únicos encontrados (incluindo pagamento externo)`);
       
       // Paginação
       const startIndex = (Number(page) - 1) * Number(limit);

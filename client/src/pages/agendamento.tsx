@@ -157,8 +157,11 @@ export default function Agendamento() {
     const [hora, minuto] = horaInicio.split(':').map(Number);
     const minutosInicio = hora * 60 + minuto;
     
-    for (let i = 0; i < tempoMinutos; i += 15) {
-      const minutosAtual = minutosInicio + i;
+    // Calcular quantos slots de 15 minutos são necessários
+    const totalSlots = Math.ceil(tempoMinutos / 15);
+    
+    for (let i = 0; i < totalSlots; i++) {
+      const minutosAtual = minutosInicio + (i * 15);
       const horaAtual = Math.floor(minutosAtual / 60);
       const minutoAtual = minutosAtual % 60;
       
@@ -628,24 +631,11 @@ export default function Agendamento() {
                     return (
                       <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5 min-w-[130px] max-w-[150px] overflow-hidden">
                         {slotData ? (
-                          // Se é um slot ocupado (não o principal), mostrar apenas fundo cinza
+                          // Se é um slot ocupado (não o principal), não renderizar nada - já está coberto pelo card principal
                           slotData.isOccupiedSlot ? (
-                            <div 
-                              className="w-full h-full min-h-[22px] bg-gray-200 border-l-2 border-blue-600 opacity-60 cursor-pointer"
-                              onClick={() => {
-                                // Clicar em slot ocupado abre a comanda do agendamento principal
-                                if (slotData.parentAgendamento) {
-                                  abrirComanda(slotData.parentAgendamento);
-                                }
-                              }}
-                              title={`Continuação: ${slotData.parentAgendamento?.cliente?.nome} - ${slotData.parentAgendamento?.servico?.nome}`}
-                            >
-                              <div className="text-[8px] text-gray-600 p-1 leading-tight">
-                                ↳ {slotData.parentAgendamento?.servico?.nome}
-                              </div>
-                            </div>
+                            <div className="w-full h-full min-h-[22px] bg-transparent pointer-events-none"></div>
                           ) : (
-                            // Slot principal - exibir card completo com altura baseada na duração
+                            // Slot principal - exibir card completo que se estende pelos slots ocupados
                             <div 
                               className={`
                                 ${slotData.status === "FINALIZADO" ? "bg-green-500 hover:bg-green-600" : ""}
@@ -653,11 +643,12 @@ export default function Agendamento() {
                                 ${slotData.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
                                 ${selectedAgendamento && selectedAgendamento.id === slotData.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
                                 rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
-                                w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-hidden relative
+                                w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-visible relative
                               `}
                               style={{
-                                height: `${Math.max(22, (slotData.duracaoMinutos || 30) * 1.6)}px`, // 1.6px por minuto para altura visual
-                                zIndex: 10
+                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 24)}px`, // 24px por slot de 15min
+                                zIndex: 10,
+                                position: 'relative'
                               }}
                               onClick={() => abrirComanda(slotData)}
                               onContextMenu={(e) => handleContextMenu(e, slotData)}
