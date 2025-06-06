@@ -63,6 +63,7 @@ export default function Planos() {
     formaPagamento: 'CREDIT_CARD'
   });
   const [externalPaymentMethod, setExternalPaymentMethod] = useState('');
+  const [cpfValido, setCpfValido] = useState(true);
 
   // Buscar planos personalizados do banco de dados
   const { data: planosPersonalizados = [], isLoading: loadingPersonalizados } = useQuery({
@@ -274,7 +275,16 @@ export default function Planos() {
     if (!checkoutData.nome || !checkoutData.email || !checkoutData.telefone || !checkoutData.cpf) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha nome, email, telefone e CPF",
+        description: "Preencha nome, email, telefone e CPF/CNPJ",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!cpfValido) {
+      toast({
+        title: "CPF/CNPJ inválido",
+        description: "Verifique o CPF/CNPJ informado e tente novamente",
         variant: "destructive"
       });
       return;
@@ -441,14 +451,23 @@ export default function Planos() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf" className="text-foreground">CPF *</Label>
+                <Label htmlFor="cpf" className="text-foreground">CPF/CNPJ *</Label>
                 <Input
                   id="cpf"
                   value={checkoutData.cpf}
-                  onChange={(e) => setCheckoutData({...checkoutData, cpf: formatCPF(e.target.value)})}
-                  placeholder="000.000.000-00"
-                  className="bg-background border-border text-foreground"
+                  onChange={(e) => {
+                    const { formatted, isValid } = validarEFormatarCpfCnpj(e.target.value);
+                    setCheckoutData({...checkoutData, cpf: formatted});
+                    setCpfValido(isValid);
+                  }}
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  className={`bg-background border-border text-foreground ${
+                    !cpfValido && checkoutData.cpf ? 'border-red-500 focus:border-red-500' : ''
+                  }`}
                 />
+                {!cpfValido && checkoutData.cpf && (
+                  <p className="text-sm text-red-600">CPF/CNPJ inválido</p>
+                )}
               </div>
 
               <div className="space-y-2">
