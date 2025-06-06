@@ -452,17 +452,43 @@ export default function Agendamento() {
 
   const criarAgendamento = () => {
     if (!selectedHour || !selectedBarbeiro || !selectedCliente || !selectedServico) {
+      console.log("❌ Campos obrigatórios não preenchidos:", {
+        selectedHour,
+        selectedBarbeiro,
+        selectedCliente,
+        selectedServico
+      });
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos para criar o agendamento",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Validar horário permitido (08:00 às 20:00)
-    const [hour] = selectedHour.split(':');
-    const hourNumber = parseInt(hour);
+    // Buscar informações do serviço selecionado para validar horário
+    const servicoSelecionado = servicos?.data?.find(s => s.id === parseInt(selectedServico));
+    if (!servicoSelecionado) {
+      toast({
+        title: "Serviço não encontrado",
+        description: "Selecione um serviço válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar horário permitido considerando duração do serviço
+    const [hour, minute] = selectedHour.split(':').map(Number);
+    const duracaoServico = servicoSelecionado.tempoMinutos || 30;
+    const totalMinutosInicio = hour * 60 + minute;
+    const totalMinutosFim = totalMinutosInicio + duracaoServico;
+    const horaFim = Math.floor(totalMinutosFim / 60);
+    const minutoFim = totalMinutosFim % 60;
     
-    if (hourNumber < 8 || hourNumber > 20) {
+    if (hour < 8 || horaFim > 20 || (horaFim === 20 && minutoFim > 0)) {
       toast({
         title: "Horário não permitido",
-        description: "Agendamentos só são permitidos entre 08:00 e 20:00",
+        description: `Serviço de ${duracaoServico}min iniciando às ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} terminaria às ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}. Horário permitido: 08:00-20:00`,
         variant: "destructive",
       });
       return;
@@ -472,7 +498,13 @@ export default function Agendamento() {
     const dataHoraBrasilia = new Date(`${format(selectedDate, "yyyy-MM-dd")}T${selectedHour}:00-03:00`);
     const dataHora = dataHoraBrasilia.toISOString().slice(0, 19).replace('T', ' ');
     
-    console.log(`🕐 Criando agendamento: Data original: ${format(selectedDate, "yyyy-MM-dd")} ${selectedHour}:00, Data convertida: ${dataHora}`);
+    console.log(`🕐 Criando agendamento:`, {
+      dataOriginal: `${format(selectedDate, "yyyy-MM-dd")} ${selectedHour}:00`,
+      dataConvertida: dataHora,
+      servicoId: selectedServico,
+      duracaoServico: duracaoServico,
+      horarioTermino: `${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}`
+    });
     
     createMutation.mutate({
       clienteId: parseInt(selectedCliente),
