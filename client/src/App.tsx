@@ -123,27 +123,28 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Switch>
-        <Route path="/login" component={LoginNovo} />
-        <Route>
-          <Redirect to="/login" />
-        </Route>
-      </Switch>
-    );
-  }
-
   return (
-    <>
-      <AuthenticatedRoutes />
+    <Switch>
+      {/* Rota de login */}
+      <Route path="/login">
+        {isAuthenticated ? <Redirect to="/" /> : <LoginNovo />}
+      </Route>
       
-      {/* Gerenciador de logout automático por inatividade */}
-      <IdleLogoutManager 
-        isAuthenticated={isAuthenticated}
-        onLogout={logout}
-      />
-    </>
+      {/* Rotas protegidas */}
+      <Route path="*">
+        {isAuthenticated ? (
+          <>
+            <AuthenticatedRoutes />
+            <IdleLogoutManager 
+              isAuthenticated={isAuthenticated}
+              onLogout={logout}
+            />
+          </>
+        ) : (
+          <Redirect to="/login" />
+        )}
+      </Route>
+    </Switch>
   );
 }
 
