@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import cookieParser from "cookie-parser";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { config } from "dotenv";
@@ -53,6 +54,16 @@ app.use((req, res, next) => {
   });
 
   next();
+});
+
+// Serve standalone login page
+app.get('/login', (req, res) => {
+  res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'login.html'));
+});
+
+// Redirect root to login
+app.get('/', (req, res) => {
+  res.redirect('/login');
 });
 
 (async () => {
