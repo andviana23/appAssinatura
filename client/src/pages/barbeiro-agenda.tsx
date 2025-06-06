@@ -54,15 +54,17 @@ export default function BarbeiroAgenda() {
   const [dataSelecionada, setDataSelecionada] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
-  // Buscar agendamentos do barbeiro para a data selecionada
+  // Buscar agendamentos da fonte oficial (mesma da página principal)
   const { data: agendamentos, isLoading } = useQuery({
-    queryKey: ["/api/barbeiro/agenda", user?.id, dataSelecionada],
-    queryFn: () => apiRequest(`/api/barbeiro/agenda?data=${dataSelecionada}`),
+    queryKey: ["/api/agendamentos", dataSelecionada],
+    queryFn: () => apiRequest(`/api/agendamentos?data=${dataSelecionada}`),
   });
 
-  // Os agendamentos já vêm filtrados pelo backend para o barbeiro logado
-  const agendamentosBarbeiro = Array.isArray(agendamentos?.agendamentos) 
-    ? agendamentos.agendamentos
+  // Filtrar apenas agendamentos do barbeiro logado da fonte oficial
+  const agendamentosBarbeiro = Array.isArray(agendamentos) 
+    ? agendamentos.filter((agendamento: any) => 
+        agendamento.barbeiroId === user?.barbeiroId
+      )
     : [];
 
   // Aplicar filtro de status
@@ -101,10 +103,10 @@ export default function BarbeiroAgenda() {
   };
 
   const navegarData = (direcao: 'anterior' | 'proximo') => {
-    const dataAtual = new Date(dataSelecionada);
+    const dataAtual = new Date(dataSelecionada + 'T12:00:00'); // Força meio-dia para evitar problemas de timezone
     const novaData = direcao === 'anterior' 
-      ? subDays(dataAtual, 1) 
-      : addDays(dataAtual, 1);
+      ? new Date(dataAtual.getTime() - 24 * 60 * 60 * 1000) // Subtrai exatamente 24 horas
+      : new Date(dataAtual.getTime() + 24 * 60 * 60 * 1000); // Adiciona exatamente 24 horas
     setDataSelecionada(format(novaData, "yyyy-MM-dd"));
   };
 
