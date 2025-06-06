@@ -39,8 +39,8 @@ export default function BarbeiroAgenda() {
   });
 
   // Filtrar agendamentos do barbeiro logado
-  const agendamentosBarbeiro = Array.isArray(agendamentos) 
-    ? agendamentos.filter((agendamento: Agendamento) => 
+  const agendamentosBarbeiro = Array.isArray(agendamentos?.agendamentos) 
+    ? agendamentos.agendamentos.filter((agendamento: Agendamento) => 
         agendamento.barbeiroId === user?.barbeiroId
       )
     : [];
@@ -57,9 +57,9 @@ export default function BarbeiroAgenda() {
 
   // Estatísticas do dia
   const totalAgendamentos = agendamentosBarbeiro.length;
-  const finalizados = agendamentosBarbeiro.filter(a => a.status === 'FINALIZADO').length;
-  const cancelados = agendamentosBarbeiro.filter(a => a.status === 'CANCELADO').length;
-  const pendentes = agendamentosBarbeiro.filter(a => a.status === 'AGENDADO').length;
+  const finalizados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'FINALIZADO').length;
+  const cancelados = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'CANCELADO').length;
+  const pendentes = agendamentosBarbeiro.filter((a: Agendamento) => a.status === 'AGENDADO').length;
 
   const getStatusColor = (status: string) => {
     switch (status) {

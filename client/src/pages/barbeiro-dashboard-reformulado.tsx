@@ -234,82 +234,29 @@ export default function BarbeiroDashboardReformulado() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="text-lg font-bold">
-                  Posição: {listaDaVez?.posicaoAtual || 0}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="text-lg font-bold">
+                    Sua posição na Lista da Vez: {listaDaVez?.posicaoAtual || 0}º
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Atendimentos: {listaDaVez?.atendimentos || 0}</span>
+                    <span>Passou: {listaDaVez?.passouvez || 0}x</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span>Atendimentos: {listaDaVez?.atendimentos || 0}</span>
-                  <span>Passou: {listaDaVez?.passouvez || 0}x</span>
-                </div>
+                <Button 
+                  onClick={() => window.location.href = "/barbeiro/agenda"}
+                  className="w-full bg-[#365e78] hover:bg-[#2a4a5e] text-white text-sm py-2"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Agenda
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Agenda Pessoal */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Agenda Pessoal
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navegarData('anterior')}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium min-w-[120px] text-center">
-                  {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navegarData('proximo')}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {agendaDia?.agendamentos?.length > 0 ? (
-                agendaDia.agendamentos.map((agendamento: any, index: number) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium">
-                        {format(new Date(agendamento.dataHora), "HH:mm")}
-                      </div>
-                      <div>
-                        <p className="font-medium">{agendamento.cliente?.nome}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{agendamento.servico?.nome}</p>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={agendamento.status === 'FINALIZADO' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {agendamento.status}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Nenhum agendamento para este dia</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Botão para Relatório Detalhado */}
         <div className="flex justify-center">
