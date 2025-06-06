@@ -146,7 +146,32 @@ export default function Agendamento() {
   const monthEnd = endOfMonth(currentCalendarDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Organize agendamentos by barbeiro and time - corrigido para fuso horário
+  // Função para calcular quantos slots de 15 minutos um serviço ocupa
+  const calcularSlotsOcupados = (tempoMinutos: number) => {
+    return Math.ceil(tempoMinutos / 15); // Cada slot = 15 minutos
+  };
+
+  // Função para gerar todos os slots ocupados por um agendamento
+  const gerarSlotsOcupados = (horaInicio: string, tempoMinutos: number) => {
+    const slots = [];
+    const [hora, minuto] = horaInicio.split(':').map(Number);
+    const minutosInicio = hora * 60 + minuto;
+    
+    for (let i = 0; i < tempoMinutos; i += 15) {
+      const minutosAtual = minutosInicio + i;
+      const horaAtual = Math.floor(minutosAtual / 60);
+      const minutoAtual = minutosAtual % 60;
+      
+      if (horaAtual >= 8 && horaAtual <= 20) {
+        const slotFormatado = `${horaAtual.toString().padStart(2, '0')}:${minutoAtual.toString().padStart(2, '0')}`;
+        slots.push(slotFormatado);
+      }
+    }
+    
+    return slots;
+  };
+
+  // Organize agendamentos by barbeiro and time - com duração do serviço
   const agendamentosByBarbeiro = Array.isArray(agendamentos) ? agendamentos.reduce((acc: any, agendamento: Agendamento) => {
     const barbeiroId = agendamento.barbeiroId;
     
@@ -159,15 +184,38 @@ export default function Agendamento() {
       hour12: false
     });
     
-    console.log(`📅 Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, DataHora: ${agendamento.dataHora}`);
+    console.log(`📅 Processando agendamento ID: ${agendamento.id}, BarbeiroID: ${barbeiroId}, TimeSlot: ${timeSlot}, Duração: ${agendamento.servico?.tempoMinutos}min`);
     
     if (!acc[barbeiroId]) {
       acc[barbeiroId] = {};
     }
     
+    // Calcular todos os slots que este agendamento deve ocupar
+    const tempoServico = agendamento.servico?.tempoMinutos || 30;
+    const slotsOcupados = gerarSlotsOcupados(timeSlot, tempoServico);
+    
+    // Marcar o slot principal com o agendamento completo
     if (timeSlot) {
-      acc[barbeiroId][timeSlot] = agendamento;
+      acc[barbeiroId][timeSlot] = {
+        ...agendamento,
+        isMainSlot: true,
+        slotsOcupados: slotsOcupados,
+        duracaoMinutos: tempoServico
+      };
     }
+    
+    // Marcar os slots subsequentes como ocupados (mas sem exibir card)
+    slotsOcupados.slice(1).forEach(slot => {
+      if (acc[barbeiroId][slot]) {
+        // Se já existe um agendamento neste slot, não sobrescrever
+        return;
+      }
+      acc[barbeiroId][slot] = {
+        isOccupiedSlot: true,
+        parentAgendamento: agendamento,
+        parentTimeSlot: timeSlot
+      };
+    });
     
     return acc;
   }, {}) : {};
@@ -575,43 +623,71 @@ export default function Agendamento() {
                   </div>
                   
                   {activeBarbeiros.map((barbeiro: Barbeiro) => {
-                    const agendamento = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
+                    const slotData = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
                       <div key={barbeiro.id} className="border-r border-border relative min-h-[24px] p-0.5 min-w-[130px] max-w-[150px] overflow-hidden">
-                        {agendamento ? (
-                          <div 
-                            className={`
-                              ${agendamento.status === "FINALIZADO" ? "bg-green-500 hover:bg-green-600" : ""}
-                              ${agendamento.status === "CANCELADO" ? "bg-gray-500 hover:bg-gray-600" : ""}
-                              ${agendamento.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
-                              ${selectedAgendamento && selectedAgendamento.id === agendamento.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
-                              rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
-                              w-full h-full min-h-[22px] flex flex-col justify-center px-1.5 py-1 overflow-hidden
-                            `}
-                            onClick={() => abrirComanda(agendamento)}
-                            onContextMenu={(e) => handleContextMenu(e, agendamento)}
-                            title={`${agendamento.cliente?.nome} - ${agendamento.servico?.nome}`}
-                          >
-                            <div className="flex items-center justify-between w-full overflow-hidden">
-                              <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="font-medium text-white text-[10px] leading-tight truncate">
-                                  {agendamento.cliente?.nome}
+                        {slotData ? (
+                          // Se é um slot ocupado (não o principal), mostrar apenas fundo cinza
+                          slotData.isOccupiedSlot ? (
+                            <div 
+                              className="w-full h-full min-h-[22px] bg-gray-200 border-l-2 border-blue-600 opacity-60 cursor-pointer"
+                              onClick={() => {
+                                // Clicar em slot ocupado abre a comanda do agendamento principal
+                                if (slotData.parentAgendamento) {
+                                  abrirComanda(slotData.parentAgendamento);
+                                }
+                              }}
+                              title={`Continuação: ${slotData.parentAgendamento?.cliente?.nome} - ${slotData.parentAgendamento?.servico?.nome}`}
+                            >
+                              <div className="text-[8px] text-gray-600 p-1 leading-tight">
+                                ↳ {slotData.parentAgendamento?.servico?.nome}
+                              </div>
+                            </div>
+                          ) : (
+                            // Slot principal - exibir card completo com altura baseada na duração
+                            <div 
+                              className={`
+                                ${slotData.status === "FINALIZADO" ? "bg-green-500 hover:bg-green-600" : ""}
+                                ${slotData.status === "CANCELADO" ? "bg-gray-500 hover:bg-gray-600" : ""}
+                                ${slotData.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
+                                ${selectedAgendamento && selectedAgendamento.id === slotData.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
+                                rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
+                                w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-hidden relative
+                              `}
+                              style={{
+                                height: `${Math.max(22, (slotData.duracaoMinutos || 30) * 1.6)}px`, // 1.6px por minuto para altura visual
+                                zIndex: 10
+                              }}
+                              onClick={() => abrirComanda(slotData)}
+                              onContextMenu={(e) => handleContextMenu(e, slotData)}
+                              title={`${slotData.cliente?.nome} - ${slotData.servico?.nome} (${slotData.duracaoMinutos}min)`}
+                            >
+                              <div className="flex items-start justify-between w-full overflow-hidden">
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                  <div className="font-medium text-white text-[10px] leading-tight truncate">
+                                    {slotData.cliente?.nome}
+                                  </div>
+                                  <div className="text-white/90 text-[9px] leading-tight truncate mt-0.5">
+                                    {slotData.servico?.nome}
+                                  </div>
+                                  <div className="text-white/70 text-[8px] leading-tight mt-0.5">
+                                    {slotData.duracaoMinutos}min
+                                  </div>
                                 </div>
-                                <div className="text-white/90 text-[9px] leading-tight truncate mt-0.5">
-                                  {agendamento.servico?.nome}
+                                
+                                <div className="flex flex-col items-center space-y-1">
+                                  {slotData.status === "FINALIZADO" && (
+                                    <Check className="h-2.5 w-2.5 text-white/90 flex-shrink-0" />
+                                  )}
+                                  
+                                  {slotData.status === "CANCELADO" && (
+                                    <X className="h-2.5 w-2.5 text-white/90 flex-shrink-0" />
+                                  )}
                                 </div>
                               </div>
-                              
-                              {agendamento.status === "FINALIZADO" && (
-                                <Check className="h-2.5 w-2.5 text-white/90 flex-shrink-0 ml-1" />
-                              )}
-                              
-                              {agendamento.status === "CANCELADO" && (
-                                <X className="h-2.5 w-2.5 text-white/90 flex-shrink-0 ml-1" />
-                              )}
                             </div>
-                          </div>
+                          )
                         ) : (
                           <button
                             className="w-full h-full flex items-center justify-center text-xs text-muted-foreground hover:bg-muted/50 transition-colors rounded-md group-hover:opacity-100 opacity-0"
