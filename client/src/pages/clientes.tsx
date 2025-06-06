@@ -10,7 +10,8 @@ import {
   RefreshCw, 
   DollarSign,
   Calendar,
-  CreditCard
+  CreditCard,
+  UserPlus
 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";

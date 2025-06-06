@@ -454,6 +454,87 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // API GESTÃO DE ASSINATURAS E CLIENTES
   // =====================================================
 
+  // POST - Cadastro manual de cliente
+  app.post('/api/clientes/cadastro-manual', async (req: Request, res: Response) => {
+    try {
+      const { nome, telefone, email } = req.body;
+
+      // Validações básicas
+      if (!nome || !telefone || !email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nome, telefone e email são obrigatórios'
+        });
+      }
+
+      // Verificar se cliente já existe (por email ou telefone)
+      const clienteExistente = await db.select()
+        .from(schema.clientes)
+        .where(
+          sql`${schema.clientes.email} = ${email} OR ${schema.clientes.telefone} = ${telefone}`
+        )
+        .limit(1);
+
+      let clienteId: number;
+      let isUpdate = false;
+
+      if (clienteExistente.length > 0) {
+        // Cliente existe - atualizar dados
+        const cliente = clienteExistente[0];
+        
+        await db.update(schema.clientes)
+          .set({
+            nome,
+            telefone,
+            email
+          })
+          .where(eq(schema.clientes.id, cliente.id));
+
+        clienteId = cliente.id;
+        isUpdate = true;
+        
+        console.log(`🔄 Cliente atualizado: ${nome} (ID: ${clienteId})`);
+      } else {
+        // Cliente novo - inserir
+        const novoCliente = await db.insert(schema.clientes)
+          .values({
+            nome,
+            telefone,
+            email,
+            origem: 'EXTERNO',
+            planoNome: 'Cadastro Manual',
+            planoValor: '0.00',
+            formaPagamento: 'PENDENTE',
+            statusAssinatura: 'INATIVO',
+            dataInicioAssinatura: new Date(),
+            dataVencimentoAssinatura: new Date()
+          })
+          .returning({ id: schema.clientes.id });
+
+        clienteId = novoCliente[0].id;
+        
+        console.log(`✅ Novo cliente cadastrado: ${nome} (ID: ${clienteId})`);
+      }
+
+      res.json({
+        success: true,
+        clienteId,
+        isUpdate,
+        message: isUpdate 
+          ? 'Dados do cliente atualizados com sucesso'
+          : 'Cliente cadastrado com sucesso'
+      });
+
+    } catch (error) {
+      console.error('Erro ao cadastrar cliente:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor',
+        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  });
+
   // Endpoint para buscar clientes pagantes do mês vigente
   app.get('/api/clientes/pagamentos-mes', async (req: Request, res: Response) => {
     try {
