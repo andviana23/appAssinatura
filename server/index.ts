@@ -66,9 +66,8 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Setup vite BEFORE creating server instance
+  // Setup vite
   if (app.get("env") === "development") {
-    // Create server instance first for HMR
     const server = app.listen(5000, "0.0.0.0", () => {
       log(`serving on port 5000`);
       
