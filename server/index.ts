@@ -1,9 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import cookieParser from "cookie-parser";
-import path from "path";
 import { registerRoutes } from "./routes";
-import { log } from "./vite";
+import { setupVite, serveStatic, log } from "./vite";
 import { config } from "dotenv";
 
 // Load environment variables
@@ -59,11 +58,6 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(app);
 
-  // Serve unified application (after API routes are registered)
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'app.html'));
-  });
-
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -72,25 +66,27 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Add cache-busting headers
-  app.use((req, res, next) => {
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+  // Setup vite BEFORE creating server instance
+  if (app.get("env") === "development") {
+    // Create server instance first for HMR
+    const server = app.listen(5000, "0.0.0.0", () => {
+      log(`serving on port 5000`);
+      
+      // Iniciar sincronização automática com Asaas
+      iniciarSincronizacaoAutomatica();
     });
-    next();
-  });
-
-  // Serve static files from client directory
-  app.use(express.static(path.resolve(import.meta.dirname, '..', 'client')));
-
-  const server = app.listen(5000, "0.0.0.0", () => {
-    log(`serving on port 5000`);
     
-    // Iniciar sincronização automática com Asaas
-    iniciarSincronizacaoAutomatica();
-  });
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+    
+    const server = app.listen(5000, "0.0.0.0", () => {
+      log(`serving on port 5000`);
+      
+      // Iniciar sincronização automática com Asaas
+      iniciarSincronizacaoAutomatica();
+    });
+  }
 
   // Função para sincronização automática com Asaas
   async function syncAsaasAutomatico() {

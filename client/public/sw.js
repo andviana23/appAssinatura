@@ -1,50 +1,49 @@
-const CACHE_NAME = 'trato-de-barbados-v2-rebuild';
+const CACHE_NAME = 'trato-de-barbados-v1';
+const urlsToCache = [
+  '/',
+  '/manifest.json',
+  '/logo-192.png',
+  '/logo-512.png',
+  // Assets essenciais serão adicionados dinamicamente
+];
 
-// Clear all caches on install
+// Instalar Service Worker
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          console.log('Deleting cache:', cacheName);
-          return caches.delete(cacheName);
-        })
-      );
-    }).then(() => {
-      console.log('All caches cleared');
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Cache aberto');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-// Bypass cache for all requests during this rebuild
+// Interceptar requisições
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request.clone()).catch(() => {
-      // If fetch fails, return a basic response
-      if (event.request.destination === 'document') {
-        return new Response('Cache cleared - please refresh', {
-          headers: { 'Content-Type': 'text/html' }
-        });
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - retornar resposta
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
       }
-      return new Response('', { status: 404 });
-    })
+    )
   );
 });
 
-// Claim clients immediately
+// Ativar Service Worker
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          console.log('Deleting cache during activation:', cacheName);
-          return caches.delete(cacheName);
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
         })
       );
-    }).then(() => {
-      console.log('Service worker activated - all caches cleared');
-      return self.clients.claim();
     })
   );
 });
