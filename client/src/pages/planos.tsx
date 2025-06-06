@@ -209,7 +209,17 @@ export default function Planos() {
           title: "Checkout Asaas aberto!",
           description: "Complete o pagamento na janela que foi aberta.",
         });
-        // NÃO fechar o modal automaticamente - usuário pode fechar manualmente
+        // FECHAR o modal automaticamente após abrir o link
+        setShowCheckoutModal(false);
+        // Limpar dados do formulário
+        setCheckoutData({
+          nome: '',
+          email: '',
+          telefone: '',
+          cpf: '',
+          planoSelecionado: null,
+          formaPagamento: 'CREDIT_CARD'
+        });
       } else if (data.success && data.subscription) {
         // Assinatura criada mas sem link
         toast({

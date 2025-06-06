@@ -3391,7 +3391,12 @@ export async function registerRoutes(app: Express): Promise<Express> {
         cpfCnpj: cliente.cpfCnpj || undefined
       };
 
-      console.log('🔄 Criando cliente no ASAAS_TRATO:', customerData);
+      console.log('🔄 Criando cliente no ASAAS_TRATO:', {
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        cpfCnpj: customerData.cpfCnpj
+      });
 
       const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
         method: 'POST',
