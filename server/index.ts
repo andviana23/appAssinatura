@@ -56,23 +56,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve standalone login page
-app.get('/login', (req, res) => {
-  res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'login.html'));
-});
-
-// Redirect root to login
-app.get('/', (req, res) => {
-  res.redirect('/login');
-});
-
-// Serve React app for dashboard and other authenticated routes
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'dashboard.html'));
-});
-
 (async () => {
   await registerRoutes(app);
+
+  // Serve unified application (after API routes are registered)
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'app.html'));
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -80,6 +70,16 @@ app.get('/dashboard', (req, res) => {
 
     res.status(status).json({ message });
     throw err;
+  });
+
+  // Add cache-busting headers
+  app.use((req, res, next) => {
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    next();
   });
 
   // Serve static files from client directory
