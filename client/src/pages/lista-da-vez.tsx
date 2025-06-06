@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Scissors, User, Trophy, Clock, Plus, Calendar, Check } from "lucide-react";
+import { Scissors, User, Trophy, Clock, Plus, Calendar, Check, Power, PowerOff } from "lucide-react";
 import dayjs from "dayjs";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +55,7 @@ export default function ListaDaVez() {
   const isLoading = isLoadingProfissionais || isLoadingAtendimentos;
 
   // Combinar dados dos profissionais com atendimentos, mantendo ordem de cadastro
-  const barbeiros = profissionaisResponse?.data?.filter((prof: any) => prof.tipo === 'barbeiro' && prof.ativo) || [];
+  const barbeiros = profissionaisResponse?.data?.filter((prof: any) => prof.tipo === 'barbeiro') || [];
   
   const filaMensal = barbeiros.map((barbeiro: any) => {
     // Buscar dados de atendimentos para este barbeiro
@@ -258,7 +258,39 @@ export default function ListaDaVez() {
     }
   });
 
-  const proximoBarbeiro = filaMensal.length > 0 ? filaMensal[0].barbeiro : null;
+  // Toggle status do barbeiro
+  const toggleBarbeiro = useMutation({
+    mutationFn: async ({ barbeiroId, ativo }: { barbeiroId: number; ativo: boolean }) => {
+      const response = await fetch(`/api/profissionais/${barbeiroId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ativo })
+      });
+      
+      if (!response.ok) throw new Error('Erro ao atualizar status');
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({ 
+        title: `Barbeiro ${variables.ativo ? 'ativado' : 'desativado'}!`,
+        description: `Status atualizado com sucesso` 
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profissionais"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lista-da-vez/fila-mensal", mesAtual] });
+    },
+    onError: () => {
+      toast({ 
+        title: "Erro ao atualizar status do barbeiro", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Separar barbeiros ativos e inativos
+  const barbeirosAtivos = filaMensal.filter((item: any) => item.barbeiro.ativo);
+  const barbeirosInativos = filaMensal.filter((item: any) => !item.barbeiro.ativo);
+  
+  const proximoBarbeiro = barbeirosAtivos.length > 0 ? barbeirosAtivos[0].barbeiro : null;
 
   if (isLoading) {
     return (
@@ -448,7 +480,7 @@ export default function ListaDaVez() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               {/* Header da tabela */}
-              <div className="hidden lg:grid lg:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/10 font-medium text-primary text-sm">
+              <div className="hidden lg:grid lg:grid-cols-6 gap-4 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/10 font-medium text-primary text-sm">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Barbeiro
@@ -466,12 +498,14 @@ export default function ListaDaVez() {
                   Posição
                 </div>
                 <div>Status</div>
+                <div>Ações</div>
               </div>
 
               {/* Linhas da tabela - Desktop */}
               <div className="hidden lg:block divide-y divide-gray-50">
-                {filaMensal.map((item: any, index: number) => (
-                  <div key={item.barbeiro.id} className="grid grid-cols-5 gap-4 p-4 hover:bg-primary/5 transition-all duration-200 items-center group">
+                {/* Barbeiros Ativos */}
+                {barbeirosAtivos.map((item: any, index: number) => (
+                  <div key={item.barbeiro.id} className="grid grid-cols-6 gap-4 p-4 hover:bg-primary/5 transition-all duration-200 items-center group">
                     {/* Barbeiro */}
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
@@ -522,13 +556,90 @@ export default function ListaDaVez() {
                         </Badge>
                       )}
                     </div>
+
+                    {/* Ações */}
+                    <div>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: false })}
+                          disabled={toggleBarbeiro.isPending}
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          <PowerOff className="h-3 w-3 mr-1" />
+                          Desativar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Barbeiros Inativos */}
+                {barbeirosInativos.map((item: any) => (
+                  <div key={item.barbeiro.id} className="grid grid-cols-6 gap-4 p-4 hover:bg-primary/5 transition-all duration-200 items-center group opacity-60">
+                    {/* Barbeiro */}
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center">
+                        <User className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-foreground text-sm">{item.barbeiro.nome}</div>
+                        <div className="text-xs text-muted-foreground">{item.barbeiro.email}</div>
+                      </div>
+                    </div>
+
+                    {/* Atendimentos */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
+                        {item.totalAtendimentosMes}
+                      </Badge>
+                    </div>
+
+                    {/* Dias que passou */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                        {item.diasPassouAVez} dias
+                      </Badge>
+                    </div>
+
+                    {/* Posição */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-200">
+                        -
+                      </Badge>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
+                        Inativo
+                      </Badge>
+                    </div>
+
+                    {/* Ações */}
+                    <div>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleBarbeiro.mutate({ barbeiroId: item.barbeiro.id, ativo: true })}
+                          disabled={toggleBarbeiro.isPending}
+                          className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                        >
+                          <Power className="h-3 w-3 mr-1" />
+                          Ativar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Cards Mobile */}
               <div className="lg:hidden space-y-3 p-4">
-                {filaMensal.map((item: any, index: number) => (
+                {/* Barbeiros Ativos */}
+                {barbeirosAtivos.map((item: any, index: number) => (
                   <Card key={item.barbeiro.id} className="bg-card border-border">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
