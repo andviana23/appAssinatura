@@ -567,44 +567,44 @@ export default function Agendamento() {
   }, [showClienteDropdown]);
 
   return (
-    <div className="h-full bg-background text-foreground flex overflow-hidden">
-      {/* Área Principal da Agenda - Lado Esquerdo */}
+    <div className="h-full bg-background text-foreground flex flex-col lg:flex-row overflow-hidden safe-area-inset">
+      {/* Área Principal da Agenda - Responsiva */}
       <div className="flex-1 bg-background flex flex-col h-full min-w-0">
-        {/* Cabeçalho da Agenda - Compacto */}
-        <div className="bg-card border-b border-border px-3 py-1.5 shadow-sm flex-shrink-0">
-          <div className="flex items-center justify-between">
+        {/* Cabeçalho da Agenda - Responsivo */}
+        <div className="bg-card border-b border-border mobile-container py-2 sm:py-3 shadow-sm flex-shrink-0">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/recepcionista-dashboard")}
-              className="flex items-center gap-1 hover:bg-muted h-7 px-2"
+              className="flex items-center gap-1 hover:bg-muted touch-friendly px-3"
             >
-              <ArrowLeft className="h-3 w-3" />
-              <span className="text-xs font-medium">Voltar</span>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm font-medium hidden sm:inline">Voltar</span>
             </Button>
 
-            <div className="text-center">
-              <h1 className="text-sm font-semibold text-foreground">Agenda do Dia</h1>
-              <div className="text-xs text-muted-foreground capitalize">
+            <div className="text-center flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">Agenda do Dia</h1>
+              <div className="text-sm text-muted-foreground capitalize">
                 {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                className="h-7 px-2"
+                className="touch-friendly px-2 sm:px-3"
               >
-                <ChevronLeft className="h-3 w-3" />
-                <span className="ml-1 text-xs">Anterior</span>
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-1 text-xs hidden sm:inline">Anterior</span>
               </Button>
               <Button
                 variant={isToday(selectedDate) ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedDate(new Date())}
-                className="h-7 px-2 text-xs"
+                className="touch-friendly px-2 sm:px-3 text-xs sm:text-sm"
               >
                 Hoje
               </Button>
@@ -612,21 +612,21 @@ export default function Agendamento() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                className="h-7 px-2"
+                className="touch-friendly px-2 sm:px-3"
               >
-                <span className="mr-1 text-xs">Próximo</span>
-                <ChevronRight className="h-3 w-3" />
+                <span className="mr-1 text-xs hidden sm:inline">Próximo</span>
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Grade da Agenda Dark Mode - Full Height */}
-        <div className="bg-card relative flex-1 overflow-y-auto">
+        {/* Grade da Agenda - Responsiva */}
+        <div className="bg-card relative flex-1 overflow-hidden">
           {activeBarbeiros.length === 0 ? (
             /* Mensagem quando não há barbeiros */
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center p-8">
+            <div className="flex items-center justify-center h-full mobile-container">
+              <div className="text-center p-6 sm:p-8">
                 <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   Nenhum barbeiro disponível para agendamento
@@ -638,46 +638,68 @@ export default function Agendamento() {
             </div>
           ) : (
             <>
-
-
-              {/* Header com nomes dos barbeiros - Altura reduzida */}
-              <div 
-                className="grid bg-muted border-b border-border relative z-10"
-                style={{ 
-                  gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
-                }}
-              >
-                <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
-                  <Clock className="h-3 w-3" />
-                  <span className="text-xs">Horário</span>
+              {/* Header com nomes dos barbeiros - Responsivo */}
+              <div className="hidden md:block">
+                <div 
+                  className="grid bg-muted border-b border-border relative z-10"
+                  style={{ 
+                    gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                  }}
+                >
+                  <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span className="text-xs">Horário</span>
+                  </div>
+                  {activeBarbeiros.map((barbeiro: Barbeiro) => (
+                    <div key={barbeiro.id} className="p-2 border-r border-border text-center min-w-[130px] max-w-[150px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
+                          <span className="text-primary font-bold text-xs">
+                            {barbeiro.nome.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {activeBarbeiros.map((barbeiro: Barbeiro) => (
-                  <div key={barbeiro.id} className="p-2 border-r border-border text-center min-w-[130px] max-w-[150px]">
-                    <div className="flex flex-col items-center gap-1">
+              </div>
+
+              {/* Layout Mobile - Lista de Barbeiros */}
+              <div className="md:hidden bg-muted border-b border-border p-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Barbeiros Disponíveis</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {activeBarbeiros.map((barbeiro: Barbeiro) => (
+                    <div key={barbeiro.id} className="flex items-center gap-2 bg-background rounded-lg px-3 py-2 border">
                       <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
                         <span className="text-primary font-bold text-xs">
                           {barbeiro.nome.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
+                      <span className="text-sm font-medium text-foreground">{barbeiro.nome}</span>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </>
           )}
 
-          {/* Linhas de horário - Full Width */}
+          {/* Layout Desktop - Grade de Horários */}
           {activeBarbeiros.length > 0 && (
-            <div className="h-full overflow-y-auto">
-              {timeSlots.map((timeSlot) => (
-                <div 
-                  key={timeSlot} 
-                  className="grid border-b border-border h-12 hover:bg-muted/30 transition-colors group relative"
-                  style={{ 
-                    gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
-                  }}
-                >
+            <>
+              {/* Desktop Grid Layout */}
+              <div className="hidden md:block h-full overflow-y-auto scroll-touch">
+                {timeSlots.map((timeSlot) => (
+                  <div 
+                    key={timeSlot} 
+                    className="grid border-b border-border h-12 hover:bg-muted/30 transition-colors group relative"
+                    style={{ 
+                      gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                    }}
+                  >
                   <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />

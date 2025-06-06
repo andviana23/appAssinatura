@@ -96,6 +96,12 @@ export function Sidebar({ mobile = false, collapsed = false, onClose }: SidebarP
   const [location] = useLocation();
   const { user, logout, isAdmin, isBarbeiro, isRecepcionista } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(mobile ? false : collapsed);
+
+  const handleLinkClick = () => {
+    if (mobile && onClose) {
+      onClose();
+    }
+  };
   
   // Navegação dinâmica baseada no perfil do usuário
   const getNavigationItems = () => {
