@@ -56,38 +56,44 @@
       </div>
     </div>
     
+    <script type="module" src="/src/main-working.tsx"></script>
     <script>
-      document.getElementById('loginForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const button = e.target.querySelector('button');
-        
-        button.textContent = 'Entrando...';
-        button.disabled = true;
-        
-        try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          });
+      // Fallback se o módulo não carregar
+      setTimeout(() => {
+        if (!document.querySelector('[data-react-root]')) {
+          document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const button = e.target.querySelector('button');
+            
+            button.textContent = 'Entrando...';
+            button.disabled = true;
+            
+            try {
+              const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+              });
 
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            alert('Email ou senha incorretos');
-          }
-        } catch (error) {
-          alert('Erro de conexão');
+              if (response.ok) {
+                window.location.href = '/dashboard';
+              } else {
+                alert('Email ou senha incorretos');
+              }
+            } catch (error) {
+              alert('Erro de conexão');
+            }
+            
+            button.textContent = 'Entrar';
+            button.disabled = false;
+          });
         }
-        
-        button.textContent = 'Entrar';
-        button.disabled = false;
-      });
+      }, 1000);
     </script>
   </body>
 </html>
