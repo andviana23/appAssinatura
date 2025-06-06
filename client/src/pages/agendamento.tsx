@@ -106,10 +106,18 @@ export default function Agendamento() {
   const clientesFiltrados = (clientesData?.data || []).filter((cliente: any) => {
     if (!clienteSearchTerm.trim()) return true;
     const searchLower = clienteSearchTerm.toLowerCase();
-    return (
-      cliente.nome.toLowerCase().includes(searchLower) ||
-      cliente.telefone.includes(clienteSearchTerm.trim())
-    );
+    
+    // Verificar se nome existe e não é nulo antes de usar toLowerCase
+    const nomeMatch = cliente.nome && typeof cliente.nome === 'string' 
+      ? cliente.nome.toLowerCase().includes(searchLower) 
+      : false;
+    
+    // Verificar se telefone existe e não é nulo antes de usar includes
+    const telefoneMatch = cliente.telefone && typeof cliente.telefone === 'string'
+      ? cliente.telefone.includes(clienteSearchTerm.trim())
+      : false;
+    
+    return nomeMatch || telefoneMatch;
   });
 
   // Get active barbeiros only (filter by tipo)
