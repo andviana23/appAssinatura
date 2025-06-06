@@ -14,9 +14,80 @@
     <title>Trato de Barbados</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    <div id="root">
+      <div style="min-height: 100vh; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; padding: 48px 16px;">
+        <div style="max-width: 400px; width: 100%; background: white; padding: 32px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h2 style="margin: 24px 0 8px 0; font-size: 30px; font-weight: 800; color: #111827;">Trato de Barbados</h2>
+            <p style="margin: 0; font-size: 14px; color: #6b7280;">Sistema de Gestão de Barbearia</p>
+          </div>
+          <form id="loginForm" style="space-y: 24px;">
+            <div>
+              <input
+                id="email"
+                type="email"
+                placeholder="Email"
+                required
+                style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 6px 6px 0 0; font-size: 14px; outline: none; box-sizing: border-box;"
+              />
+              <input
+                id="password"
+                type="password"
+                placeholder="Senha"
+                required
+                style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 6px 6px; font-size: 14px; outline: none; box-sizing: border-box;"
+              />
+            </div>
+            <button
+              type="submit"
+              style="width: 100%; padding: 12px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 16px;"
+              onmouseover="this.style.backgroundColor='#1d4ed8'"
+              onmouseout="this.style.backgroundColor='#2563eb'"
+            >
+              Entrar
+            </button>
+          </form>
+          <div style="margin-top: 24px; text-align: center; font-size: 12px; color: #6b7280;">
+            <p style="margin: 8px 0;"><strong>Credenciais padrão:</strong></p>
+            <p style="margin: 4px 0;"><strong>Admin:</strong> admin@tratodebarbados.com.br / admin123</p>
+            <p style="margin: 4px 0;"><strong>Admin:</strong> andrey@tratodebarbados.com.br / @Aa30019258</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const button = e.target.querySelector('button');
+        
+        button.textContent = 'Entrando...';
+        button.disabled = true;
+        
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            alert('Email ou senha incorretos');
+          }
+        } catch (error) {
+          alert('Erro de conexão');
+        }
+        
+        button.textContent = 'Entrar';
+        button.disabled = false;
+      });
+    </script>
   </body>
 </html>
