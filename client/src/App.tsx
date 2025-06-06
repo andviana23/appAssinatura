@@ -8,6 +8,7 @@ import { IdleLogoutManager } from "@/components/IdleLogoutManager";
 import { Layout } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { AuthGuard } from "@/components/AuthGuard";
 // import { ThemeProvider } from "@/contexts/theme-context";
 
 // Pages
@@ -157,7 +158,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <div className="min-h-screen bg-background text-foreground dark">
-            <AppContent />
+            <AuthGuard>
+              <AppContent />
+            </AuthGuard>
             <Toaster />
           </div>
         </TooltipProvider>
