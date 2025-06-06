@@ -1898,13 +1898,34 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Validar horário permitido (08:00 às 20:00)
-      const dataHoraValidacao = new Date(dataHora);
-      const hour = dataHoraValidacao.getHours();
-      
-      if (hour < 8 || hour > 20) {
+      // Buscar duração do serviço para validar horário
+      const servicoInfo = await db.select()
+        .from(schema.servicos)
+        .where(eq(schema.servicos.id, servicoId))
+        .limit(1);
+
+      if (servicoInfo.length === 0) {
         return res.status(400).json({
-          message: 'Agendamentos só são permitidos entre 08:00 e 20:00'
+          message: 'Serviço não encontrado'
+        });
+      }
+
+      // Validar horário permitido (08:00 às 20:00) considerando duração do serviço
+      const dataHoraValidacao = new Date(dataHora);
+      const horaInicio = dataHoraValidacao.getHours();
+      const minutoInicio = dataHoraValidacao.getMinutes();
+      
+      // Calcular horário de término
+      const duracaoServico = servicoInfo[0].tempoMinutos || 30;
+      const totalMinutosInicio = horaInicio * 60 + minutoInicio;
+      const totalMinutosFim = totalMinutosInicio + duracaoServico;
+      const horaFim = Math.floor(totalMinutosFim / 60);
+      const minutoFim = totalMinutosFim % 60;
+      
+      // Validar se o agendamento inicia e termina dentro do horário permitido
+      if (horaInicio < 8 || horaFim > 20 || (horaFim === 20 && minutoFim > 0)) {
+        return res.status(400).json({
+          message: `Agendamento não permitido. Serviço de ${duracaoServico}min iniciando às ${horaInicio.toString().padStart(2, '0')}:${minutoInicio.toString().padStart(2, '0')} terminaria às ${horaFim.toString().padStart(2, '0')}:${minutoFim.toString().padStart(2, '0')}. Horário permitido: 08:00-20:00`
         });
       }
 
@@ -1948,17 +1969,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Validar se serviço existe
-      const servico = await db.select()
-        .from(schema.servicos)
-        .where(eq(schema.servicos.id, servicoId))
-        .limit(1);
-
-      if (servico.length === 0) {
-        return res.status(400).json({
-          message: 'Serviço não encontrado'
-        });
-      }
+      // Serviço já foi validado anteriormente para cálculo de horário
 
       // Converter dataHora para verificação de conflito
       const dataHoraConflito = new Date(dataHora.replace(' ', 'T') + '-03:00');
