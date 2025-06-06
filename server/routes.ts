@@ -1733,9 +1733,10 @@ export async function registerRoutes(app: Express): Promise<Express> {
       
       console.log(`🔍 Buscando agendamentos para data: ${dataFiltro}`);
       
-      // Criar range de data completo para o dia
-      const dataInicio = new Date(`${dataFiltro}T00:00:00.000Z`);
-      const dataFim = new Date(`${dataFiltro}T23:59:59.999Z`);
+      // Criar range de data completo para o dia no horário de Brasília (UTC-3)
+      const dataAtual = new Date(dataFiltro + 'T00:00:00-03:00'); // Horário de Brasília
+      const dataInicio = new Date(dataAtual.getTime()); // 00:00 Brasília
+      const dataFim = new Date(dataAtual.getTime() + 24 * 60 * 60 * 1000 - 1); // 23:59:59.999 Brasília
       
       console.log(`📅 Range de busca: ${dataInicio.toISOString()} até ${dataFim.toISOString()}`);
       
@@ -1942,13 +1943,18 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Verificar conflito de horário usando SQL direto
+      // Converter dataHora para verificação de conflito
+      const dataHoraConflito = new Date(dataHora.replace(' ', 'T') + '-03:00');
+      
+      // Verificar conflito de horário
       const agendamentoExistente = await db.select()
         .from(schema.agendamentos)
         .where(
-          sql`${schema.agendamentos.barbeiroId} = ${barbeiroId} 
-              AND ${schema.agendamentos.dataHora} = ${dataHora}::timestamp
-              AND ${schema.agendamentos.status} = 'AGENDADO'`
+          and(
+            eq(schema.agendamentos.barbeiroId, barbeiroId),
+            eq(schema.agendamentos.dataHora, dataHoraConflito),
+            eq(schema.agendamentos.status, 'AGENDADO')
+          )
         )
         .limit(1);
 
@@ -1958,8 +1964,8 @@ export async function registerRoutes(app: Express): Promise<Express> {
         });
       }
 
-      // Converter string para Date object (renomeando para evitar conflito)
-      const dataHoraFinal = new Date(dataHora);
+      // Converter string para Date object usando horário de Brasília (UTC-3)
+      const dataHoraFinal = new Date(dataHora.replace(' ', 'T') + '-03:00');
       
       // Criar o agendamento usando Drizzle ORM
       const [novoAgendamento] = await db.insert(schema.agendamentos)
