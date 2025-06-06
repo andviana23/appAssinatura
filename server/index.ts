@@ -66,6 +66,11 @@ app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
+// Serve React app for dashboard and other authenticated routes
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.resolve(import.meta.dirname, '..', 'client', 'dashboard.html'));
+});
+
 (async () => {
   await registerRoutes(app);
 

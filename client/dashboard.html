@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trato de Barbados - Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8fafc;
+            color: #1a202c;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2c5aa0;
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 80px;
+            width: 250px;
+            height: calc(100vh - 80px);
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .menu-item {
+            display: block;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            color: #4a5568;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .menu-item:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .menu-item.active {
+            background: #ebf8ff;
+            color: #3182ce;
+            border-right: 3px solid #3182ce;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .card-change {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .positive {
+            color: #38a169;
+        }
+        
+        .negative {
+            color: #e53e3e;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
+        }
+        
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function Dashboard() {
+            const [user, setUser] = useState(null);
+            const [activeMenu, setActiveMenu] = useState('dashboard');
+            const [sidebarOpen, setSidebarOpen] = useState(false);
+            const [stats, setStats] = useState({
+                agendamentosHoje: 0,
+                filaEspera: 0,
+                faturamentoMes: 0,
+                clientesAtivos: 0
+            });
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState('');
+
+            useEffect(() => {
+                checkAuth();
+                loadStats();
+            }, []);
+
+            const checkAuth = async () => {
+                try {
+                    const response = await fetch('/api/auth/me');
+                    if (response.ok) {
+                        const userData = await response.json();
+                        setUser(userData);
+                    } else {
+                        window.location.href = '/login';
+                    }
+                } catch (error) {
+                    window.location.href = '/login';
+                }
+            };
+
+            const loadStats = async () => {
+                try {
+                    const response = await fetch('/api/dashboard/stats');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setStats(data);
+                    }
+                } catch (error) {
+                    setError('Erro ao carregar estatísticas');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const logout = async () => {
+                try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    window.location.href = '/login';
+                } catch (error) {
+                    window.location.href = '/login';
+                }
+            };
+
+            const menuItems = [
+                { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                { id: 'agendamentos', label: 'Agendamentos', icon: '📅' },
+                { id: 'lista-vez', label: 'Lista da Vez', icon: '👥' },
+                { id: 'clientes', label: 'Clientes', icon: '👤' },
+                { id: 'barbeiros', label: 'Barbeiros', icon: '✂️' },
+                { id: 'servicos', label: 'Serviços', icon: '💼' },
+                { id: 'financeiro', label: 'Financeiro', icon: '💰' },
+                { id: 'relatorios', label: 'Relatórios', icon: '📈' },
+                { id: 'configuracoes', label: 'Configurações', icon: '⚙️' }
+            ];
+
+            const renderContent = () => {
+                switch (activeMenu) {
+                    case 'dashboard':
+                        return (
+                            <div>
+                                <h1 style={{fontSize: '2rem', fontWeight: '700', marginBottom: '2rem', color: '#2d3748'}}>
+                                    Dashboard
+                                </h1>
+                                
+                                {error && <div className="error">{error}</div>}
+                                
+                                {loading ? (
+                                    <div className="loading">Carregando estatísticas...</div>
+                                ) : (
+                                    <div className="dashboard-grid">
+                                        <div className="card">
+                                            <div className="card-title">Agendamentos Hoje</div>
+                                            <div className="card-value">{stats.agendamentosHoje}</div>
+                                            <div className="card-change positive">+12% vs ontem</div>
+                                        </div>
+                                        
+                                        <div className="card">
+                                            <div className="card-title">Fila de Espera</div>
+                                            <div className="card-value">{stats.filaEspera}</div>
+                                            <div className="card-change">pessoas aguardando</div>
+                                        </div>
+                                        
+                                        <div className="card">
+                                            <div className="card-title">Faturamento Mês</div>
+                                            <div className="card-value">R$ {stats.faturamentoMes.toLocaleString()}</div>
+                                            <div className="card-change positive">+8% vs mês anterior</div>
+                                        </div>
+                                        
+                                        <div className="card">
+                                            <div className="card-title">Clientes Ativos</div>
+                                            <div className="card-value">{stats.clientesAtivos}</div>
+                                            <div className="card-change positive">+5% este mês</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    default:
+                        return (
+                            <div>
+                                <h1 style={{fontSize: '2rem', fontWeight: '700', marginBottom: '2rem', color: '#2d3748'}}>
+                                    {menuItems.find(item => item.id === activeMenu)?.label || 'Página'}
+                                </h1>
+                                <div className="card">
+                                    <p>Funcionalidade em desenvolvimento. Esta seção será implementada em breve.</p>
+                                    <p style={{marginTop: '1rem', color: '#718096'}}>
+                                        Para acessar as funcionalidades completas do sistema, utilize as credenciais de administrador.
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                }
+            };
+
+            if (!user) {
+                return (
+                    <div className="loading">
+                        <div>Verificando autenticação...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <header className="header">
+                        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                style={{display: window.innerWidth <= 768 ? 'block' : 'none'}}
+                            >
+                                ☰
+                            </button>
+                            <div className="logo">Trato de Barbados</div>
+                        </div>
+                        
+                        <div className="user-menu">
+                            <span style={{color: '#718096', fontSize: '0.875rem'}}>
+                                Olá, {user.nome || user.email}
+                            </span>
+                            <button className="btn btn-secondary" onClick={logout}>
+                                Sair
+                            </button>
+                        </div>
+                    </header>
+
+                    <nav className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+                        <div className="sidebar-menu">
+                            {menuItems.map(item => (
+                                <button
+                                    key={item.id}
+                                    className={`menu-item ${activeMenu === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setActiveMenu(item.id);
+                                        setSidebarOpen(false);
+                                    }}
+                                >
+                                    <span style={{marginRight: '0.5rem'}}>{item.icon}</span>
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    <main className="main-content">
+                        {renderContent()}
+                    </main>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<Dashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
