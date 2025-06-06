@@ -494,9 +494,8 @@ export default function Agendamento() {
       return;
     }
 
-    // Criar data no horário de Brasília (UTC-3) e converter para ISO string
-    const dataHoraBrasilia = new Date(`${format(selectedDate, "yyyy-MM-dd")}T${selectedHour}:00-03:00`);
-    const dataHora = dataHoraBrasilia.toISOString().slice(0, 19).replace('T', ' ');
+    // Enviar horário diretamente no formato de Brasília sem conversão UTC
+    const dataHora = `${format(selectedDate, "yyyy-MM-dd")} ${selectedHour}:00`;
     
     console.log(`🕐 Criando agendamento:`, {
       dataOriginal: `${format(selectedDate, "yyyy-MM-dd")} ${selectedHour}:00`,
