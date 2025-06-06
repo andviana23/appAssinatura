@@ -4216,13 +4216,52 @@ export async function registerRoutes(app: Express): Promise<Express> {
       const atendimentos = registros.filter(r => r.tipoAcao === 'ATENDIMENTO').length;
       const passouVez = registros.filter(r => r.tipoAcao === 'PASSOU_VEZ').length;
 
-      // Calcular posição atual (simplificado)
-      const posicaoAtual = Math.max(1, atendimentos - passouVez);
+      // Buscar todos os barbeiros ATIVOS para calcular posição correta
+      const todosBarreiros = await db.select()
+        .from(schema.profissionais)
+        .where(and(
+          eq(schema.profissionais.tipo, 'barbeiro'),
+          eq(schema.profissionais.ativo, true) // Considerar apenas profissionais ativos
+        ));
+
+      // Calcular estatísticas de todos os barbeiros ativos no mês
+      const estatisticasBarbeiros = await Promise.all(todosBarreiros.map(async (barbeiro) => {
+        const registrosBarbeiro = await db.select()
+          .from(schema.listaVezAtendimentos)
+          .where(and(
+            eq(schema.listaVezAtendimentos.barbeiroId, barbeiro.id),
+            eq(schema.listaVezAtendimentos.mesAno, mesAno)
+          ));
+
+        const atendimentosBarbeiro = registrosBarbeiro.filter(r => r.tipoAcao === 'ATENDIMENTO').length;
+        const passouVezBarbeiro = registrosBarbeiro.filter(r => r.tipoAcao === 'PASSOU_VEZ').length;
+        const totalAjustado = atendimentosBarbeiro + passouVezBarbeiro;
+
+        return {
+          barbeiroId: barbeiro.id,
+          nome: barbeiro.nome,
+          totalAtendimentos: atendimentosBarbeiro,
+          passouVez: passouVezBarbeiro,
+          totalAjustado
+        };
+      }));
+
+      // Ordenar barbeiros por total ajustado (menor total = melhor posição na fila)
+      const barbeirosOrdenados = estatisticasBarbeiros.sort((a, b) => {
+        if (a.totalAjustado !== b.totalAjustado) {
+          return a.totalAjustado - b.totalAjustado;
+        }
+        // Em caso de empate, ordenar por nome
+        return a.nome.localeCompare(b.nome);
+      });
+
+      // Encontrar posição do barbeiro atual
+      const posicaoAtual = barbeirosOrdenados.findIndex(b => b.barbeiroId === profissionalId) + 1;
 
       res.json({
         posicaoAtual,
         atendimentos,
-        passouVez
+        passouvez: passouVez
       });
 
     } catch (error) {
