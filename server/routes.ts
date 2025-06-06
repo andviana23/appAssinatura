@@ -3249,21 +3249,181 @@ export async function registerRoutes(app: Express): Promise<Express> {
   // GET - Estatísticas de comissão baseadas em assinaturas pagas e tempo trabalhado
   app.get('/api/comissao/stats', async (req: Request, res: Response) => {
     try {
-      // Buscar todas as assinaturas com status ATIVO (pagas)
-      const assinaturasPagas = await db.select({
-        valor: schema.clientes.planoValor,
-        status: schema.clientes.statusAssinatura
-      })
-      .from(schema.clientes)
-      .where(eq(schema.clientes.statusAssinatura, 'ATIVO'));
+      // Copiar EXATAMENTE a mesma lógica da API de pagamentos-mes
+      const asaasTrato = process.env.ASAAS_TRATO;
+      const asaasAndrey = process.env.ASAAS_AND;
+      
+      if (!asaasTrato || !asaasAndrey) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Chaves de API do Asaas não configuradas' 
+        });
+      }
 
-      // Calcular receita total de assinaturas pagas
-      const receitaTotalAssinatura = assinaturasPagas.reduce((total, assinatura) => {
-        return total + (parseFloat(assinatura.valor || '0'));
-      }, 0);
+      const hoje = new Date();
+      const mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+      
+      console.log(`📅 Comissão - Buscando pagamentos do mês: ${mesAtual}...`);
 
-      // Calcular comissão total (40% da receita)
-      const totalComissao = receitaTotalAssinatura * 0.4;
+      let clientesPagantes: any[] = [];
+      let valorTotalPago = 0;
+      const cacheClientes = new Map();
+
+      // Função para buscar dados do cliente com cache
+      const buscarDadosCliente = async (customerId: string, apiKey: string) => {
+        const chaveCache = `${customerId}-${apiKey}`;
+        if (cacheClientes.has(chaveCache)) {
+          return cacheClientes.get(chaveCache);
+        }
+
+        try {
+          const response = await fetch(`https://www.asaas.com/api/v3/customers/${customerId}`, {
+            headers: {
+              'access_token': apiKey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const dadosCliente = await response.json();
+            cacheClientes.set(chaveCache, dadosCliente);
+            return dadosCliente;
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar cliente ${customerId}:`, error);
+        }
+        return null;
+      };
+
+      // 1. ASAAS_TRATO
+      try {
+        const responseTrato = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=5000`, {
+          headers: { 'access_token': asaasTrato }
+        });
+        
+        if (responseTrato.ok) {
+          const dataTrato = await responseTrato.json();
+          
+          for (const payment of dataTrato.data) {
+            const dataPagamento = new Date(payment.originalDueDate || payment.dueDate);
+            const mesPagamento = dataPagamento.getFullYear() + '-' + String(dataPagamento.getMonth() + 1).padStart(2, '0');
+            
+            if (mesPagamento === mesAtual && payment.value > 0) {
+              const dadosCliente = await buscarDadosCliente(payment.customer, asaasTrato);
+              
+              if (dadosCliente) {
+                clientesPagantes.push({
+                  id: payment.customer,
+                  nome: dadosCliente.name,
+                  email: dadosCliente.email,
+                  telefone: dadosCliente.phone,
+                  valorPago: parseFloat(payment.value),
+                  dataPagamento: payment.originalDueDate || payment.dueDate,
+                  descricao: payment.description || 'Assinatura mensal',
+                  conta: 'ASAAS_TRATO'
+                });
+                
+                valorTotalPago += parseFloat(payment.value);
+              }
+            }
+          }
+          
+          console.log('📊 ASAAS_TRATO:', dataTrato.data.filter((p: any) => {
+            const dataPag = new Date(p.originalDueDate || p.dueDate);
+            const mesPag = dataPag.getFullYear() + '-' + String(dataPag.getMonth() + 1).padStart(2, '0');
+            return mesPag === mesAtual;
+          }).length, 'pagamentos CONFIRMED encontrados');
+        }
+      } catch (error) {
+        console.error('Erro ASAAS_TRATO:', error);
+      }
+
+      // 2. ASAAS_AND
+      try {
+        const responseAndrey = await fetch(`https://www.asaas.com/api/v3/payments?status=CONFIRMED&limit=5000`, {
+          headers: { 'access_token': asaasAndrey }
+        });
+        
+        if (responseAndrey.ok) {
+          const dataAndrey = await responseAndrey.json();
+          
+          for (const payment of dataAndrey.data) {
+            const dataPagamento = new Date(payment.originalDueDate || payment.dueDate);
+            const mesPagamento = dataPagamento.getFullYear() + '-' + String(dataPagamento.getMonth() + 1).padStart(2, '0');
+            
+            if (mesPagamento === mesAtual && payment.value > 0) {
+              const dadosCliente = await buscarDadosCliente(payment.customer, asaasAndrey);
+              
+              if (dadosCliente) {
+                clientesPagantes.push({
+                  id: payment.customer,
+                  nome: dadosCliente.name,
+                  email: dadosCliente.email,
+                  telefone: dadosCliente.phone,
+                  valorPago: parseFloat(payment.value),
+                  dataPagamento: payment.originalDueDate || payment.dueDate,
+                  descricao: payment.description || 'Assinatura mensal',
+                  conta: 'ASAAS_AND'
+                });
+                
+                valorTotalPago += parseFloat(payment.value);
+              }
+            }
+          }
+          
+          console.log('📊 ASAAS_AND:', dataAndrey.data.filter((p: any) => {
+            const dataPag = new Date(p.originalDueDate || p.dueDate);
+            const mesPag = dataPag.getFullYear() + '-' + String(dataPag.getMonth() + 1).padStart(2, '0');
+            return mesPag === mesAtual;
+          }).length, 'pagamentos CONFIRMED encontrados');
+        }
+      } catch (error) {
+        console.error('Erro ASAAS_AND:', error);
+      }
+
+      // 3. Pagamentos externos
+      try {
+        const clientesExternos = await db.select()
+          .from(schema.clientes)
+          .where(eq(schema.clientes.planoTipo, 'PAGAMENTO_EXTERNO'));
+
+        for (const cliente of clientesExternos) {
+          if (cliente.dataVencimentoAssinatura) {
+            const dataVencimento = new Date(cliente.dataVencimentoAssinatura);
+            const mesVencimento = dataVencimento.getFullYear() + '-' + String(dataVencimento.getMonth() + 1).padStart(2, '0');
+            
+            if (mesVencimento === mesAtual && cliente.planoValor && cliente.planoValor > 0) {
+              clientesPagantes.push({
+                id: cliente.id,
+                nome: cliente.nome,
+                email: cliente.email,
+                telefone: cliente.telefone,
+                valorPago: parseFloat(cliente.planoValor.toString()),
+                dataPagamento: cliente.dataVencimentoAssinatura,
+                descricao: cliente.planoNome || 'Plano personalizado',
+                conta: 'PAGAMENTO_EXTERNO'
+              });
+              
+              valorTotalPago += parseFloat(cliente.planoValor.toString());
+            }
+          }
+        }
+        
+        console.log('📊 PAGAMENTO_EXTERNO:', clientesExternos.filter(c => {
+          if (!c.dataVencimentoAssinatura) return false;
+          const dataVenc = new Date(c.dataVencimentoAssinatura);
+          const mesVenc = dataVenc.getFullYear() + '-' + String(dataVenc.getMonth() + 1).padStart(2, '0');
+          return mesVenc === mesAtual;
+        }).length, 'pagamentos externos encontrados');
+      } catch (error) {
+        console.error('Erro PAGAMENTO_EXTERNO:', error);
+      }
+
+      console.log('✅', clientesPagantes.length, 'clientes pagantes encontrados no mês', mesAtual);
+      console.log('💰 Valor total pago: R$', valorTotalPago.toFixed(2));
+
+      // Calcular comissão total (40% da receita REAL)
+      const totalComissao = valorTotalPago * 0.4;
 
       // Buscar total de minutos trabalhados de agendamentos finalizados
       const agendamentosFinalizados = await db.select({
@@ -3278,7 +3438,7 @@ export async function registerRoutes(app: Express): Promise<Express> {
       }, 0);
 
       res.json({
-        faturamentoTotalAssinatura: receitaTotalAssinatura,
+        faturamentoTotalAssinatura: valorTotalPago,
         totalComissao: totalComissao,
         totalMinutosGerais: totalMinutosGerais
       });
