@@ -567,38 +567,39 @@ export default function Agendamento() {
   }, [showClienteDropdown]);
 
   return (
-    <div className="h-full bg-background text-foreground flex overflow-hidden">
-      {/* Área Principal da Agenda - Lado Esquerdo */}
-      <div className="flex-1 bg-background flex flex-col h-full min-w-0">
-        {/* Cabeçalho da Agenda - Compacto */}
-        <div className="bg-card border-b border-border px-3 py-1.5 shadow-sm flex-shrink-0">
-          <div className="flex items-center justify-between">
+    <div className="h-full bg-background text-foreground flex flex-col lg:flex-row overflow-hidden">
+      {/* Área Principal da Agenda - Mobile First */}
+      <div className="flex-1 bg-background flex flex-col h-full min-w-0 order-1 lg:order-1">
+        {/* Cabeçalho da Agenda - Mobile Responsive */}
+        <div className="bg-card border-b border-border px-2 sm:px-3 py-2 sm:py-1.5 shadow-sm flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/recepcionista-dashboard")}
-              className="flex items-center gap-1 hover:bg-muted h-7 px-2"
+              className="flex items-center gap-1 hover:bg-muted h-7 px-2 self-start"
             >
               <ArrowLeft className="h-3 w-3" />
               <span className="text-xs font-medium">Voltar</span>
             </Button>
 
-            <div className="text-center">
-              <h1 className="text-sm font-semibold text-foreground">Agenda do Dia</h1>
+            <div className="text-center flex-1 sm:flex-none">
+              <h1 className="text-sm sm:text-base font-semibold text-foreground">Agenda do Dia</h1>
               <div className="text-xs text-muted-foreground capitalize">
-                {format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}
+                <span className="hidden sm:inline">{format(selectedDate, "EEEE, dd/MM/yyyy", { locale: ptBR })}</span>
+                <span className="sm:hidden">{format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 self-end sm:self-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                className="h-7 px-2"
+                className="h-7 px-1 sm:px-2"
               >
                 <ChevronLeft className="h-3 w-3" />
-                <span className="ml-1 text-xs">Anterior</span>
+                <span className="ml-1 text-xs hidden sm:inline">Anterior</span>
               </Button>
               <Button
                 variant={isToday(selectedDate) ? "default" : "outline"}
@@ -612,54 +613,52 @@ export default function Agendamento() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-                className="h-7 px-2"
+                className="h-7 px-1 sm:px-2"
               >
-                <span className="mr-1 text-xs">Próximo</span>
+                <span className="mr-1 text-xs hidden sm:inline">Próximo</span>
                 <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Grade da Agenda Dark Mode - Full Height */}
-        <div className="bg-card relative flex-1 overflow-y-auto">
+        {/* Grade da Agenda - Mobile Responsive */}
+        <div className="bg-card relative flex-1 overflow-y-auto overflow-x-auto">
           {activeBarbeiros.length === 0 ? (
             /* Mensagem quando não há barbeiros */
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center p-8">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Nenhum barbeiro disponível para agendamento
+            <div className="flex items-center justify-center h-full p-4">
+              <div className="text-center">
+                <Clock className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-2 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 sm:mb-2">
+                  Nenhum barbeiro disponível
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Cadastre profissionais com o tipo "barbeiro" para visualizar a agenda.
                 </p>
               </div>
             </div>
           ) : (
             <>
-
-
-              {/* Header com nomes dos barbeiros - Altura reduzida */}
+              {/* Header com nomes dos barbeiros - Mobile Responsive */}
               <div 
-                className="grid bg-muted border-b border-border relative z-10"
+                className="grid bg-muted border-b border-border relative z-10 min-w-fit"
                 style={{ 
-                  gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                  gridTemplateColumns: `60px repeat(${activeBarbeiros.length}, minmax(100px, 1fr))` 
                 }}
               >
-                <div className="p-2 border-r border-border font-semibold flex items-center gap-2 text-foreground">
+                <div className="p-1 sm:p-2 border-r border-border font-semibold flex items-center gap-1 text-foreground">
                   <Clock className="h-3 w-3" />
-                  <span className="text-xs">Horário</span>
+                  <span className="text-xs hidden sm:inline">Horário</span>
                 </div>
                 {activeBarbeiros.map((barbeiro: Barbeiro) => (
-                  <div key={barbeiro.id} className="p-2 border-r border-border text-center min-w-[130px] max-w-[150px]">
+                  <div key={barbeiro.id} className="p-1 sm:p-2 border-r border-border text-center min-w-[100px] sm:min-w-[130px]">
                     <div className="flex flex-col items-center gap-1">
-                      <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center">
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 bg-primary/20 rounded-full flex items-center justify-center">
                         <span className="text-primary font-bold text-xs">
                           {barbeiro.nome.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-semibold text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
+                      <span className="font-semibold text-xs sm:text-sm text-foreground truncate w-full">{barbeiro.nome}</span>
                     </div>
                   </div>
                 ))}
@@ -667,21 +666,21 @@ export default function Agendamento() {
             </>
           )}
 
-          {/* Linhas de horário - Full Width */}
+          {/* Linhas de horário - Mobile Responsive */}
           {activeBarbeiros.length > 0 && (
-            <div className="h-full overflow-y-auto">
+            <div className="h-full overflow-y-auto min-w-fit">
               {timeSlots.map((timeSlot) => (
                 <div 
                   key={timeSlot} 
-                  className="grid border-b border-border h-12 hover:bg-muted/30 transition-colors group relative"
+                  className="grid border-b border-border h-10 sm:h-12 hover:bg-muted/30 transition-colors group relative min-w-fit"
                   style={{ 
-                    gridTemplateColumns: `80px repeat(${activeBarbeiros.length}, minmax(130px, 1fr))` 
+                    gridTemplateColumns: `60px repeat(${activeBarbeiros.length}, minmax(100px, 1fr))` 
                   }}
                 >
-                  <div className="p-2 border-r border-border text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {timeSlot}
+                  <div className="p-1 sm:p-2 border-r border-border text-xs sm:text-sm font-semibold text-muted-foreground flex items-center justify-center bg-muted/50">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="text-[10px] sm:text-xs">{timeSlot}</span>
                     </div>
                   </div>
                   
@@ -689,11 +688,11 @@ export default function Agendamento() {
                     const slotData = agendamentosByBarbeiro[barbeiro.id]?.[timeSlot];
                     
                     return (
-                      <div key={barbeiro.id} className="border-r border-border relative h-12 p-0.5 min-w-[130px] max-w-[150px] overflow-visible">
+                      <div key={barbeiro.id} className="border-r border-border relative h-10 sm:h-12 p-0.5 min-w-[100px] sm:min-w-[130px] overflow-visible">
                         {slotData ? (
                           // Se é um slot ocupado (não o principal), não renderizar nada - já está coberto pelo card principal
                           slotData.isOccupiedSlot ? (
-                            <div className="w-full h-full min-h-[22px] bg-transparent pointer-events-none"></div>
+                            <div className="w-full h-full min-h-[18px] sm:min-h-[22px] bg-transparent pointer-events-none"></div>
                           ) : (
                             // Slot principal - exibir card completo que se estende pelos slots ocupados
                             <div 
@@ -703,10 +702,10 @@ export default function Agendamento() {
                                 ${slotData.status === "AGENDADO" ? "bg-blue-600 hover:bg-blue-700" : ""}
                                 ${selectedAgendamento && selectedAgendamento.id === slotData.id && isComandaOpen ? "bg-amber-500 hover:bg-amber-600" : ""}
                                 rounded-md transition-all duration-200 cursor-pointer text-white shadow-sm hover:shadow-md
-                                w-full min-h-[22px] flex flex-col justify-start px-1.5 py-1 overflow-visible relative
+                                w-full min-h-[18px] sm:min-h-[22px] flex flex-col justify-start px-1 sm:px-1.5 py-0.5 sm:py-1 overflow-visible relative
                               `}
                               style={{
-                                height: `${Math.max(22, (slotData.slotsOcupados?.length || 1) * 48)}px`, // 48px por slot de 30min
+                                height: `${Math.max(18, (slotData.slotsOcupados?.length || 1) * (window.innerWidth < 640 ? 40 : 48))}px`, // 40px mobile, 48px desktop
                                 zIndex: 10,
                                 position: 'absolute',
                                 top: 0,
@@ -719,24 +718,24 @@ export default function Agendamento() {
                             >
                               <div className="flex items-start justify-between w-full overflow-hidden">
                                 <div className="flex-1 min-w-0 overflow-hidden">
-                                  <div className="font-medium text-white text-[10px] leading-tight truncate">
+                                  <div className="font-medium text-white text-[8px] sm:text-[10px] leading-tight truncate">
                                     {slotData.cliente?.nome}
                                   </div>
-                                  <div className="text-white/90 text-[9px] leading-tight truncate mt-0.5">
+                                  <div className="text-white/90 text-[7px] sm:text-[9px] leading-tight truncate mt-0.5 hidden sm:block">
                                     {slotData.servico?.nome}
                                   </div>
-                                  <div className="text-white/70 text-[8px] leading-tight mt-0.5">
+                                  <div className="text-white/70 text-[7px] sm:text-[8px] leading-tight mt-0.5 hidden sm:block">
                                     {slotData.duracaoMinutos}min
                                   </div>
                                 </div>
                                 
                                 <div className="flex flex-col items-center space-y-1">
                                   {slotData.status === "FINALIZADO" && (
-                                    <Check className="h-2.5 w-2.5 text-white/90 flex-shrink-0" />
+                                    <Check className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-white/90 flex-shrink-0" />
                                   )}
                                   
                                   {slotData.status === "CANCELADO" && (
-                                    <X className="h-2.5 w-2.5 text-white/90 flex-shrink-0" />
+                                    <X className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-white/90 flex-shrink-0" />
                                   )}
                                 </div>
                               </div>
@@ -764,46 +763,49 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {/* Sidebar do Calendário - Lado Direito */}
-      <div className="w-80 bg-card border-l border-border shadow-2xl flex-shrink-0 overflow-y-auto">
-        <div className="p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
+      {/* Sidebar do Calendário - Mobile Responsive */}
+      <div className="w-full lg:w-80 bg-card border-t lg:border-t-0 lg:border-l border-border shadow-2xl flex-shrink-0 overflow-y-auto order-2 lg:order-2 max-h-[50vh] lg:max-h-none">
+        <div className="p-3 sm:p-6 border-b border-border">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Calendário
           </h2>
         </div>
         
-        {/* Mini Calendário */}
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        {/* Mini Calendário - Mobile Responsive */}
+        <div className="p-3 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={previousMonth} 
-              className="h-8 w-8 p-0 hover:bg-muted"
+              className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-muted"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <h3 className="font-semibold text-foreground capitalize">
+            <h3 className="font-semibold text-sm sm:text-base text-foreground capitalize">
               {format(currentCalendarDate, "MMMM yyyy", { locale: ptBR })}
             </h3>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={nextMonth}
-              className="h-8 w-8 p-0 hover:bg-muted"
+              className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-muted"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
           
-          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-3">
-            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
-              <div key={day} className="p-2 font-medium text-muted-foreground">{day}</div>
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-center text-xs mb-2 sm:mb-3">
+            {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
+              <div key={day} className="p-1 sm:p-2 font-medium text-muted-foreground">
+                <span className="sm:hidden">{day}</span>
+                <span className="hidden sm:inline">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][index]}</span>
+              </div>
             ))}
           </div>
           
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {daysInMonth.map(date => (
               <Button
                 key={date.toISOString()}
@@ -811,38 +813,39 @@ export default function Agendamento() {
                 size="sm"
                 onClick={() => selectCalendarDate(date)}
                 className={`
-                  h-8 w-8 p-0 text-xs transition-all hover:bg-muted relative
+                  h-6 w-6 sm:h-8 sm:w-8 p-0 text-xs transition-all hover:bg-muted relative
                   ${isSameDay(date, selectedDate) ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
-                  ${isToday(date) ? 'font-bold ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}
+                  ${isToday(date) ? 'font-bold ring-1 sm:ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}
                   ${!isSameMonth(date, currentCalendarDate) ? 'text-muted-foreground/50' : ''}
                 `}
               >
                 {format(date, "d")}
                 {hasAgendamentos(date) && (
-                  <div className="absolute bottom-0 right-0 h-1.5 w-1.5 bg-green-500 rounded-full"></div>
+                  <div className="absolute bottom-0 right-0 h-1 w-1 sm:h-1.5 sm:w-1.5 bg-green-500 rounded-full"></div>
                 )}
               </Button>
             ))}
           </div>
         </div>
         
-        {/* Navegação de Data */}
-        <div className="p-6 border-t border-border">
-          <div className="flex gap-2 mb-6">
+        {/* Navegação de Data - Mobile Responsive */}
+        <div className="p-3 sm:p-6 border-t border-border">
+          <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6">
             <Button
               variant="outline"
               size="sm"
               onClick={() => selectCalendarDate(subDays(selectedDate, 1))}
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm py-1 sm:py-2"
             >
               <ChevronLeft className="h-3 w-3 mr-1" />
-              Anterior
+              <span className="hidden sm:inline">Anterior</span>
+              <span className="sm:hidden">Ant</span>
             </Button>
             <Button
               variant="default"
               size="sm"
               onClick={() => selectCalendarDate(new Date())}
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm py-1 sm:py-2"
             >
               Hoje
             </Button>
@@ -850,9 +853,10 @@ export default function Agendamento() {
               variant="outline"
               size="sm"
               onClick={() => selectCalendarDate(addDays(selectedDate, 1))}
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm py-1 sm:py-2"
             >
-              Próximo
+              <span className="hidden sm:inline">Próximo</span>
+              <span className="sm:hidden">Prox</span>
               <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           </div>
