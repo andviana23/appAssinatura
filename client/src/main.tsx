@@ -1,17 +1,18 @@
 import { createRoot } from "react-dom/client";
+import App from "./App";
 import "./index.css";
 
-const App = () => {
-  return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>Sistema Barbershop</h1>
-      <p>Aplicação carregada com sucesso!</p>
-      <button onClick={() => window.location.href = "/login"}>
-        Fazer Login
-      </button>
-    </div>
-  );
-};
+// Registrar Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW registrado com sucesso: ', registration);
+      })
+      .catch((registrationError) => {
+        console.log('SW registration falhou: ', registrationError);
+      });
+  });
+}
 
-const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
+createRoot(document.getElementById("root")!).render(<App />);
