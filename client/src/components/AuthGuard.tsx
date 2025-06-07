@@ -1,8 +1,7 @@
-import { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface AuthGuardProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
