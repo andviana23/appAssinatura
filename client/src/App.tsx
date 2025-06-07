@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/dashboard-melhorado";
 import Barbeiros from "@/pages/barbeiros";
 import Profissionais from "@/pages/profissionais";
 import ClientesNovo from "@/pages/clientes";
+import ClientesSimples from "@/pages/clientes-simples";
 import ClientesDebug from "@/pages/clientes-debug";
 import ClientesStatus from "@/pages/clientes-status";
 import CadastroCliente from "@/pages/cadastro-cliente";
@@ -75,7 +76,7 @@ function AuthenticatedRoutes() {
         <Route path="/profissionais" component={Profissionais} />
         <Route path="/profissionais/novo" component={Profissionais} />
         <Route path="/profissionais/editar/:id" component={Profissionais} />
-        <Route path="/clientes" component={ClientesNovo} />
+        <Route path="/clientes" component={ClientesSimples} />
         <Route path="/clientes/cadastro" component={CadastroCliente} />
         <Route path="/clientes-debug" component={ClientesDebug} />
         <Route path="/clientes-status" component={ClientesStatus} />

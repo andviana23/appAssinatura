@@ -4376,5 +4376,62 @@ export async function registerRoutes(app: Express): Promise<Express> {
     }
   });
 
+  // Endpoint para buscar todos os clientes cadastrados (simplificado)
+  app.get('/api/clientes/todos', requireAnyRole, async (req: Request, res: Response) => {
+    try {
+      // Buscar clientes da tabela clientesMaster (estrutura moderna)
+      let clientesMaster: any[] = [];
+      try {
+        clientesMaster = await db.select({
+          id: schema.clientesMaster.id,
+          nomeCompleto: schema.clientesMaster.nomeCompleto,
+          telefone: schema.clientesMaster.telefonePrincipal,
+          email: schema.clientesMaster.email
+        }).from(schema.clientesMaster)
+          .orderBy(schema.clientesMaster.nomeCompleto);
+      } catch (error) {
+        console.log('Tabela clientesMaster não encontrada, usando apenas clientes unificados');
+      }
+
+      // Buscar clientes da tabela clientes (estrutura antiga/unificada)
+      const clientesUnificados = await db.select({
+        id: schema.clientes.id,
+        nomeCompleto: schema.clientes.nome,
+        telefone: schema.clientes.telefone,
+        email: schema.clientes.email
+      }).from(schema.clientes)
+        .orderBy(schema.clientes.nome);
+
+      // Combinar ambas as fontes e mapear para formato consistente
+      const todosClientes = [
+        ...clientesMaster.map(c => ({
+          id: `master_${c.id}`,
+          nomeCompleto: c.nomeCompleto,
+          telefone: c.telefone,
+          email: c.email
+        })),
+        ...clientesUnificados.map(c => ({
+          id: `unified_${c.id}`,
+          nomeCompleto: c.nomeCompleto,
+          telefone: c.telefone,
+          email: c.email
+        }))
+      ];
+
+      res.json({
+        success: true,
+        total: todosClientes.length,
+        clientes: todosClientes
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar todos os clientes:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor' 
+      });
+    }
+  });
+
   return app;
 }
