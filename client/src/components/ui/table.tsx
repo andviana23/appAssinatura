@@ -1,5 +1,5 @@
 import * as React from "react"
-import { forwardRef, HTMLAttributes } from "react"
+import { forwardRef, HTMLAttributes, ThHTMLAttributes, TdHTMLAttributes } from "react"
 
 import { cn } from "@/lib/utils"
 
