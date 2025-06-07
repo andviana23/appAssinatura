@@ -1,249 +1,144 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Users, 
+  Search, 
   RefreshCw, 
-  Phone, 
-  Mail, 
-  Calendar,
-  Database,
+  DollarSign,
+  Phone,
+  User,
   CheckCircle,
-  XCircle,
-  Clock,
-  ArrowLeft,
-  Building2,
-  Trash2,
-  Ban
+  TrendingUp
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { LoadingClientsState } from "@/components/error-illustrations";
 
-interface ClienteUnificado {
+interface ClienteAtivo {
   id: string;
-  name: string;
+  nomeCompleto: string;
+  telefone?: string;
   email?: string;
-  phone?: string;
-  cpfCnpj?: string;
-  dateCreated: string;
-  conta: 'ASAAS_TRATO' | 'ASAAS_AND';
-  status: 'ativo' | 'inativo' | 'aguardando_pagamento';
-  notificationDisabled: boolean;
-  deleted: boolean;
+  statusAssinatura: string;
 }
 
-interface ClientesPorStatus {
-  ativos: {
-    total: number;
-    clientes: ClienteUnificado[];
-  };
-  inativos: {
-    total: number;
-    clientes: ClienteUnificado[];
-  };
-  aguardandoPagamento: {
-    total: number;
-    clientes: ClienteUnificado[];
-  };
+interface FaturamentoMes {
+  valorTotal: number;
+  mes: string;
+  totalClientes: number;
+}
+
+interface ApiResponseClientes {
+  success: boolean;
   total: number;
+  clientesAtivos: number;
+  clientesInadimplentes: number;
+  clientes: ClienteAtivo[];
 }
 
-export default function ClientesStatusPage() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+interface ApiResponseFaturamento {
+  success: boolean;
+  totalClientes: number;
+  valorTotal: number;
+  mes: string;
+}
 
-  // Buscar clientes unificados por status
-  const { data: clientesPorStatus, isLoading, refetch } = useQuery<ClientesPorStatus>({
+export default function ClientesStatus() {
+  const [busca, setBusca] = useState("");
+
+  // Buscar clientes com status ativo
+  const { data: dadosClientes, isLoading: loadingClientes, error: errorClientes, refetch: refetchClientes } = useQuery<ApiResponseClientes>({
     queryKey: ["/api/clientes/unificados-status"],
+    queryFn: async () => {
+      const response = await fetch('/api/clientes/unificados-status');
+      if (!response.ok) {
+        throw new Error("Erro ao carregar status dos clientes");
+      }
+      return response.json();
+    },
     refetchInterval: 30000,
   });
 
-  // Mutation para cancelar assinatura
-  const cancelarAssinatura = useMutation({
-    mutationFn: async (cliente: any) => {
-      if (cliente.conta === 'PAGAMENTO_EXTERNO') {
-        // Para pagamento externo, marcar como cancelado
-        const response = await apiRequest(`/api/clientes-externos/${cliente.id}/cancelar`, "POST");
-        return response.json();
-      } else {
-        // Para Asaas, cancelar via API
-        const response = await apiRequest(`/api/assinaturas/${cliente.id}/cancelar`, "POST", {
-          clienteId: cliente.id
-        });
-        return response.json();
+  // Buscar faturamento do mês das assinaturas
+  const { data: dadosFaturamento, isLoading: loadingFaturamento, error: errorFaturamento, refetch: refetchFaturamento } = useQuery<ApiResponseFaturamento>({
+    queryKey: ["/api/clientes/pagamentos-mes"],
+    queryFn: async () => {
+      const response = await fetch('/api/clientes/pagamentos-mes');
+      if (!response.ok) {
+        throw new Error("Erro ao carregar faturamento do mês");
       }
+      return response.json();
     },
-    onSuccess: (data, cliente) => {
-      toast({
-        title: "Assinatura cancelada",
-        description: cliente.conta === 'PAGAMENTO_EXTERNO' 
-          ? "Cliente marcado como cancelado. Será removido automaticamente ao fim do período."
-          : "Assinatura cancelada na plataforma Asaas.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unificados-status"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao cancelar assinatura",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    refetchInterval: 30000,
   });
 
-  // Mutation para deletar cliente
-  const deletarCliente = useMutation({
-    mutationFn: async (cliente: any) => {
-      if (cliente.conta === 'PAGAMENTO_EXTERNO') {
-        const response = await apiRequest(`/api/clientes-externos/${cliente.id}/deletar`, "DELETE");
-        return response.json();
-      } else {
-        const response = await apiRequest(`/api/clientes-asaas/${cliente.id}/deletar`, "DELETE");
-        return response.json();
-      }
-    },
-    onSuccess: () => {
-      toast({
-        title: "Cliente deletado",
-        description: "Cliente removido do sistema com sucesso.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/clientes/unificados-status"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao deletar cliente",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Filtrar apenas clientes ativos e aplicar busca
+  const clientesAtivos = useMemo(() => {
+    if (!dadosClientes?.clientes) return [];
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
-    } catch {
-      return 'Data inválida';
+    const ativos = dadosClientes.clientes.filter(cliente => 
+      cliente.statusAssinatura === 'ATIVO'
+    );
+
+    if (!busca) return ativos;
+    
+    return ativos.filter((cliente) =>
+      cliente.nomeCompleto.toLowerCase().includes(busca.toLowerCase()) ||
+      cliente.telefone?.toLowerCase().includes(busca.toLowerCase()) ||
+      cliente.email?.toLowerCase().includes(busca.toLowerCase())
+    );
+  }, [dadosClientes?.clientes, busca]);
+
+  const formatarTelefone = (telefone?: string) => {
+    if (!telefone) return "Não informado";
+    
+    const numeros = telefone.replace(/\D/g, '');
+    if (numeros.length === 11) {
+      return numeros.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    } else if (numeros.length === 10) {
+      return numeros.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
     }
+    return telefone;
   };
 
-  const getContaBadge = (conta: string) => {
-    switch (conta) {
-      case 'ASAAS_TRATO':
-        return <Badge variant="default" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">Trato</Badge>;
-      case 'ASAAS_AND':
-        return <Badge variant="default" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">Andrey</Badge>;
-      default:
-        return <Badge variant="outline">{conta}</Badge>;
-    }
+  const formatarMoeda = (valor: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
   };
 
-  const ClienteTable = ({ clientes, titulo, icon, cor }: { 
-    clientes: ClienteUnificado[], 
-    titulo: string, 
-    icon: React.ReactNode, 
-    cor: string 
-  }) => (
-    <Card className="border-border bg-card shadow-lg">
-      <CardHeader className="bg-primary text-primary-foreground">
-        <CardTitle className="flex items-center gap-2">
-          {icon}
-          {titulo} ({clientes.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {clientes.length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Nenhum cliente encontrado nesta categoria
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Conta</TableHead>
-                <TableHead>Data Criação</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clientes.map((cliente) => (
-                <TableRow key={`${cliente.conta}-${cliente.id}`}>
-                  <TableCell className="font-medium">{cliente.name}</TableCell>
-                  <TableCell>
-                    {cliente.email ? (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        {cliente.email}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {cliente.phone ? (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        {cliente.phone}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{getContaBadge(cliente.conta)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {formatDate(cliente.dateCreated)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => cancelarAssinatura.mutate(cliente)}
-                        disabled={cancelarAssinatura.isPending}
-                        className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 border-orange-300 hover:border-orange-400 dark:border-orange-600 dark:hover:border-orange-500"
-                      >
-                        <Ban className="h-4 w-4 mr-1" />
-                        Cancelar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deletarCliente.mutate(cliente)}
-                        disabled={deletarCliente.isPending}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400 dark:border-red-600 dark:hover:border-red-500"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Deletar
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
+  const mesAtualFormatado = dadosFaturamento?.mes ? 
+    format(new Date(dadosFaturamento.mes + '-01'), "MMM/yyyy", { locale: ptBR }) : 
+    format(new Date(), "MMM/yyyy", { locale: ptBR });
+
+  const isLoading = loadingClientes || loadingFaturamento;
+  const error = errorClientes || errorFaturamento;
 
   if (isLoading) {
+    return <LoadingClientsState />;
+  }
+
+  if (error) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-6">
+        <div className="text-center py-8">
+          <Users className="h-12 w-12 mx-auto mb-4 text-red-500" />
+          <h2 className="text-xl font-semibold mb-2">Erro ao carregar dados</h2>
+          <p className="text-muted-foreground mb-4">Não foi possível carregar os dados dos clientes.</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => refetchClientes()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Recarregar Clientes
+            </Button>
+            <Button onClick={() => refetchFaturamento()} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Recarregar Faturamento
+            </Button>
           </div>
         </div>
       </div>
@@ -251,132 +146,116 @@ export default function ClientesStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setLocation("/")}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors bg-primary/10 rounded-xl px-4 py-2 hover:bg-primary/20"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-semibold">Voltar</span>
-            </button>
-          </div>
-          
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">
-                Clientes por Status
-              </h1>
-              <p className="text-muted-foreground">
-                Visualização unificada das duas contas ASAAS organizadas por status
-              </p>
-            </div>
-            
-            <Button
-              onClick={() => refetch()}
-              variant="default"
-              size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Atualizar Dados
-            </Button>
-          </div>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Clientes Ativos</h1>
+          <p className="text-muted-foreground">
+            Assinantes com status ativo no sistema
+          </p>
         </div>
-
-        {/* Estatísticas */}
-        {clientesPorStatus && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-border bg-card shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total de Clientes</p>
-                    <p className="text-2xl font-bold text-card-foreground">
-                      {clientesPorStatus.total}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Quantidade total cadastrados no sistema
-                    </p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Clientes Ativos</p>
-                    <p className="text-2xl font-bold text-card-foreground">
-                      {clientesPorStatus.ativos.total}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Assinaturas ativas no mês atual
-                    </p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-red-600 dark:text-red-400">Clientes Inadimplentes</p>
-                    <p className="text-2xl font-bold text-card-foreground">
-                      {clientesPorStatus.inativos.total}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cobranças em atraso no mês vigente
-                    </p>
-                  </div>
-                  <XCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Abas de Status */}
-        {clientesPorStatus && (
-          <Tabs defaultValue="ativos" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="ativos" className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Ativos ({clientesPorStatus.ativos.total})
-              </TabsTrigger>
-              <TabsTrigger value="inadimplentes" className="flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                Inadimplentes ({clientesPorStatus.inativos.total})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="ativos">
-              <ClienteTable 
-                clientes={clientesPorStatus.ativos.clientes}
-                titulo="Clientes Ativos"
-                icon={<CheckCircle className="h-5 w-5" />}
-                cor="bg-gradient-to-r from-green-600 to-green-700"
-              />
-            </TabsContent>
-
-            <TabsContent value="inadimplentes">
-              <ClienteTable 
-                clientes={clientesPorStatus.inativos.clientes}
-                titulo="Clientes Inadimplentes"
-                icon={<XCircle className="h-5 w-5" />}
-                cor="bg-gradient-to-r from-red-600 to-red-700"
-              />
-            </TabsContent>
-          </Tabs>
-        )}
+        <div className="flex gap-2">
+          <Button onClick={() => { refetchClientes(); refetchFaturamento(); }} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
+
+      {/* Card de Faturamento */}
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-semibold text-green-800">
+            Faturamento de Assinaturas ({mesAtualFormatado})
+          </CardTitle>
+          <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
+            <TrendingUp className="h-6 w-6 text-green-600" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold text-green-700 mb-1">
+            {formatarMoeda(dadosFaturamento?.valorTotal || 0)}
+          </div>
+          <p className="text-sm text-green-600">
+            <DollarSign className="inline h-3 w-3 mr-1" />
+            {dadosFaturamento?.totalClientes || 0} clientes pagantes no mês
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Buscar Clientes Ativos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, telefone ou email..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Clientes Ativos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            Clientes com Assinatura Ativa ({clientesAtivos.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {clientesAtivos.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Nenhum cliente ativo encontrado</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {clientesAtivos.map((cliente) => (
+                <div 
+                  key={cliente.id} 
+                  className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-green-300 transition-all duration-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
+                        {cliente.nomeCompleto}
+                      </h3>
+                      <div className="flex items-center gap-2 text-gray-600 mb-2">
+                        <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-sm font-medium">
+                          {formatarTelefone(cliente.telefone)}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Ativo
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

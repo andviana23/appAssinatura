@@ -19,7 +19,7 @@ import Profissionais from "@/pages/profissionais";
 import ClientesNovo from "@/pages/clientes";
 import ClientesSimples from "@/pages/clientes-simples";
 import ClientesDebug from "@/pages/clientes-debug";
-import ClientesStatus from "@/pages/clientes-status";
+import ClientesStatusNovo from "@/pages/clientes-status";
 import CadastroCliente from "@/pages/cadastro-cliente";
 
 import SistemaModerno from "@/pages/sistema-moderno";
@@ -79,7 +79,7 @@ function AuthenticatedRoutes() {
         <Route path="/clientes" component={ClientesSimples} />
         <Route path="/clientes/cadastro" component={CadastroCliente} />
         <Route path="/clientes-debug" component={ClientesDebug} />
-        <Route path="/clientes-status" component={ClientesStatus} />
+        <Route path="/clientes-status" component={ClientesStatusNovo} />
         <Route path="/sistema-moderno" component={SistemaModerno} />
         <Route path="/servicos" component={Servicos} />
         <Route path="/planos" component={Planos} />
