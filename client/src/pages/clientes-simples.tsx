@@ -184,25 +184,25 @@ export default function ClientesSimples() {
               <p>Nenhum cliente encontrado</p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-3">
               {clientesUnicos.map((cliente) => (
                 <div 
                   key={cliente.id} 
-                  className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-200"
+                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
-                      <User className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
-                        {cliente.nomeCompleto}
-                      </h3>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="h-4 w-4 text-blue-500" />
-                        <span className="font-semibold text-base">
-                          {formatarTelefone(cliente.telefone)}
-                        </span>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {cliente.nomeCompleto}
+                        </h3>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Phone className="h-3 w-3" />
+                          <span>{formatarTelefone(cliente.telefone)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
