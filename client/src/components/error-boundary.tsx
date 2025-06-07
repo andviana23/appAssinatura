@@ -1,4 +1,4 @@
-import React from 'react';
+import { Component, ReactNode, ComponentType, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,15 +6,15 @@ import { Card, CardContent } from '@/components/ui/card';
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  errorInfo: React.ErrorInfo | null;
+  errorInfo: ErrorInfo | null;
 }
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
+  children: ReactNode;
+  fallback?: ComponentType<{ error: Error; retry: () => void }>;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -31,7 +31,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo
@@ -145,7 +145,7 @@ export function DefaultErrorFallback({ error, retry }: ErrorFallbackProps) {
 
 // Specialized error boundary for async operations
 export function AsyncErrorBoundary({ children, onError }: { 
-  children: React.ReactNode; 
+  children: ReactNode; 
   onError?: (error: Error) => void;
 }) {
   return (

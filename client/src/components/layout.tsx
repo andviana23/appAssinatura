@@ -5,7 +5,7 @@ import { Header } from "./header";
 import { useScreenSize } from "@/hooks/use-mobile";
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {

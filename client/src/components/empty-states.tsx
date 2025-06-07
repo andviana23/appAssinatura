@@ -2,7 +2,7 @@ import { Search, Filter, Calendar, Users, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   title: string;
   description: string;
   action?: {
