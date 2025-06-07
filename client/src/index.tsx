@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
-import "./index.css";
 
-const App = () => {
+function App() {
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
       <h1>Sistema Barbershop</h1>
@@ -11,7 +10,10 @@ const App = () => {
       </button>
     </div>
   );
-};
+}
 
-const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
+const container = document.getElementById("root");
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
