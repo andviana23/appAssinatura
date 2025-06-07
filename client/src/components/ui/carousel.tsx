@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useEffect, useState, forwardRef, KeyboardEvent, HTMLAttributes } from "react"
+import { createContext, useContext, useCallback, useEffect, useState, forwardRef, KeyboardEvent, HTMLAttributes, ComponentProps } from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
@@ -170,9 +170,9 @@ const CarouselContent = forwardRef<
 })
 CarouselContent.displayName = "CarouselContent"
 
-const CarouselItem = React.forwardRef<
+const CarouselItem = forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const { orientation } = useCarousel()
 
@@ -192,9 +192,9 @@ const CarouselItem = React.forwardRef<
 })
 CarouselItem.displayName = "CarouselItem"
 
-const CarouselPrevious = React.forwardRef<
+const CarouselPrevious = forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<typeof Button>
+  ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
   const { orientation, scrollPrev, canScrollPrev } = useCarousel()
 
@@ -221,9 +221,9 @@ const CarouselPrevious = React.forwardRef<
 })
 CarouselPrevious.displayName = "CarouselPrevious"
 
-const CarouselNext = React.forwardRef<
+const CarouselNext = forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<typeof Button>
+  ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
   const { orientation, scrollNext, canScrollNext } = useCarousel()
 
