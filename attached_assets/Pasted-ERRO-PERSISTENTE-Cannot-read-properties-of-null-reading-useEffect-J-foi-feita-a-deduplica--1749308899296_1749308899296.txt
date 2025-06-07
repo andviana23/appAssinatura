@@ -1,0 +1,79 @@
+ERRO PERSISTENTE: "Cannot read properties of null (reading 'useEffect')"
+
+Já foi feita a deduplicação e atualização de todas as dependências do React para a mesma versão. O erro persiste no QueryClientProvider do @tanstack/react-query.
+
+AÇÕES IMEDIATAS OBRIGATÓRIAS:
+
+Forçar resolução única do React/React-DOM em TODO o projeto:
+
+No package.json, adicione:
+
+json
+Copiar
+Editar
+"resolutions": {
+  "react": "^18.3.1",
+  "react-dom": "^18.3.1"
+}
+Se estiver usando npm e não yarn, use o pacote npm-force-resolutions:
+
+Adicione no package.json:
+
+json
+Copiar
+Editar
+"scripts": {
+  "preinstall": "npx npm-force-resolutions"
+}
+Rode:
+
+sh
+Copiar
+Editar
+npx npm-force-resolutions
+npm install
+Atualize o @tanstack/react-query e todas as dependências relacionadas para as versões mais recentes:
+
+sh
+Copiar
+Editar
+npm install @tanstack/react-query@latest
+Verifique se NÃO existe nenhuma dependência local, linkada ou instalada via file: ou npm link que possa trazer React duplicado.
+
+Procure por imports de hooks fora de componentes funcionais EM TODO O PROJETO, não só nos principais.
+
+Apague node_modules, package-lock.json e reinstale tudo do zero após os passos acima:
+
+sh
+Copiar
+Editar
+rm -rf node_modules package-lock.json
+npm install
+Após instalar, rode o projeto do zero.
+
+Se o erro persistir, execute o comando abaixo e compartilhe o resultado completo:
+
+sh
+Copiar
+Editar
+npm ls react react-dom @tanstack/react-query
+Não pare até garantir:
+
+Apenas UMA cópia de React e React-DOM em toda a árvore
+
+Todas as libs externas (especialmente @tanstack/react-query) na última versão compatível com React 18.3.1
+
+Nenhum hook usado fora de componente funcional
+
+Esse erro SÓ some quando toda a árvore de dependências respeita a mesma versão de React e NENHUM hook está fora de componente.
+
+Só isso vai destravar o sistema.
+
+Se não resolver, me manda o resultado do
+
+sh
+Copiar
+Editar
+npm ls react react-dom @tanstack/react-query
+e a estrutura do seu package.json.
+A solução é sempre alinhar tudo pra só UMA versão, nunca falha.
