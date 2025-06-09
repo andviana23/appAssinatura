@@ -36,6 +36,7 @@ import ListaDaVez from "@/pages/lista-da-vez";
 import GerenciarFila from "@/pages/gerenciar-fila";
 import GerenciarAssinaturas from "@/pages/gerenciar-assinaturas";
 import PlanosAssinatura from "@/pages/planos-assinatura";
+import CadastrarAssinatura from "@/pages/CadastrarAssinatura";
 import TestAsaas from "@/pages/test-asaas";
 import LoginNovo from "@/pages/login";
 import LoginComRemember from "@/pages/login-com-remember";
@@ -92,6 +93,7 @@ function AuthenticatedRoutes() {
         <Route path="/gerenciar-fila" component={GerenciarFila} />
         <Route path="/gerenciar-assinaturas" component={GerenciarAssinaturas} />
         <Route path="/planos-assinatura" component={PlanosAssinatura} />
+        <Route path="/cadastrar-assinatura" component={CadastrarAssinatura} />
         <Route path="/test-asaas" component={TestAsaas} />
         <Route path="/configuracoes" component={Configuracoes} />
         
