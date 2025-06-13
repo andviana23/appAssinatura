@@ -576,7 +576,7 @@ export default function Agendamento() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation("/recepcionista-dashboard")}
+              onClick={() => setLocation("/dashboard")}
               className="flex items-center gap-1 hover:bg-muted h-7 px-2 self-start"
             >
               <ArrowLeft className="h-3 w-3" />
